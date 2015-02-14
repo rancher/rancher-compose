@@ -1,0 +1,6 @@
+web:
+  image: rancher/server:beta
+zk:
+  image: ibuildthecloud/zookeeper
+  ports:
+    - "2181:2181"

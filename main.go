@@ -6,7 +6,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudnautique/go-rancher/client"
-	"github.com/cloudnautique/rancher-composer/service"
+	"github.com/cloudnautique/rancher-composer/project"
 	"github.com/codegangsta/cli"
 )
 
@@ -48,40 +48,39 @@ func main() {
 			Name:  "up",
 			Usage: "Bring a yml config or service up",
 			Action: func(c *cli.Context) {
-				url := c.GlobalString("api-url")
-				accessKey := c.GlobalString("access-key")
-				secretKey := c.GlobalString("secret-key")
-				fileName := c.GlobalString("f")
-
-				log.Infof("Attempting to use file: %s", fileName)
-
-				m, err := service.YamlUnmarshall(fileName)
+				prj := getProject(c)
+				err := prj.StartAllServices()
 				if err != nil {
-					log.Fatalf("Error parsing Yaml: %s", err)
+					log.Fatalf("Died trying to create Servers")
 				}
-				log.Infof("Setting up Rancher Client")
-				rClient, err := GetRancherClient(url, accessKey, secretKey)
-				if err != nil {
-					log.Fatalf("Unable to get Client: %s", err)
-				}
-
-				for service, config := range m {
-					log.Infof("Service: %s found", service)
-					container := client.Container{
-						Name:      service.(string),
-						ImageUuid: "docker:" + config.(map[interface{}]interface{})["image"].(string),
-					}
-					log.Infof("Image: %s", container.ImageUuid)
-					log.Infof("Name: %s", container.Name)
-					_, err := rClient.Container.Create(&container)
-					if err != nil {
-						log.Fatal("Could not create container: ", err)
-					}
-				}
-
 			},
 		},
 	}
 
 	app.Run(os.Args)
+}
+
+func getRancherClient(c *cli.Context) *client.RancherClient {
+	url := c.GlobalString("api-url")
+	accessKey := c.GlobalString("access-key")
+	secretKey := c.GlobalString("secret-key")
+
+	rClient, err := GetRancherClient(url, accessKey, secretKey)
+	if err != nil {
+		log.Fatalf("Unable to get Rancher client: %s", err)
+	}
+
+	return rClient
+}
+
+func getProject(c *cli.Context) *project.Project {
+	filename := c.GlobalString("f")
+	rClient := getRancherClient(c)
+
+	prj, err := project.NewProject("rc", filename, rClient)
+	if err != nil {
+		log.Fatalf("Could not create project from file. %v", filename, err)
+	}
+
+	return prj
 }

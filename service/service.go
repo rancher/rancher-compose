@@ -1,23 +1,36 @@
 package service
 
 import (
-	"io/ioutil"
-
 	log "github.com/Sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	"github.com/cloudnautique/go-rancher/client"
 )
 
-func YamlUnmarshall(filename string) (map[interface{}]interface{}, error) {
-	yamlbytes, err := ioutil.ReadFile(filename)
+type Service struct {
+	ServiceName string
+	Config      map[interface{}]interface{}
+}
+
+func New(serviceName string, containerConfig map[interface{}]interface{}) *Service {
+	service := &Service{
+		ServiceName: serviceName,
+		Config:      containerConfig,
+	}
+	return service
+}
+
+func (s *Service) Create(rClient *client.RancherClient) error {
+	network := []string{"1n2"}
+	container := client.Container{
+		Name:       "rc_" + s.ServiceName + "_1",
+		ImageUuid:  "docker:" + s.Config["image"].(string),
+		NetworkIds: network,
+	}
+	log.Infof("Starting container: %s", container.Name)
+
+	_, err := rClient.Container.Create(&container)
 	if err != nil {
-		log.Fatalf("Could not open docker-compose file: %s", err)
+		log.Fatalf("Could not create container: %s", err)
 	}
 
-	m := make(map[interface{}]interface{})
-	err = yaml.Unmarshal([]byte(yamlbytes), &m)
-	if err != nil {
-		log.Fatalf("error: %s", err)
-	}
-
-	return m, nil
+	return nil
 }

@@ -9,6 +9,8 @@ zk:
   image: ibuildthecloud/zookeeper
   ports:
     - "2181:2181"
+  environment:
+    CATTLE: "Prod"
 redis:
   image: ibuildthecloud/redis
   expose:
@@ -17,3 +19,9 @@ redis:
     - "2222"
 app:
  image: rancher/server:beta
+ubuntu:
+ image: ubuntu:14.04.1
+ command: sleep 60
+master:
+ image: rancher/build-master
+ privileged: true

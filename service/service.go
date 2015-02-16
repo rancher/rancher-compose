@@ -67,7 +67,30 @@ func (s *Service) createContainerConfig() *client.Container {
 	}
 
 	addPorts(container, s.Config)
+	addEnvironmentVariables(container, s.Config)
+	addCommands(container, s.Config)
+	setPrivileged(container, s.Config)
 
+	return container
+}
+
+func addEnvironmentVariables(container *client.Container, config map[interface{}]interface{}) *client.Container {
+	envVars, exists := config["environment"]
+	if exists {
+		vars := make(map[string]interface{})
+		for key, value := range envVars.(map[interface{}]interface{}) {
+			vars[key.(string)] = value.(string)
+		}
+		container.Environment = vars
+	}
+	return container
+}
+
+func addCommands(container *client.Container, config map[interface{}]interface{}) *client.Container {
+	cmd, exists := config["command"]
+	if exists {
+		container.Command = cmd.(string)
+	}
 	return container
 }
 
@@ -101,5 +124,13 @@ func addPorts(container *client.Container, config map[interface{}]interface{}) *
 		container.Ports = portList
 	}
 
+	return container
+}
+
+func setPrivileged(container *client.Container, config map[interface{}]interface{}) *client.Container {
+	priv, exists := config["privileged"]
+	if exists {
+		container.Privileged = priv.(bool)
+	}
 	return container
 }

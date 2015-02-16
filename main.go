@@ -46,7 +46,7 @@ func main() {
 	app.Commands = []cli.Command{
 		{
 			Name:  "up",
-			Usage: "Bring a yml config or service up",
+			Usage: "Bring all services up",
 			Action: func(c *cli.Context) {
 				prj := getProject(c)
 				err := prj.StartAllServices()

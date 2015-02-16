@@ -34,7 +34,7 @@ func NewProject(name string, filename string, client *client.RancherClient) (*Pr
 
 	for service, config := range m {
 		log.Infof("Project has service: %s", service)
-		addService(service.(string), config.(map[interface{}]interface{}))
+		project.addService(service.(string), config.(map[interface{}]interface{}))
 	}
 
 	return project, nil
@@ -46,9 +46,8 @@ func printProjectServices() {
 	}
 }
 
-func addService(serviceName string, containerConfig map[interface{}]interface{}) error {
-	//todo: remove the "_" character
-	service := service.New("rc_", serviceName, containerConfig)
+func (p *Project) addService(serviceName string, containerConfig map[interface{}]interface{}) error {
+	service := service.New(p.ProjectName, serviceName, containerConfig)
 	if _, exists := ProjectServices[serviceName]; exists {
 		return fmt.Errorf("Service: %s already exists", serviceName)
 	}

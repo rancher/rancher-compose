@@ -55,6 +55,17 @@ func main() {
 				}
 			},
 		},
+		{
+			Name:  "rm",
+			Usage: "Remove all containers and services",
+			Action: func(c *cli.Context) {
+				prj := getProject(c)
+				err := prj.RmAllServices()
+				if err != nil {
+					log.Fatal("Could not remove all services. %s", err)
+				}
+			},
+		},
 	}
 
 	app.Run(os.Args)

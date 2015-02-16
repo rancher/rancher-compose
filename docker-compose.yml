@@ -1,6 +1,19 @@
 web:
   image: rancher/server:beta
+  ports:
+    - "8080:8080"
+    - "3306:3306"
+  links:
+    - "zk:zk1"
 zk:
   image: ibuildthecloud/zookeeper
   ports:
     - "2181:2181"
+redis:
+  image: ibuildthecloud/redis
+  expose:
+    - "2176"
+  ports:
+    - "2222"
+app:
+ image: rancher/server:beta

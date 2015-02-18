@@ -1,6 +1,6 @@
 # Prototyping....
 
-This is very raw, and allows us to explore Docker Fig/Compose functionality with Rancher
+This is very raw experiment. Allowing us to explore Docker Fig/Compose functionality with Rancher... 
 
 ##Supported
 
@@ -26,7 +26,7 @@ Removing everything:
 
 ```
 NAME:
-   composer - FIG 2 Rancher
+   composer - Docker-compose 2 Rancher
 
 USAGE:
    composer [global options] command [command options] [arguments...]
@@ -35,7 +35,7 @@ VERSION:
    0.0.1
 
 AUTHOR:
-  Bill Maxwell - <unknown@email>
+  Rancher
 
 COMMANDS:
    up       Bring all services up

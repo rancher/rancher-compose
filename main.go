@@ -16,7 +16,8 @@ func main() {
 	app.Name = "rancher-compose"
 	app.Usage = "Docker-compose to Rancher"
 	app.Version = "0.1.0"
-	app.Author = "Bill Maxwell"
+	app.Author = "Rancher"
+	app.Email = ""
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name: "api-url",
@@ -64,14 +65,6 @@ func main() {
 				if err != nil {
 					log.Fatal("Could not remove all services. %s", err)
 				}
-			},
-		},
-		{
-			Name:  "test",
-			Usage: "testing...",
-			Action: func(c *cli.Context) {
-				prj := getProject(c)
-				prj.Print()
 			},
 		},
 	}

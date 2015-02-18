@@ -19,7 +19,9 @@ Removing everything:
 ## Still exploring
  
  - Links
-
+ - Volumes
+ - Volumes-from
+ 
 ## Usage:
 
 ```

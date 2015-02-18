@@ -7,15 +7,15 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/rancherio/go-rancher/client"
-	"github.com/rancherio/rancher-composer/project"
+	"github.com/rancherio/rancher-compose/project"
 )
 
 func main() {
 	app := cli.NewApp()
 
-	app.Name = "composer"
-	app.Usage = "FIG 2 Rancher"
-	app.Version = "0.0.1"
+	app.Name = "rancher-compose"
+	app.Usage = "Docker-compose to Rancher"
+	app.Version = "0.1.0"
 	app.Author = "Bill Maxwell"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{

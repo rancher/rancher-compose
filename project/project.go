@@ -5,8 +5,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/rancherio/go-rancher/client"
-	"github.com/rancherio/rancher-composer/parser"
-	"github.com/rancherio/rancher-composer/service"
+	"github.com/rancherio/rancher-compose/parser"
+	"github.com/rancherio/rancher-compose/service"
 )
 
 type Project struct {

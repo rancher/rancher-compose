@@ -21,7 +21,10 @@ Removing everything:
  - Links
  - Volumes
  - Volumes-from
- 
+
+## Building
+If you run the `./scripts/build` command it will drop `./build/rancher-composer` binary. 
+
 ## Usage:
 
 ```
@@ -32,7 +35,7 @@ USAGE:
    composer [global options] command [command options] [arguments...]
 
 VERSION:
-   0.0.1
+   0.1.0
 
 AUTHOR:
   Rancher
@@ -50,3 +53,5 @@ GLOBAL OPTIONS:
    --help, -h           show help
    --version, -v        print the version
 ```
+
+Copyright Rancher Labs

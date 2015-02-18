@@ -2,7 +2,7 @@ package main
 
 import (
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudnautique/go-rancher/client"
+	"github.com/rancherio/go-rancher/client"
 )
 
 func GetRancherClient(url string, apiKey string, apiSecret string) (*client.RancherClient, error) {

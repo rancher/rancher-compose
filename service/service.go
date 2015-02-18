@@ -2,9 +2,10 @@ package service
 
 import (
 	"strconv"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudnautique/go-rancher/client"
+	"github.com/rancherio/go-rancher/client"
 )
 
 type Service struct {
@@ -12,23 +13,24 @@ type Service struct {
 	Config         map[interface{}]interface{}
 	ProjectName    string
 	ContainerCount int
+	RancherClient  *client.RancherClient
 }
 
-func New(projectName string, serviceName string, containerConfig map[interface{}]interface{}) *Service {
+func New(projectName string, serviceName string, containerConfig map[interface{}]interface{}, rClient *client.RancherClient) *Service {
 	service := &Service{
-		ServiceName:    serviceName,
-		Config:         containerConfig,
-		ProjectName:    projectName,
-		ContainerCount: 0,
+		ServiceName:   serviceName,
+		Config:        containerConfig,
+		ProjectName:   projectName,
+		RancherClient: rClient,
 	}
 	return service
 }
 
-func (s *Service) Create(rClient *client.RancherClient) error {
+func (s *Service) Create() error {
 	container := s.createContainerConfig()
 	log.Infof("Starting container: %s", container.Name)
 
-	_, err := rClient.Container.Create(container)
+	_, err := s.RancherClient.Container.Create(container)
 	if err != nil {
 		log.Fatalf("Could not create container: %s", err)
 	}
@@ -36,20 +38,36 @@ func (s *Service) Create(rClient *client.RancherClient) error {
 	return nil
 }
 
-func (s *Service) Delete(rClient *client.RancherClient) error {
+func (s *Service) Delete() error {
 	listOpts := client.NewListOpts()
 	listOpts.Filters["name_prefix"] = s.containerNamePrefix()
 
-	containers, err := rClient.Container.List(listOpts)
+	containers, err := s.RancherClient.Container.List(listOpts)
 	if err != nil {
 		log.Fatalf("Could not get list of containers")
 	}
 
 	for _, container := range containers.Data {
 		log.Infof("Stopping Container: %s", container.Name)
-		rClient.Container.Delete(&container)
+		s.RancherClient.Container.Delete(&container)
 	}
 	return nil
+}
+
+func (s *Service) GetLinkDefs() map[string]string {
+	links := make(map[string]string)
+	_, exists := s.Config["links"]
+	if exists {
+		for _, link := range s.Config["links"].([]interface{}) {
+			spLink := strings.Split(link.(string), ":")
+			if len(spLink) == 2 {
+				links[spLink[0]] = spLink[1]
+			} else {
+				links[spLink[0]] = spLink[0]
+			}
+		}
+	}
+	return links
 }
 
 func (s *Service) containerNamePrefix() string {
@@ -71,6 +89,10 @@ func (s *Service) createContainerConfig() *client.Container {
 	addCommands(container, s.Config)
 	setPrivileged(container, s.Config)
 
+	return container
+}
+
+func (s *Service) addLinks(container *client.Container) *client.Container {
 	return container
 }
 

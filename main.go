@@ -5,9 +5,9 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudnautique/go-rancher/client"
 	"github.com/cloudnautique/rancher-composer/project"
 	"github.com/codegangsta/cli"
+	"github.com/rancherio/go-rancher/client"
 )
 
 func main() {
@@ -64,6 +64,14 @@ func main() {
 				if err != nil {
 					log.Fatal("Could not remove all services. %s", err)
 				}
+			},
+		},
+		{
+			Name:  "test",
+			Usage: "testing...",
+			Action: func(c *cli.Context) {
+				prj := getProject(c)
+				prj.Print()
 			},
 		},
 	}

@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudnautique/go-rancher/client"
 	"github.com/cloudnautique/rancher-composer/parser"
 	"github.com/cloudnautique/rancher-composer/service"
+	"github.com/rancherio/go-rancher/client"
 )
 
 type Project struct {
@@ -41,13 +41,14 @@ func NewProject(name string, filename string, client *client.RancherClient) (*Pr
 }
 
 func printProjectServices() {
-	for service := range ProjectServices {
-		log.Infof("Service: %s has been parsed", service)
+	s := sortServices()
+	for i, service := range s {
+		log.Infof("Service: %v %s has been parsed", i, service)
 	}
 }
 
 func (p *Project) addService(serviceName string, containerConfig map[interface{}]interface{}) error {
-	service := service.New(p.ProjectName, serviceName, containerConfig)
+	service := service.New(p.ProjectName, serviceName, containerConfig, p.Client)
 	if _, exists := ProjectServices[serviceName]; exists {
 		return fmt.Errorf("Service: %s already exists", serviceName)
 	}
@@ -57,9 +58,10 @@ func (p *Project) addService(serviceName string, containerConfig map[interface{}
 }
 
 func (p *Project) StartAllServices() error {
-	for name, service := range ProjectServices {
-		log.Infof("Bringing up service: %s", name)
-		err := service.Create(p.Client)
+	serviceStartOrder := sortServices()
+	for _, service := range serviceStartOrder {
+		log.Infof("Bringing up service: %s", service)
+		err := ProjectServices[service].Create()
 		if err != nil {
 			return fmt.Errorf("Error: %v", err)
 		}
@@ -70,10 +72,65 @@ func (p *Project) StartAllServices() error {
 func (p *Project) RmAllServices() error {
 	for name, service := range ProjectServices {
 		log.Infof("Removing service: %s", name)
-		err := service.Delete(p.Client)
+		err := service.Delete()
 		if err != nil {
 			return fmt.Errorf("Error: %v", err)
 		}
 	}
 	return nil
+}
+
+func sortServices() []string {
+	// ported from Fig
+	unmarkedServices := make([]string, 0, len(ProjectServices))
+	sortedServices := make([]string, 0)
+	temporaryMarked := make([]string, 0, len(unmarkedServices))
+
+	for service, _ := range ProjectServices {
+		unmarkedServices = append(unmarkedServices, service)
+	}
+
+	var visit func(service *service.Service)
+
+	visit = func(service *service.Service) {
+		if stringInArray(service.ServiceName, temporaryMarked) {
+			log.Fatalf("Service %s has either a circular dep or is linked to itself", service.ServiceName)
+		}
+		if stringInArray(service.ServiceName, unmarkedServices) {
+			temporaryMarked = append(temporaryMarked, service.ServiceName)
+			links := service.GetLinkDefs()
+			for svc, _ := range links {
+				visit(ProjectServices[svc])
+			}
+			temporaryMarked = removeFromArray(service.ServiceName, temporaryMarked)
+			unmarkedServices = removeFromArray(service.ServiceName, unmarkedServices)
+			sortedServices = append(sortedServices, service.ServiceName)
+		}
+
+	}
+
+	for _, service := range unmarkedServices {
+		visit(ProjectServices[service])
+	}
+
+	return sortedServices
+}
+
+func removeFromArray(item string, array []string) []string {
+	dumb := make([]string, 0, len(array)-1)
+	for _, str := range array {
+		if str != item {
+			dumb = append(dumb, str)
+		}
+	}
+	return dumb
+}
+
+func stringInArray(item string, array []string) bool {
+	for _, str := range array {
+		if str == item {
+			return true
+		}
+	}
+	return false
 }

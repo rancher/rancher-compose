@@ -3,8 +3,6 @@ web:
   ports:
     - "8080:8080"
     - "3306:3306"
-  links:
-    - "zk:zk1"
 zk:
   image: ibuildthecloud/zookeeper
   ports:

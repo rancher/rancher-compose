@@ -5,9 +5,9 @@ import (
 	"os"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudnautique/rancher-composer/project"
 	"github.com/codegangsta/cli"
 	"github.com/rancherio/go-rancher/client"
+	"github.com/rancherio/rancher-composer/project"
 )
 
 func main() {

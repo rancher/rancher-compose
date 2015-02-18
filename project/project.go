@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudnautique/rancher-composer/parser"
-	"github.com/cloudnautique/rancher-composer/service"
 	"github.com/rancherio/go-rancher/client"
+	"github.com/rancherio/rancher-composer/parser"
+	"github.com/rancherio/rancher-composer/service"
 )
 
 type Project struct {

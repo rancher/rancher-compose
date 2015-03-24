@@ -1,136 +1,207 @@
 package project
 
 import (
-	"fmt"
+	"bytes"
+	"errors"
+	"strings"
+	"sync"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/rancherio/go-rancher/client"
-	"github.com/rancherio/rancher-compose/parser"
-	"github.com/rancherio/rancher-compose/service"
+	"gopkg.in/yaml.v2"
 )
 
-type Project struct {
-	ProjectName string
-	Client      *client.RancherClient
-	Print       func()
-}
+type ServiceState string
 
 var (
-	ProjectServices map[string]*service.Service
+	EXECUTED   ServiceState = ServiceState("executed")
+	UNKNOWN    ServiceState = ServiceState("unknown")
+	ErrRestart error        = errors.New("Restart execution")
 )
 
-func NewProject(name string, filename string, client *client.RancherClient) (*Project, error) {
-	ProjectServices = make(map[string]*service.Service)
-	project := &Project{
-		ProjectName: name,
-		Client:      client,
-		Print:       printProjectServices,
+func NewProject(name string, factory ServiceFactory) *Project {
+	return &Project{
+		Name:     name,
+		configs:  make(map[string]*ServiceConfig),
+		Services: make(map[string]Service),
+		factory:  factory,
 	}
+}
 
-	m, err := parser.YamlUnmarshal(filename)
+func (p *Project) AddConfig(name string, config *ServiceConfig) error {
+	service, err := p.factory.Create(p, name, config)
 	if err != nil {
-		log.Fatalf("Could not parse %s file. %v", filename, err)
+		log.Errorf("Failed to create service for %s : %v", name, err)
+		return err
 	}
 
-	for service, config := range m {
-		log.Infof("Project has service: %s", service)
-		project.addService(service.(string), config.(map[interface{}]interface{}))
-	}
+	p.Notify(SERVICE_ADD, service, nil)
 
-	return project, nil
-}
+	p.configs[name] = config
+	p.Services[name] = service
 
-func printProjectServices() {
-	s := sortServices()
-	for i, service := range s {
-		log.Infof("Service: %v %s has been parsed", i, service)
-	}
-}
-
-func (p *Project) addService(serviceName string, containerConfig map[interface{}]interface{}) error {
-	service := service.New(p.ProjectName, serviceName, containerConfig, p.Client)
-	if _, exists := ProjectServices[serviceName]; exists {
-		return fmt.Errorf("Service: %s already exists", serviceName)
-	}
-
-	ProjectServices[serviceName] = service
 	return nil
 }
 
-func (p *Project) StartAllServices() error {
-	serviceStartOrder := sortServices()
-	for _, service := range serviceStartOrder {
-		log.Infof("Bringing up service: %s", service)
-		err := ProjectServices[service].Create()
+func (p *Project) Load(bytes []byte) error {
+	configs := make(map[string]*ServiceConfig)
+	err := yaml.Unmarshal(bytes, configs)
+	if err != nil {
+		log.Fatalf("Could not parse config for project %s : %v", p.Name, err)
+	}
+
+	for name, config := range configs {
+		err := p.AddConfig(name, config)
 		if err != nil {
-			return fmt.Errorf("Error: %v", err)
+			return err
 		}
 	}
+
 	return nil
 }
 
-func (p *Project) RmAllServices() error {
-	for name, service := range ProjectServices {
-		log.Infof("Removing service: %s", name)
-		err := service.Delete()
-		if err != nil {
-			return fmt.Errorf("Error: %v", err)
-		}
+func (p *Project) Up() error {
+	wrappers := make(map[string]*ServiceWrapper)
+
+	for name, _ := range p.Services {
+		wrappers[name] = NewServiceWrapper(name, p)
 	}
-	return nil
+
+	p.Notify(PROJECT_UP_START, nil, nil)
+
+	return p.startAll(wrappers)
 }
 
-func sortServices() []string {
-	// ported from Fig
-	unmarkedServices := make([]string, 0, len(ProjectServices))
-	sortedServices := make([]string, 0)
-	temporaryMarked := make([]string, 0, len(unmarkedServices))
+func (p *Project) startAll(wrappers map[string]*ServiceWrapper) error {
+	restart := false
 
-	for service, _ := range ProjectServices {
-		unmarkedServices = append(unmarkedServices, service)
+	for _, wrapper := range wrappers {
+		wrapper.Reset()
 	}
 
-	var visit func(service *service.Service)
+	for _, wrapper := range wrappers {
+		go wrapper.Start(wrappers)
+	}
 
-	visit = func(service *service.Service) {
-		if stringInArray(service.ServiceName, temporaryMarked) {
-			log.Fatalf("Service %s has either a circular dep or is linked to itself", service.ServiceName)
-		}
-		if stringInArray(service.ServiceName, unmarkedServices) {
-			temporaryMarked = append(temporaryMarked, service.ServiceName)
-			links := service.GetLinkDefs()
-			for svc, _ := range links {
-				visit(ProjectServices[svc])
+	var firstError error
+
+	for _, wrapper := range wrappers {
+		err := wrapper.Wait()
+		if err == ErrRestart {
+			restart = true
+		} else if err != nil {
+			log.Errorf("Failed to start: %s : %v", wrapper.name, err)
+			if firstError == nil {
+				firstError = err
 			}
-			temporaryMarked = removeFromArray(service.ServiceName, temporaryMarked)
-			unmarkedServices = removeFromArray(service.ServiceName, unmarkedServices)
-			sortedServices = append(sortedServices, service.ServiceName)
 		}
-
 	}
 
-	for _, service := range unmarkedServices {
-		visit(ProjectServices[service])
+	if restart {
+		if p.ReloadCallback != nil {
+			if err := p.ReloadCallback(); err != nil {
+				log.Errorf("Failed calling callback: %v", err)
+			}
+		}
+		return p.startAll(wrappers)
+	} else {
+		return firstError
 	}
-
-	return sortedServices
 }
 
-func removeFromArray(item string, array []string) []string {
-	dumb := make([]string, 0, len(array)-1)
-	for _, str := range array {
-		if str != item {
-			dumb = append(dumb, str)
-		}
-	}
-	return dumb
+type ServiceWrapper struct {
+	name     string
+	services map[string]Service
+	service  Service
+	done     sync.WaitGroup
+	state    ServiceState
+	err      error
+	project  *Project
 }
 
-func stringInArray(item string, array []string) bool {
-	for _, str := range array {
-		if str == item {
-			return true
+func NewServiceWrapper(name string, p *Project) *ServiceWrapper {
+	wrapper := &ServiceWrapper{
+		name:     name,
+		services: make(map[string]Service),
+		service:  p.Services[name],
+		state:    UNKNOWN,
+		project:  p,
+	}
+	return wrapper
+}
+
+func (s *ServiceWrapper) Reset() {
+	if s.err == ErrRestart {
+		s.err = nil
+	}
+	s.done.Add(1)
+}
+
+func (s *ServiceWrapper) Start(wrappers map[string]*ServiceWrapper) {
+	defer s.done.Done()
+
+	if s.state == EXECUTED {
+		return
+	}
+
+	for _, link := range append(s.service.Config().Links, s.service.Config().VolumesFrom...) {
+		name := strings.Split(link, ":")[0]
+		if wrapper, ok := wrappers[name]; ok {
+			if wrapper.Wait() == ErrRestart {
+				s.project.Notify(PROJECT_RELOAD, wrapper.service, nil)
+				s.err = ErrRestart
+				return
+			}
+		} else {
+			log.Errorf("Failed to find %s", name)
 		}
 	}
-	return false
+
+	s.state = EXECUTED
+
+	s.project.Notify(SERVICE_UP_START, s.service, nil)
+
+	s.err = s.service.Up()
+	if s.err == ErrRestart {
+		s.project.Notify(SERVICE_UP, s.service, nil)
+		s.project.Notify(PROJECT_RELOAD_TRIGGER, s.service, nil)
+	} else if s.err != nil {
+		log.Errorf("Failed to start %s : %v", s.name, s.err)
+	} else {
+		s.project.Notify(SERVICE_UP, s.service, nil)
+	}
+}
+
+func (s *ServiceWrapper) Wait() error {
+	s.done.Wait()
+	return s.err
+}
+
+func (p *Project) Notify(event Event, service Service, data map[string]string) {
+	buffer := bytes.NewBuffer(nil)
+	if data != nil {
+		for k, v := range data {
+			if buffer.Len() > 0 {
+				buffer.WriteString(", ")
+			}
+			buffer.WriteString(k)
+			buffer.WriteString("=")
+			buffer.WriteString(v)
+		}
+	}
+
+	if event == SERVICE_UP {
+		p.upCount++
+	}
+
+	logf := log.Debugf
+
+	if SERVICE_UP == event {
+		logf = log.Infof
+	}
+
+	if service == nil {
+		logf("Project [%s]: %s %s", p.Name, event, buffer.Bytes())
+	} else {
+		logf("[%d/%d] [%s]: %s %s", p.upCount, len(p.Services), service.Name(), event, buffer.Bytes())
+	}
 }

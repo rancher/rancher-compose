@@ -8,14 +8,6 @@ import (
 	"github.com/rancherio/go-rancher/client"
 )
 
-type Service struct {
-	ServiceName    string
-	Config         map[interface{}]interface{}
-	ProjectName    string
-	ContainerCount int
-	RancherClient  *client.RancherClient
-}
-
 func New(projectName string, serviceName string, containerConfig map[interface{}]interface{}, rClient *client.RancherClient) *Service {
 	service := &Service{
 		ServiceName:   serviceName,

@@ -1,136 +1,156 @@
 package project
 
 import (
-	"fmt"
+	"strings"
+	"sync"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/rancherio/go-rancher/client"
-	"github.com/rancherio/rancher-compose/parser"
-	"github.com/rancherio/rancher-compose/service"
+	"gopkg.in/yaml.v2"
 )
 
-type Project struct {
-	ProjectName string
-	Client      *client.RancherClient
-	Print       func()
+func NewProject(name string, factory ServiceFactory) *Project {
+	return &Project{
+		Name:     name,
+		configs:  make(map[string]*ServiceConfig),
+		Services: make(map[string]Service),
+		factory:  factory,
+	}
 }
 
-var (
-	ProjectServices map[string]*service.Service
-)
-
-func NewProject(name string, filename string, client *client.RancherClient) (*Project, error) {
-	ProjectServices = make(map[string]*service.Service)
-	project := &Project{
-		ProjectName: name,
-		Client:      client,
-		Print:       printProjectServices,
-	}
-
-	m, err := parser.YamlUnmarshal(filename)
+func (p *Project) AddConfig(name string, config *ServiceConfig) error {
+	service, err := p.factory.Create(p, name, config)
 	if err != nil {
-		log.Fatalf("Could not parse %s file. %v", filename, err)
+		log.Errorf("Failed to create service for %s : %v", name, err)
+		return err
 	}
 
-	for service, config := range m {
-		log.Infof("Project has service: %s", service)
-		project.addService(service.(string), config.(map[interface{}]interface{}))
-	}
+	p.configs[name] = config
+	p.Services[name] = service
 
-	return project, nil
-}
-
-func printProjectServices() {
-	s := sortServices()
-	for i, service := range s {
-		log.Infof("Service: %v %s has been parsed", i, service)
-	}
-}
-
-func (p *Project) addService(serviceName string, containerConfig map[interface{}]interface{}) error {
-	service := service.New(p.ProjectName, serviceName, containerConfig, p.Client)
-	if _, exists := ProjectServices[serviceName]; exists {
-		return fmt.Errorf("Service: %s already exists", serviceName)
-	}
-
-	ProjectServices[serviceName] = service
 	return nil
 }
 
-func (p *Project) StartAllServices() error {
-	serviceStartOrder := sortServices()
-	for _, service := range serviceStartOrder {
-		log.Infof("Bringing up service: %s", service)
-		err := ProjectServices[service].Create()
+func (p *Project) Load(bytes []byte) error {
+	configs := make(map[string]*ServiceConfig)
+	err := yaml.Unmarshal(bytes, configs)
+	if err != nil {
+		log.Fatalf("Could not parse config for project %s : %v", p.Name, err)
+	}
+
+	for name, config := range configs {
+		err := p.AddConfig(name, config)
 		if err != nil {
-			return fmt.Errorf("Error: %v", err)
+			return err
 		}
 	}
+
 	return nil
 }
 
-func (p *Project) RmAllServices() error {
-	for name, service := range ProjectServices {
-		log.Infof("Removing service: %s", name)
-		err := service.Delete()
-		if err != nil {
-			return fmt.Errorf("Error: %v", err)
-		}
+//func printProjectServices() {
+//	s := sortServices()
+//	for i, service := range s {
+//		log.Infof("Service: %v %s has been parsed", i, service)
+//	}
+//}
+//
+//func (p *Project) addService(serviceName string, containerConfig map[interface{}]interface{}) error {
+//	service := service.New(p.ProjectName, serviceName, containerConfig, p.Client)
+//	if _, exists := ProjectServices[serviceName]; exists {
+//		return fmt.Errorf("Service: %s already exists", serviceName)
+//	}
+//
+//	ProjectServices[serviceName] = service
+//	return nil
+//}
+
+func (p *Project) Up() error {
+	log.Infof("Starting project %s", p.Name)
+	wrappers := make(map[string]*ServiceWrapper)
+
+	for name, _ := range p.Services {
+		wrappers[name] = NewServiceWrapper(name, p)
 	}
+
+	for _, wrapper := range wrappers {
+		go wrapper.Start(wrappers)
+	}
+
+	for _, wrapper := range wrappers {
+		wrapper.Wait()
+	}
+
 	return nil
 }
 
-func sortServices() []string {
-	// ported from Fig
-	unmarkedServices := make([]string, 0, len(ProjectServices))
-	sortedServices := make([]string, 0)
-	temporaryMarked := make([]string, 0, len(unmarkedServices))
-
-	for service, _ := range ProjectServices {
-		unmarkedServices = append(unmarkedServices, service)
-	}
-
-	var visit func(service *service.Service)
-
-	visit = func(service *service.Service) {
-		if stringInArray(service.ServiceName, temporaryMarked) {
-			log.Fatalf("Service %s has either a circular dep or is linked to itself", service.ServiceName)
-		}
-		if stringInArray(service.ServiceName, unmarkedServices) {
-			temporaryMarked = append(temporaryMarked, service.ServiceName)
-			links := service.GetLinkDefs()
-			for svc, _ := range links {
-				visit(ProjectServices[svc])
-			}
-			temporaryMarked = removeFromArray(service.ServiceName, temporaryMarked)
-			unmarkedServices = removeFromArray(service.ServiceName, unmarkedServices)
-			sortedServices = append(sortedServices, service.ServiceName)
-		}
-
-	}
-
-	for _, service := range unmarkedServices {
-		visit(ProjectServices[service])
-	}
-
-	return sortedServices
+type ServiceWrapper struct {
+	name     string
+	services map[string]Service
+	service  Service
+	done     sync.WaitGroup
 }
 
-func removeFromArray(item string, array []string) []string {
-	dumb := make([]string, 0, len(array)-1)
-	for _, str := range array {
-		if str != item {
-			dumb = append(dumb, str)
-		}
+func NewServiceWrapper(name string, p *Project) *ServiceWrapper {
+	wrapper := &ServiceWrapper{
+		name:     name,
+		services: make(map[string]Service),
+		service:  p.Services[name],
 	}
-	return dumb
+	wrapper.done.Add(1)
+	return wrapper
 }
 
-func stringInArray(item string, array []string) bool {
-	for _, str := range array {
-		if str == item {
-			return true
+func (s *ServiceWrapper) Start(wrappers map[string]*ServiceWrapper) {
+	defer s.done.Done()
+
+	for _, link := range append(s.service.Config().Links, s.service.Config().VolumesFrom...) {
+		name := strings.Split(link, ":")[0]
+		if wrapper, ok := wrappers[name]; ok {
+			wrapper.Wait()
+		} else {
+			log.Errorf("Failed to find %s", name)
 		}
 	}
-	return false
+
+	log.Infof("Starting service %s", s.name)
+	err := s.service.Up()
+	if err != nil {
+		log.Errorf("Failed to start %s : %v", s.name, err)
+	}
+	log.Infof("Started service %s", s.name)
 }
+
+func (s *ServiceWrapper) Wait() {
+	s.done.Wait()
+}
+
+//
+//func (p *Project) RmAllServices() error {
+//	for name, service := range ProjectServices {
+//		log.Infof("Removing service: %s", name)
+//		err := service.Delete()
+//		if err != nil {
+//			return fmt.Errorf("Error: %v", err)
+//		}
+//	}
+//	return nil
+//}
+
+//func removeFromArray(item string, array []string) []string {
+//	dumb := make([]string, 0, len(array)-1)
+//	for _, str := range array {
+//		if str != item {
+//			dumb = append(dumb, str)
+//		}
+//	}
+//	return dumb
+//}
+//
+//func stringInArray(item string, array []string) bool {
+//	for _, str := range array {
+//		if str == item {
+//			return true
+//		}
+//	}
+//	return false
+//}

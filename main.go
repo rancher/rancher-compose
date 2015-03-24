@@ -6,8 +6,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
-	"github.com/rancherio/go-rancher/client"
-	"github.com/rancherio/rancher-compose/project"
+	"github.com/rancherio/compose/project"
 )
 
 func main() {
@@ -50,40 +49,41 @@ func main() {
 			Usage: "Bring all services up",
 			Action: func(c *cli.Context) {
 				prj := getProject(c)
-				err := prj.StartAllServices()
+				err := prj.Up()
 				if err != nil {
 					log.Fatalf("Died trying to create Servers")
 				}
 			},
 		},
-		{
-			Name:  "rm",
-			Usage: "Remove all containers and services",
-			Action: func(c *cli.Context) {
-				prj := getProject(c)
-				err := prj.RmAllServices()
-				if err != nil {
-					log.Fatal("Could not remove all services. %s", err)
-				}
-			},
-		},
+		//		{
+		//			Name:  "rm",
+		//			Usage: "Remove all containers and services",
+		//			Action: func(c *cli.Context) {
+		//				prj := getProject(c)
+		//				err := prj.RmAllServices()
+		//				if err != nil {
+		//					log.Fatal("Could not remove all services. %s", err)
+		//				}
+		//			},
+		//		},
 	}
 
 	app.Run(os.Args)
 }
 
-func getRancherClient(c *cli.Context) *client.RancherClient {
-	url := c.GlobalString("api-url")
-	accessKey := c.GlobalString("access-key")
-	secretKey := c.GlobalString("secret-key")
-
-	rClient, err := GetRancherClient(url, accessKey, secretKey)
-	if err != nil {
-		log.Fatalf("Unable to get Rancher client: %s", err)
-	}
-
-	return rClient
-}
+//func getRancherClient(c *cli.Context) *client.RancherClient {
+//	url := c.GlobalString("api-url")
+//	accessKey := c.GlobalString("access-key")
+//	secretKey := c.GlobalString("secret-key")
+//
+//	rClient, err := GetRancherClient(url, accessKey, secretKey)
+//	if err != nil {
+//		log.Fatalf("Unable to get Rancher client: %s", err)
+//	}
+//
+//	return rClient
+//}
+//
 
 func getProject(c *cli.Context) *project.Project {
 	filename := c.GlobalString("f")

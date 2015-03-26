@@ -35,6 +35,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 			Privileged:     c.Privileged,
 			Binds:          c.Volumes,
 			Dns:            c.Dns,
+			NetworkMode:    runconfig.NetworkMode(c.Net),
 			ReadonlyRootfs: c.ReadOnly,
 			PidMode:        runconfig.PidMode(c.Pid),
 			IpcMode:        runconfig.IpcMode(c.Ipc),

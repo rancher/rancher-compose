@@ -1,11 +1,20 @@
 package project
 
 import (
+	"errors"
 	"strings"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
 	"gopkg.in/yaml.v2"
+)
+
+type ServiceState string
+
+var (
+	EXECUTED   ServiceState = ServiceState("executed")
+	UNKNOWN    ServiceState = ServiceState("unknown")
+	ErrRestart error        = errors.New("Restart execution")
 )
 
 func NewProject(name string, factory ServiceFactory) *Project {
@@ -23,6 +32,8 @@ func (p *Project) AddConfig(name string, config *ServiceConfig) error {
 		log.Errorf("Failed to create service for %s : %v", name, err)
 		return err
 	}
+
+	log.Infof("Adding service: %s", name)
 
 	p.configs[name] = config
 	p.Services[name] = service
@@ -65,22 +76,52 @@ func (p *Project) Load(bytes []byte) error {
 //}
 
 func (p *Project) Up() error {
-	log.Infof("Starting project %s", p.Name)
 	wrappers := make(map[string]*ServiceWrapper)
 
 	for name, _ := range p.Services {
 		wrappers[name] = NewServiceWrapper(name, p)
 	}
 
+	log.Infof("Starting project: %s, services: %d", p.Name, len(wrappers))
+
+	return p.startAll(wrappers)
+}
+
+func (p *Project) startAll(wrappers map[string]*ServiceWrapper) error {
+	restart := false
+
+	for _, wrapper := range wrappers {
+		wrapper.Reset()
+	}
+
 	for _, wrapper := range wrappers {
 		go wrapper.Start(wrappers)
 	}
 
+	var firstError error
+
 	for _, wrapper := range wrappers {
-		wrapper.Wait()
+		err := wrapper.Wait()
+		if err == ErrRestart {
+			restart = true
+		} else if err != nil {
+			log.Errorf("Failed to start: %s : %v", wrapper.name, err)
+			if firstError == nil {
+				firstError = err
+			}
+		}
 	}
 
-	return nil
+	if restart {
+		if p.ReloadCallback != nil {
+			if err := p.ReloadCallback(); err != nil {
+				log.Errorf("Failed calling callback: %v", err)
+			}
+		}
+		return p.startAll(wrappers)
+	} else {
+		return firstError
+	}
 }
 
 type ServiceWrapper struct {
@@ -88,6 +129,8 @@ type ServiceWrapper struct {
 	services map[string]Service
 	service  Service
 	done     sync.WaitGroup
+	state    ServiceState
+	err      error
 }
 
 func NewServiceWrapper(name string, p *Project) *ServiceWrapper {
@@ -95,33 +138,55 @@ func NewServiceWrapper(name string, p *Project) *ServiceWrapper {
 		name:     name,
 		services: make(map[string]Service),
 		service:  p.Services[name],
+		state:    UNKNOWN,
 	}
-	wrapper.done.Add(1)
 	return wrapper
+}
+
+func (s *ServiceWrapper) Reset() {
+	if s.err == ErrRestart {
+		s.err = nil
+	}
+	s.done.Add(1)
 }
 
 func (s *ServiceWrapper) Start(wrappers map[string]*ServiceWrapper) {
 	defer s.done.Done()
 
+	if s.state == EXECUTED {
+		return
+	}
+
 	for _, link := range append(s.service.Config().Links, s.service.Config().VolumesFrom...) {
 		name := strings.Split(link, ":")[0]
 		if wrapper, ok := wrappers[name]; ok {
-			wrapper.Wait()
+			if wrapper.Wait() == ErrRestart {
+				log.Infof("Restart from dependency: %s of %s", wrapper.name, s.name)
+				s.err = ErrRestart
+				return
+			}
 		} else {
 			log.Errorf("Failed to find %s", name)
 		}
 	}
 
+	s.state = EXECUTED
+
 	log.Infof("Starting service %s", s.name)
-	err := s.service.Up()
-	if err != nil {
-		log.Errorf("Failed to start %s : %v", s.name, err)
+
+	s.err = s.service.Up()
+	if s.err == ErrRestart {
+		log.Infof("Restart from service %s", s.name)
+	} else if s.err != nil {
+		log.Errorf("Failed to start %s : %v", s.name, s.err)
+	} else {
+		log.Infof("Started service %s", s.name)
 	}
-	log.Infof("Started service %s", s.name)
 }
 
-func (s *ServiceWrapper) Wait() {
+func (s *ServiceWrapper) Wait() error {
 	s.done.Wait()
+	return s.err
 }
 
 //

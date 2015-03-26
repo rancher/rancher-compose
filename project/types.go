@@ -39,13 +39,14 @@ type ServiceConfig struct {
 }
 
 type Project struct {
-	Name     string
-	configs  map[string]*ServiceConfig
-	Services map[string]Service
-	file     string
-	content  []byte
-	client   *client.RancherClient
-	factory  ServiceFactory
+	Name           string
+	configs        map[string]*ServiceConfig
+	Services       map[string]Service
+	file           string
+	content        []byte
+	client         *client.RancherClient
+	factory        ServiceFactory
+	ReloadCallback func() error
 }
 
 type Service interface {

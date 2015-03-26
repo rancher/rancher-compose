@@ -53,6 +53,11 @@ GLOBAL OPTIONS:
    --help, -h           show help
    --version, -v        print the version
 ```
+## Contact
+For bugs, questions, comments, corrections, suggestions, etc., open an issue in
+ [rancherio/rancher](//github.com/rancherio/rancher/issues) with a title starting with `[rancher-compose] `.
+
+Or just [click here](//github.com/rancherio/rancher/issues/new?title=%5Brancher-compose%5D%20) to create a new issue.
 
 # License
 Copyright (c) 2014-2015 [Rancher Labs, Inc.](http://rancher.com)

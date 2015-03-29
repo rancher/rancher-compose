@@ -2,6 +2,23 @@ package project
 
 import "github.com/rancherio/go-rancher/client"
 
+type Event string
+
+const (
+	CONTAINER_ID = "container_id"
+
+	CONTAINER_CREATED = Event("Created container")
+	CONTAINER_STARTED = Event("Started container")
+
+	SERVICE_ADD      = Event("Adding")
+	SERVICE_UP_START = Event("Starting")
+	SERVICE_UP       = Event("Started")
+
+	PROJECT_UP_START       = Event("Starting project")
+	PROJECT_RELOAD         = Event("Reloading project")
+	PROJECT_RELOAD_TRIGGER = Event("Triggering project reload")
+)
+
 type ServiceConfig struct {
 	CapAdd      []string `yaml:"cap_add,omitempty"`
 	CapDrop     []string `yaml:"cap_drop,omitempty"`
@@ -47,9 +64,11 @@ type Project struct {
 	client         *client.RancherClient
 	factory        ServiceFactory
 	ReloadCallback func() error
+	upCount        int
 }
 
 type Service interface {
+	Name() string
 	Up() error
 	Config() *ServiceConfig
 }

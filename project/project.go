@@ -1,6 +1,7 @@
 package project
 
 import (
+	"bytes"
 	"errors"
 	"strings"
 	"sync"
@@ -33,7 +34,7 @@ func (p *Project) AddConfig(name string, config *ServiceConfig) error {
 		return err
 	}
 
-	log.Infof("Adding service: %s", name)
+	p.Notify(SERVICE_ADD, service, nil)
 
 	p.configs[name] = config
 	p.Services[name] = service
@@ -58,23 +59,6 @@ func (p *Project) Load(bytes []byte) error {
 	return nil
 }
 
-//func printProjectServices() {
-//	s := sortServices()
-//	for i, service := range s {
-//		log.Infof("Service: %v %s has been parsed", i, service)
-//	}
-//}
-//
-//func (p *Project) addService(serviceName string, containerConfig map[interface{}]interface{}) error {
-//	service := service.New(p.ProjectName, serviceName, containerConfig, p.Client)
-//	if _, exists := ProjectServices[serviceName]; exists {
-//		return fmt.Errorf("Service: %s already exists", serviceName)
-//	}
-//
-//	ProjectServices[serviceName] = service
-//	return nil
-//}
-
 func (p *Project) Up() error {
 	wrappers := make(map[string]*ServiceWrapper)
 
@@ -82,7 +66,7 @@ func (p *Project) Up() error {
 		wrappers[name] = NewServiceWrapper(name, p)
 	}
 
-	log.Infof("Starting project: %s, services: %d", p.Name, len(wrappers))
+	p.Notify(PROJECT_UP_START, nil, nil)
 
 	return p.startAll(wrappers)
 }
@@ -131,6 +115,7 @@ type ServiceWrapper struct {
 	done     sync.WaitGroup
 	state    ServiceState
 	err      error
+	project  *Project
 }
 
 func NewServiceWrapper(name string, p *Project) *ServiceWrapper {
@@ -139,6 +124,7 @@ func NewServiceWrapper(name string, p *Project) *ServiceWrapper {
 		services: make(map[string]Service),
 		service:  p.Services[name],
 		state:    UNKNOWN,
+		project:  p,
 	}
 	return wrapper
 }
@@ -161,7 +147,7 @@ func (s *ServiceWrapper) Start(wrappers map[string]*ServiceWrapper) {
 		name := strings.Split(link, ":")[0]
 		if wrapper, ok := wrappers[name]; ok {
 			if wrapper.Wait() == ErrRestart {
-				log.Infof("Restart from dependency: %s of %s", wrapper.name, s.name)
+				s.project.Notify(PROJECT_RELOAD, wrapper.service, nil)
 				s.err = ErrRestart
 				return
 			}
@@ -172,15 +158,16 @@ func (s *ServiceWrapper) Start(wrappers map[string]*ServiceWrapper) {
 
 	s.state = EXECUTED
 
-	log.Infof("Starting service %s", s.name)
+	s.project.Notify(SERVICE_UP_START, s.service, nil)
 
 	s.err = s.service.Up()
 	if s.err == ErrRestart {
-		log.Infof("Restart from service %s", s.name)
+		s.project.Notify(SERVICE_UP, s.service, nil)
+		s.project.Notify(PROJECT_RELOAD_TRIGGER, s.service, nil)
 	} else if s.err != nil {
 		log.Errorf("Failed to start %s : %v", s.name, s.err)
 	} else {
-		log.Infof("Started service %s", s.name)
+		s.project.Notify(SERVICE_UP, s.service, nil)
 	}
 }
 
@@ -189,33 +176,32 @@ func (s *ServiceWrapper) Wait() error {
 	return s.err
 }
 
-//
-//func (p *Project) RmAllServices() error {
-//	for name, service := range ProjectServices {
-//		log.Infof("Removing service: %s", name)
-//		err := service.Delete()
-//		if err != nil {
-//			return fmt.Errorf("Error: %v", err)
-//		}
-//	}
-//	return nil
-//}
+func (p *Project) Notify(event Event, service Service, data map[string]string) {
+	buffer := bytes.NewBuffer(nil)
+	if data != nil {
+		for k, v := range data {
+			if buffer.Len() > 0 {
+				buffer.WriteString(", ")
+			}
+			buffer.WriteString(k)
+			buffer.WriteString("=")
+			buffer.WriteString(v)
+		}
+	}
 
-//func removeFromArray(item string, array []string) []string {
-//	dumb := make([]string, 0, len(array)-1)
-//	for _, str := range array {
-//		if str != item {
-//			dumb = append(dumb, str)
-//		}
-//	}
-//	return dumb
-//}
-//
-//func stringInArray(item string, array []string) bool {
-//	for _, str := range array {
-//		if str == item {
-//			return true
-//		}
-//	}
-//	return false
-//}
+	if event == SERVICE_UP {
+		p.upCount++
+	}
+
+	logf := log.Debugf
+
+	if SERVICE_UP == event {
+		logf = log.Infof
+	}
+
+	if service == nil {
+		logf("Project [%s]: %s %s", p.Name, event, buffer.Bytes())
+	} else {
+		logf("[%d/%d] [%s]: %s %s", p.upCount, len(p.Services), service.Name(), event, buffer.Bytes())
+	}
+}

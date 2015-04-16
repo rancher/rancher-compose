@@ -3,7 +3,6 @@ package project
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -44,9 +43,8 @@ func (p *Project) createService(name string, config ServiceConfig) (Service, err
 				continue
 			}
 
-			value := p.EnvironmentLookup.Lookup(env, name, &config)
-			if value != "" {
-				parsedEnv = append(parsedEnv, fmt.Sprintf("%s=%s", env, value))
+			for _, value := range p.EnvironmentLookup.Lookup(env, name, &config) {
+				parsedEnv = append(parsedEnv, value)
 			}
 		}
 

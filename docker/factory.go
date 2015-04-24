@@ -27,6 +27,9 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 			Cmd:        cmd,
 			Image:      c.Image,
 			Labels:     kvListToMap(c.Labels),
+			Tty:        c.Tty,
+			OpenStdin:  c.StdinOpen,
+			WorkingDir: c.WorkingDir,
 		},
 		&runconfig.HostConfig{
 			VolumesFrom:    c.VolumesFrom,

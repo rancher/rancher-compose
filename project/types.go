@@ -1,6 +1,9 @@
 package project
 
-import "github.com/rancherio/go-rancher/client"
+import (
+	"github.com/rancherio/go-rancher/client"
+	"gopkg.in/yaml.v2"
+)
 
 type Event string
 
@@ -20,13 +23,60 @@ const (
 	PROJECT_RELOAD_TRIGGER = Event("Triggering project reload")
 )
 
+type Stringorslice struct {
+	parts []string
+}
+
+func (s *Stringorslice) MarshalYAML() (interface{}, error) {
+	if s == nil {
+		return nil, nil
+	}
+	return yaml.Marshal(s.Slice())
+}
+
+func (s *Stringorslice) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var sliceType []string
+	err := unmarshal(&sliceType)
+	if err == nil {
+		s.parts = sliceType
+		return nil
+	}
+
+	var stringType string
+	err = unmarshal(&stringType)
+	if err == nil {
+		sliceType = make([]string, 0, 1)
+		s.parts = append(sliceType, string(stringType))
+		return nil
+	}
+	return err
+}
+
+func (s *Stringorslice) Len() int {
+	if s == nil {
+		return 0
+	}
+	return len(s.parts)
+}
+
+func (s *Stringorslice) Slice() []string {
+	if s == nil {
+		return nil
+	}
+	return s.parts
+}
+
+func NewStringorslice(parts ...string) *Stringorslice {
+	return &Stringorslice{parts}
+}
+
 type ServiceConfig struct {
 	CapAdd      []string `yaml:"cap_add,omitempty"`
 	CapDrop     []string `yaml:"cap_drop,omitempty"`
 	CpuShares   int64    `yaml:"cpu_shares,omitempty"`
 	Command     string   `yaml:"command,omitempty"`
 	Detach      string   `yaml:"detach,omitempty"`
-	Dns         []string `yaml:"dns,omitempty"`
+	Dns         *Stringorslice
 	DnsSearch   string   `yaml:"dns_search,omitempty"`
 	DomainName  string   `yaml:"domainname,omitempty"`
 	Entrypoint  string   `yaml:"entrypoint,omitempty"`

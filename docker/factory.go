@@ -19,6 +19,8 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 	cmd, _ := shlex.Split(c.Command)
 	entrypoint, _ := shlex.Split(c.Entrypoint)
 	ports, binding, err := nat.ParsePortSpecs(c.Ports)
+	restart, err := runconfig.ParseRestartPolicy(c.Restart)
+	dns := c.Dns.Slice()
 
 	if err != nil {
 		return nil, nil, err
@@ -36,6 +38,9 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		Image:        c.Image,
 		Labels:       kvListToMap(c.Labels),
 		ExposedPorts: ports,
+		Tty:          c.Tty,
+		OpenStdin:    c.StdinOpen,
+		WorkingDir:   c.WorkingDir,
 	}
 	host_config := &runconfig.HostConfig{
 		VolumesFrom: c.VolumesFrom,
@@ -43,7 +48,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		CapDrop:     c.CapDrop,
 		Privileged:  c.Privileged,
 		Binds:       c.Volumes,
-		Dns:         c.Dns,
+		Dns:         dns,
 		LogConfig: runconfig.LogConfig{
 			Type: c.LogDriver,
 		},
@@ -52,6 +57,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		PidMode:        runconfig.PidMode(c.Pid),
 		IpcMode:        runconfig.IpcMode(c.Ipc),
 		PortBindings:   binding,
+		RestartPolicy:  restart,
 	}
 
 	return config, host_config, nil

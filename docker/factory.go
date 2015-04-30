@@ -21,6 +21,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 	ports, binding, err := nat.ParsePortSpecs(c.Ports)
 	restart, err := runconfig.ParseRestartPolicy(c.Restart)
 	dns := c.Dns.Slice()
+	labels := c.Labels.MapParts()
 
 	if err != nil {
 		return nil, nil, err
@@ -36,7 +37,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		Env:          c.Environment,
 		Cmd:          cmd,
 		Image:        c.Image,
-		Labels:       kvListToMap(c.Labels),
+		Labels:       labels,
 		ExposedPorts: ports,
 		Tty:          c.Tty,
 		OpenStdin:    c.StdinOpen,

@@ -3,6 +3,7 @@ package project
 import (
 	"github.com/rancherio/go-rancher/client"
 	"gopkg.in/yaml.v2"
+	"strings"
 )
 
 type Event string
@@ -70,6 +71,56 @@ func NewStringorslice(parts ...string) *Stringorslice {
 	return &Stringorslice{parts}
 }
 
+type SliceorMap struct {
+	parts map[string]string
+}
+
+func (s *SliceorMap) MarshalYAML() (interface{}, error) {
+	if s == nil {
+		return nil, nil
+	}
+	return yaml.Marshal(s.MapParts())
+}
+
+func (s *SliceorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	mapType := make(map[string]string)
+	err := unmarshal(&mapType)
+	if err == nil {
+		s.parts = mapType
+		return nil
+	}
+
+	var sliceType []string
+	var keyValueSlice []string
+	var key string
+	var value string
+
+	err = unmarshal(&sliceType)
+	if err == nil {
+		mapType = make(map[string]string)
+		for _, slice := range sliceType {
+			keyValueSlice = strings.Split(slice, "=") //split up key and value into []string
+			key = keyValueSlice[0]
+			value = keyValueSlice[1]
+			mapType[key] = value
+		}
+		s.parts = mapType
+		return nil
+	}
+	return err
+}
+
+func (s *SliceorMap) MapParts() map[string]string {
+	if s == nil {
+		return nil
+	}
+	return s.parts
+}
+
+func NewSliceorMap(parts map[string]string) *SliceorMap {
+	return &SliceorMap{parts}
+}
+
 type ServiceConfig struct {
 	CapAdd      []string `yaml:"cap_add,omitempty"`
 	CapDrop     []string `yaml:"cap_drop,omitempty"`
@@ -84,7 +135,8 @@ type ServiceConfig struct {
 	Environment []string `yaml:"environment,omitempty"`
 	Hostname    string   `yaml:"hostname,omitempty"`
 	Image       string   `yaml:"image,omitempty"`
-	Labels      []string `yaml:"labels,omitempty"`
+	//Labels      map[string]string `yaml:"labels,omitempty"`
+	Labels      *SliceorMap
 	Links       []string `yaml:"links,omitempty"`
 	LogDriver   string   `yaml:"log_driver,omitempty"`
 	MemLimit    int64    `yaml:"mem_limit,omitempty"`

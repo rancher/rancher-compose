@@ -28,14 +28,12 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 	}
 
 	config := &runconfig.Config{
-		Entrypoint:   entrypoint,
+		Entrypoint:   runconfig.NewEntrypoint(entrypoint...),
 		Hostname:     c.Hostname,
 		Domainname:   c.DomainName,
 		User:         c.User,
-		Memory:       c.MemLimit,
-		CpuShares:    c.CpuShares,
 		Env:          c.Environment,
-		Cmd:          cmd,
+		Cmd:          runconfig.NewCommand(cmd...),
 		Image:        c.Image,
 		Labels:       labels,
 		ExposedPorts: ports,
@@ -44,6 +42,8 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		WorkingDir:   c.WorkingDir,
 	}
 	host_config := &runconfig.HostConfig{
+		Memory:      c.MemLimit,
+		CpuShares:   c.CpuShares,
 		VolumesFrom: c.VolumesFrom,
 		CapAdd:      c.CapAdd,
 		CapDrop:     c.CapDrop,

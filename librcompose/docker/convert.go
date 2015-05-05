@@ -31,7 +31,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 	labels := c.Labels.MapParts()
 
 	if len(c.Expose) > 0 {
-		exposedPorst, _, err := nat.ParsePortSpecs(c.Expose)
+		exposedPorts, _, err := nat.ParsePortSpecs(c.Expose)
 		ports = exposedPorts
 		if err != nil {
 			return nil, nil, err

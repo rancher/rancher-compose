@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"strings"
-	"sync"
 
 	log "github.com/Sirupsen/logrus"
 	"gopkg.in/yaml.v2"
@@ -19,21 +18,20 @@ var (
 )
 
 type ProjectEvent struct {
-	Event   Event
-	Service Service
-	Data    map[string]string
+	Event       Event
+	ServiceName string
+	Data        map[string]string
 }
 
 func NewProject(name string, factory ServiceFactory) *Project {
 	return &Project{
-		Name:     name,
-		configs:  make(map[string]*ServiceConfig),
-		Services: make(map[string]Service),
-		factory:  factory,
+		Name:    name,
+		configs: make(map[string]*ServiceConfig),
+		factory: factory,
 	}
 }
 
-func (p *Project) createService(name string, config ServiceConfig) (Service, error) {
+func (p *Project) CreateService(name string, config ServiceConfig) (Service, error) {
 	if p.EnvironmentLookup != nil {
 		parsedEnv := make([]string, 0, len(config.Environment))
 
@@ -55,17 +53,9 @@ func (p *Project) createService(name string, config ServiceConfig) (Service, err
 }
 
 func (p *Project) AddConfig(name string, config *ServiceConfig) error {
-	service, err := p.createService(name, *config)
-	if err != nil {
-		log.Errorf("Failed to create service for %s : %v", name, err)
-		return err
-	}
+	p.Notify(SERVICE_ADD, name, nil)
 
-	p.Notify(SERVICE_ADD, service, nil)
-
-	p.reload = append(p.reload, name)
 	p.configs[name] = config
-	p.Services[name] = service
 
 	return nil
 }
@@ -88,24 +78,36 @@ func (p *Project) Load(bytes []byte) error {
 }
 
 func (p *Project) Up() error {
-	wrappers := make(map[string]*ServiceWrapper)
+	wrappers := make(map[string]*serviceWrapper)
 
-	p.Notify(PROJECT_UP_START, nil, nil)
-
-	return p.startAll(wrappers)
-}
-
-func (p *Project) startAll(wrappers map[string]*ServiceWrapper) error {
-	for _, name := range p.reload {
-		wrappers[name] = NewServiceWrapper(name, p)
+	for name, _ := range p.configs {
+		wrapper, err := newServiceWrapper(name, p)
+		if err != nil {
+			return err
+		}
+		wrappers[name] = wrapper
 	}
 
-	p.reload = []string{}
+	p.Notify(PROJECT_UP_START, "", nil)
 
+	err := p.startAll(wrappers, 0)
+
+	if err == nil {
+		p.Notify(PROJECT_UP_DONE, "", nil)
+	}
+
+	return err
+}
+
+func (p *Project) startAll(wrappers map[string]*serviceWrapper, level int) error {
 	restart := false
 
-	for _, wrapper := range wrappers {
-		wrapper.Reset()
+	if level > 0 {
+		for _, wrapper := range wrappers {
+			if err := wrapper.Reset(); err != nil {
+				return err
+			}
+		}
 	}
 
 	for _, wrapper := range wrappers {
@@ -132,85 +134,17 @@ func (p *Project) startAll(wrappers map[string]*ServiceWrapper) error {
 				log.Errorf("Failed calling callback: %v", err)
 			}
 		}
-		return p.startAll(wrappers)
+		return p.startAll(wrappers, level+1)
 	} else {
 		return firstError
 	}
-}
-
-type ServiceWrapper struct {
-	name     string
-	services map[string]Service
-	service  Service
-	done     sync.WaitGroup
-	state    ServiceState
-	err      error
-	project  *Project
-}
-
-func NewServiceWrapper(name string, p *Project) *ServiceWrapper {
-	wrapper := &ServiceWrapper{
-		name:     name,
-		services: make(map[string]Service),
-		service:  p.Services[name],
-		state:    UNKNOWN,
-		project:  p,
-	}
-	return wrapper
-}
-
-func (s *ServiceWrapper) Reset() {
-	if s.err == ErrRestart {
-		s.err = nil
-	}
-	s.done.Add(1)
-}
-
-func (s *ServiceWrapper) Start(wrappers map[string]*ServiceWrapper) {
-	defer s.done.Done()
-
-	if s.state == EXECUTED {
-		return
-	}
-
-	for _, link := range append(s.service.Config().Links, s.service.Config().VolumesFrom...) {
-		name := strings.Split(link, ":")[0]
-		if wrapper, ok := wrappers[name]; ok {
-			if wrapper.Wait() == ErrRestart {
-				s.project.Notify(PROJECT_RELOAD, wrapper.service, nil)
-				s.err = ErrRestart
-				return
-			}
-		} else {
-			log.Errorf("Failed to find %s", name)
-		}
-	}
-
-	s.state = EXECUTED
-
-	s.project.Notify(SERVICE_UP_START, s.service, nil)
-
-	s.err = s.service.Up()
-	if s.err == ErrRestart {
-		s.project.Notify(SERVICE_UP, s.service, nil)
-		s.project.Notify(PROJECT_RELOAD_TRIGGER, s.service, nil)
-	} else if s.err != nil {
-		log.Errorf("Failed to start %s : %v", s.name, s.err)
-	} else {
-		s.project.Notify(SERVICE_UP, s.service, nil)
-	}
-}
-
-func (s *ServiceWrapper) Wait() error {
-	s.done.Wait()
-	return s.err
 }
 
 func (p *Project) AddListener(c chan<- ProjectEvent) {
 	p.listeners = append(p.listeners, c)
 }
 
-func (p *Project) Notify(event Event, service Service, data map[string]string) {
+func (p *Project) Notify(event Event, serviceName string, data map[string]string) {
 	buffer := bytes.NewBuffer(nil)
 	if data != nil {
 		for k, v := range data {
@@ -233,17 +167,17 @@ func (p *Project) Notify(event Event, service Service, data map[string]string) {
 		logf = log.Infof
 	}
 
-	if service == nil {
+	if serviceName == "" {
 		logf("Project [%s]: %s %s", p.Name, event, buffer.Bytes())
 	} else {
-		logf("[%d/%d] [%s]: %s %s", p.upCount, len(p.Services), service.Name(), event, buffer.Bytes())
+		logf("[%d/%d] [%s]: %s %s", p.upCount, len(p.configs), serviceName, event, buffer.Bytes())
 	}
 
 	for _, l := range p.listeners {
 		projectEvent := ProjectEvent{
-			Event:   event,
-			Service: service,
-			Data:    data,
+			Event:       event,
+			ServiceName: serviceName,
+			Data:        data,
 		}
 		// Don't ever block
 		select {

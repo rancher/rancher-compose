@@ -19,5 +19,6 @@ if [ ! -e ./src/$PACKAGE ]; then
 fi
 
 rm -rf ./build
-mkdir -p ./build
-go build -o ./build/rancher-compose
+mkdir -p ./build ./bin
+
+go build -o ./bin/rancher-compose

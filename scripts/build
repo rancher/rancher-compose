@@ -1,24 +1,24 @@
-#!/bin/bash
-
-set -e
-set -x
+#!/bin/bash -e
 
 cd $(dirname $0)/..
 
-export GOPATH=$(pwd)/Godeps/_workspace:$(pwd)/gopath
-
-if [ ! -d ./gopath ]; then
-    mkdir -p gopath/src
+if [ -f ./build/bootstrap.envs ];then
+    . ./build/bootstrap.envs
 fi
 
-PACKAGE=./gopath/src/$(<.package)
+. ./scripts/common_functions
 
-if [ ! -e ./src/$PACKAGE ]; then
-    mkdir -p $(dirname ${PACKAGE})
+set_project_vars
+
+if [ -L ${PACKAGE} ]; then
+    rm ${PACKAGE}
+fi
+
+if [ ! -e ${PACKAGE} ]; then
+    mkdir -p $(dirname $PACKAGE)
     ln -s $(pwd) $PACKAGE
 fi
 
-rm -rf ./build
-mkdir -p ./build ./bin
+echo export GOPATH=$GOPATH
 
-go build -o ./bin/rancher-compose
+go build -o bin/${PROJECT}

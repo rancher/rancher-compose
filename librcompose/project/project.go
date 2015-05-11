@@ -34,9 +34,9 @@ func NewProject(name string, factory ServiceFactory) *Project {
 
 func (p *Project) CreateService(name string, config ServiceConfig) (Service, error) {
 	if p.EnvironmentLookup != nil {
-		parsedEnv := make([]string, 0, len(config.Environment))
+		parsedEnv := make([]string, 0, len(config.Environment.Slice()))
 
-		for _, env := range config.Environment {
+		for _, env := range config.Environment.Slice() {
 			if strings.IndexRune(env, '=') != -1 {
 				parsedEnv = append(parsedEnv, env)
 				continue
@@ -47,7 +47,7 @@ func (p *Project) CreateService(name string, config ServiceConfig) (Service, err
 			}
 		}
 
-		config.Environment = parsedEnv
+		config.Environment = NewMaporslice(parsedEnv)
 	}
 
 	return p.factory.Create(p, name, &config)

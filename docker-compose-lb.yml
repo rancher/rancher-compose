@@ -1,0 +1,13 @@
+lb:
+  image: rancher/load-balancer
+  links:
+  - web
+  ports:
+  - "82:5000"
+web:
+  image: ibuildthecloud/python-demo
+  command: python app.py
+  links:
+   - redis
+redis:
+  image: redis

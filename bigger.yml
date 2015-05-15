@@ -1,0 +1,33 @@
+serf:
+  image: ctlc/serf
+  ports:
+  - 7373
+  - 7946
+lb:
+  image: ctlc/haproxy-serf
+  ports:
+  - 80:80
+  links:
+  - serf
+  environment:
+  - "HAPROXY_PASSWORD=qa1N76pWAri9"
+web:
+  image: ctlc/wordpress-serf
+  ports:
+  - 80
+  environment:
+  - "DB_PASSWORD=qa1N76pWAri9"
+  links:
+  - serf
+  - db
+  volumes:
+  - /local/path/to/wordpress:/app
+db:
+  image: ctlc/mysql-serf
+  ports:
+  - 3306
+  volumes:
+  - /mysql:/var/lib/mysql
+  environment:
+  - "MYSQL_DATABASE=wordpress"
+  - "MYSQL_ROOT_PASSWORD=qa1N76pWAri9"

@@ -31,9 +31,9 @@ func isVolume(s string) bool {
 func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig, error) {
 	vs := Filter(c.Volumes, isVolume)
 
-	volumes := make(map[string]struct {}, len(vs))
+	volumes := make(map[string]struct{}, len(vs))
 	for _, v := range vs {
-		volumes[v] = struct {}{}
+		volumes[v] = struct{}{}
 	}
 
 	cmd, err := shlex.Split(c.Command)
@@ -52,16 +52,18 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 	if err != nil {
 		return nil, nil, err
 	}
-	dns := c.Dns.Slice()
-	dnssearch := c.DnsSearch.Slice()
-	labels := c.Labels.MapParts()
 
-	if len(c.Expose) > 0 {
-		exposedPorts, _, err := nat.ParsePortSpecs(c.Expose)
-		ports = exposedPorts
-		if err != nil {
-			return nil, nil, err
+	if exposedPorts, _, err := nat.ParsePortSpecs(c.Expose); err != nil {
+		return nil, nil, err
+	} else {
+		for k, v := range exposedPorts {
+			ports[k] = v
 		}
+	}
+
+	deviceMappings, err := parseDevices(c.Devices)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	config := &runconfig.Config{
@@ -72,7 +74,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		Env:          c.Environment.Slice(),
 		Cmd:          runconfig.NewCommand(cmd...),
 		Image:        c.Image,
-		Labels:       labels,
+		Labels:       c.Labels.MapParts(),
 		ExposedPorts: ports,
 		Tty:          c.Tty,
 		OpenStdin:    c.StdinOpen,
@@ -84,21 +86,41 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		CapAdd:      c.CapAdd,
 		CapDrop:     c.CapDrop,
 		CpuShares:   c.CpuShares,
+		CpusetCpus:  c.CpuSet,
+		ExtraHosts:  c.ExtraHosts,
 		Privileged:  c.Privileged,
 		Binds:       Filter(c.Volumes, isBind),
-		Dns:         dns,
-		DnsSearch:   dnssearch,
-		LogConfig:   runconfig.LogConfig{
-			Type: c.LogDriver,
+		Devices:     deviceMappings,
+		Dns:         c.Dns.Slice(),
+		DnsSearch:   c.DnsSearch.Slice(),
+		LogConfig: runconfig.LogConfig{
+			Type:   c.LogDriver,
+			Config: c.LogOpt,
 		},
 		Memory:         c.MemLimit,
+		MemorySwap:     c.MemSwapLimit,
 		NetworkMode:    runconfig.NetworkMode(c.Net),
 		ReadonlyRootfs: c.ReadOnly,
 		PidMode:        runconfig.PidMode(c.Pid),
 		IpcMode:        runconfig.IpcMode(c.Ipc),
 		PortBindings:   binding,
 		RestartPolicy:  restart,
+		SecurityOpt:    c.SecurityOpt,
 	}
 
 	return config, host_config, nil
+}
+
+func parseDevices(devices []string) ([]runconfig.DeviceMapping, error) {
+	// parse device mappings
+	deviceMappings := []runconfig.DeviceMapping{}
+	for _, device := range devices {
+		deviceMapping, err := runconfig.ParseDevice(device)
+		if err != nil {
+			return nil, err
+		}
+		deviceMappings = append(deviceMappings, deviceMapping)
+	}
+
+	return deviceMappings, nil
 }

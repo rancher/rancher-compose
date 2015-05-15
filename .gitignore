@@ -1,4 +1,11 @@
-build
-dist
-gopath
+*.pyc
 *.swp
+
+.idea
+
+/build
+/dist
+/gopath
+/tests/integration/.venv
+
+__pycache__

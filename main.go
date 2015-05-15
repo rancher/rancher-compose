@@ -10,8 +10,6 @@ import (
 )
 
 func main() {
-	logrus.SetLevel(logrus.DebugLevel)
-
 	app := cli.NewApp()
 
 	app.Name = "rancher-compose"
@@ -19,7 +17,16 @@ func main() {
 	app.Version = "0.1.0"
 	app.Author = "Rancher"
 	app.Email = ""
+	app.Before = func(c *cli.Context) error {
+		if c.GlobalBool("debug") {
+			logrus.SetLevel(logrus.DebugLevel)
+		}
+		return nil
+	}
 	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name: "debug",
+		},
 		cli.StringFlag{
 			Name: "url",
 			Usage: fmt.Sprintf(
@@ -47,15 +54,74 @@ func main() {
 			Value: "docker-compose.yml",
 		},
 		cli.StringFlag{
+			Name:  "rancher-file,r",
+			Usage: "Specify an alternate Rancher compose file (default: rancher-compose.yml)",
+		},
+		cli.StringFlag{
 			Name:  "project-name,p",
 			Usage: "Specify an alternate project name (default: directory name)",
 		},
 	}
 	app.Commands = []cli.Command{
 		{
+			Name:   "create",
+			Usage:  "Create all services but do not start",
+			Action: cliApp.ProjectCreate,
+		},
+		{
 			Name:   "up",
 			Usage:  "Bring all services up",
 			Action: cliApp.ProjectUp,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "d",
+					Usage: "Do not block and log",
+				},
+			},
+		},
+		{
+			Name:   "start",
+			Usage:  "Start services",
+			Action: cliApp.ProjectUp,
+		},
+		{
+			Name:   "logs",
+			Usage:  "Get service logs",
+			Action: cliApp.ProjectLog,
+			Flags: []cli.Flag{
+				cli.IntFlag{
+					Name:  "lines",
+					Usage: "number of lines to tail",
+					Value: 100,
+				},
+			},
+		},
+		{
+			Name:   "restart",
+			Usage:  "Restart services",
+			Action: cliApp.ProjectRestart,
+		},
+		{
+			Name:      "stop",
+			ShortName: "down",
+			Usage:     "Stop services",
+			Action:    cliApp.ProjectDown,
+		},
+		{
+			Name:   "scale",
+			Usage:  "Scale services",
+			Action: cliApp.Scale,
+		},
+		{
+			Name:   "rm",
+			Usage:  "Delete services",
+			Action: cliApp.ProjectDelete,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "force",
+					Usage: "Allow deletion of all services",
+				},
+			},
 		},
 	}
 

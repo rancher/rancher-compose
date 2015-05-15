@@ -1,0 +1,8 @@
+second:
+    environment:
+        foo: bar
+        a: b
+    env_file:
+    - env.file
+    - env2.file
+    image: second

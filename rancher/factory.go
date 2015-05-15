@@ -23,6 +23,14 @@ func NewProject(c *Context) (*project.Project, error) {
 	}
 
 	p := project.NewProject(c.ProjectName, factory)
+	p.EnvironmentLookup = c
+	if c.ComposeFile == "-" {
+		p.File = "."
+	} else {
+		p.File = c.ComposeFile
+	}
+	p.ConfigLookup = project.FileConfigLookup{}
+
 	err := p.Load(c.ComposeBytes)
 
 	c.Project = p

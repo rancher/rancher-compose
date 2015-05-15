@@ -1,0 +1,59 @@
+web:
+    build: github.com/ibuildthecloud/tiny-build
+    dockerfile: something/other
+    name: foo
+    command: /bin/sh -c
+    net: host
+    pid: host
+    dns:
+    - 8.8.8.8
+    - 1.1.1.1
+    ports:
+    - 80:81
+    - 123
+    image: nginx
+    volumes:
+    - /tmp/foo
+    - /tmp/x:/tmp/y
+    environment:
+      foo: bar
+      a: b
+    cap_add:
+    - ALL
+    - SYS_ADMIN
+    cap_drop:
+    - NET_ADMIN
+    - SYS_ADMIN
+    dns_search:
+    - foo.com
+    - bar.com
+    working_dir: /somewhere
+    entrypoint: /bin/foo bar
+    user: somebody
+    hostname: myhostname
+    domainname: example.com
+    mem_limit: 100
+    mem_swap_limit: 101
+    privileged: true
+    restart: always
+    stdin_open: true
+    tty: true
+    cpu_shares: 42
+    cpu_set: 1,2
+    log_driver: syslog
+    log_opt:
+      tag: foo
+    devices:
+    - /dev/sda:/dev/a
+    - /dev/sdb:/dev/c:ro
+    labels:
+      a: b
+      c: d
+    expose:
+    - 21
+    extra_hosts:
+    - host:1.1.1.1
+    - host:2.2.2.2
+    security_opt:
+    - "label:foo"
+    - "label:bar"

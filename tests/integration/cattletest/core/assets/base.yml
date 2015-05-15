@@ -1,0 +1,22 @@
+base:
+    extends:
+        file: subdir/second.yml
+        service: second
+
+local:
+    environment:
+      key: value
+    ports:
+    - 80
+    image: local
+    links:
+    - foo
+
+other-base:
+    environment:
+      key2: value2
+    ports:
+    - 81
+    extends:
+        service: local
+    image: other

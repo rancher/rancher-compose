@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -e
+
+cd $(dirname $0)/..
+
+. ./scripts/common_functions
+
+set_project_vars
+
+go test ./...
+
+result=$(find . -name "*.go" | grep -v ./Godeps | xargs gofmt -l)
+for i in $result; do
+    echo Violates gofmt: $i
+done
+
+[ -n "$result" ] && exit 1
+
+echo OK

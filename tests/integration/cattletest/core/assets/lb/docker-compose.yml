@@ -1,0 +1,8 @@
+lb:
+    image: rancher/load-balancer
+    ports:
+    - "80:80"
+    links:
+    - web
+web:
+    image: nginx

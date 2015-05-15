@@ -36,8 +36,14 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		volumes[v] = struct {}{}
 	}
 
-	cmd, _ := shlex.Split(c.Command)
-	entrypoint, _ := shlex.Split(c.Entrypoint)
+	cmd, err := shlex.Split(c.Command)
+	if err != nil {
+		return nil, nil, err
+	}
+	entrypoint, err := shlex.Split(c.Entrypoint)
+	if err != nil {
+		return nil, nil, err
+	}
 	ports, binding, err := nat.ParsePortSpecs(c.Ports)
 	if err != nil {
 		return nil, nil, err

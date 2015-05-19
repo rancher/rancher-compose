@@ -102,17 +102,3 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 
 	return config, host_config, nil
 }
-
-func kvListToMap(list []string) map[string]string {
-	result := make(map[string]string)
-	for _, item := range list {
-		parts := strings.SplitN(item, "=", 2)
-		if len(parts) < 2 {
-			result[parts[0]] = ""
-		} else {
-			result[parts[0]] = parts[1]
-		}
-	}
-
-	return result
-}

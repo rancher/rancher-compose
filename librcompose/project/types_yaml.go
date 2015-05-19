@@ -2,20 +2,14 @@ package project
 
 import (
 	"strings"
-
-	"gopkg.in/yaml.v2"
 )
 
 type Stringorslice struct {
 	parts []string
 }
 
-func (s *Stringorslice) MarshalYAML() (interface{}, error) {
-	if s == nil {
-		return nil, nil
-	}
-	bytes, err := yaml.Marshal(s.Slice())
-	return string(bytes), err
+func (s Stringorslice) MarshalYAML() (interface{}, error) {
+	return s.parts, nil
 }
 
 func (s *Stringorslice) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -58,12 +52,8 @@ type SliceorMap struct {
 	parts map[string]string
 }
 
-func (s *SliceorMap) MarshalYAML() (interface{}, error) {
-	if s == nil {
-		return nil, nil
-	}
-	bytes, err := yaml.Marshal(s.MapParts())
-	return string(bytes), err
+func (s SliceorMap) MarshalYAML() (interface{}, error) {
+	return s.parts, nil
 }
 
 func (s *SliceorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -109,12 +99,8 @@ type Maporslice struct {
 	parts []string
 }
 
-func (s *Maporslice) MarshalYAML() (interface{}, error) {
-	if s == nil {
-		return nil, nil
-	}
-	bytes, err := yaml.Marshal(s.Slice())
-	return string(bytes), err
+func (s Maporslice) MarshalYAML() (interface{}, error) {
+	return s.parts, nil
 }
 
 func (s *Maporslice) UnmarshalYAML(unmarshal func(interface{}) error) error {

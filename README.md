@@ -1,38 +1,18 @@
-# Prototyping....
+# Rancher Compose
 
-This is very raw experiment. Allowing us to explore Docker Fig/Compose functionality with Rancher... 
-
-##Supported
-
-Bringing containers up:
-
- * From images
- * Ports/Expose
- * Environment vars
- * Commands
- * Privileged
- 
-Removing everything:
-
- - Remove all services/containers
-
-## Still exploring
- 
- - Links
- - Volumes
- - Volumes-from
+Docker compose compatible client that deploys to [Rancher](https://github.com/rancherio/rancher).
 
 ## Building
-If you run the `./scripts/build` command it will drop `./build/rancher-composer` binary. 
+Run `./scripts/build` to create `./bin/rancher-compose`
 
 ## Usage:
 
 ```
 NAME:
-   composer - Docker-compose 2 Rancher
+   rancher-compose - Docker-compose to Rancher
 
 USAGE:
-   composer [global options] command [command options] [arguments...]
+   rancher-compose [global options] command [command options] [arguments...]
 
 VERSION:
    0.1.0
@@ -41,18 +21,45 @@ AUTHOR:
   Rancher
 
 COMMANDS:
-   up       Bring all services up
-   rm       Remove all containers and services
-   help, h  Shows a list of commands or help for one command
-
+   create	Create all services but do not start
+   up		Bring all services up
+   start	Start services
+   logs		Get service logs
+   restart	Restart services
+   stop, down	Stop services
+   scale	Scale services
+   rm		Delete services
+   help, h	Shows a list of commands or help for one command
+   
 GLOBAL OPTIONS:
-   --api-url            Specify the Rancher API Endpoint URL
-   --access-key         Specify api access key
-   --secret-key         Specify api secret key [$RANCHER_SECRET_KEY]
-   -f "docker-compose.yml"  docker-compose yml file to use
-   --help, -h           show help
-   --version, -v        print the version
+   --debug				
+   --url 				Specify the Rancher API endpoint URL [$RANCHER_URL]
+   --access-key 			Specify Rancher API access key [$RANCHER_ACCESS_KEY]
+   --secret-key 			Specify Rancher API secret key [$RANCHER_SECRET_KEY]
+   --file, -f "docker-compose.yml"	Specify an alternate compose file (default: docker-compose.yml)
+   --rancher-file, -r 			Specify an alternate Rancher compose file (default: rancher-compose.yml)
+   --project-name, -p 			Specify an alternate project name (default: directory name)
+   --help, -h				show help
+   --version, -v			print the version
 ```
+
+# Compose compatibility
+
+`rancher-compose` strives to be completely compatible with Docker Compose.  Since `rancher-compose` is largely focused
+on running production workloads some behaviors between Docker Compose and Rancher Compose are different.
+
+## Deleting Services/Container
+
+`rancher-compose` will not delete things by default.  This means that if you do two `up` commands in a row, the second `up` will
+do nothing.  This is because the first up will create everything and leave it running.  Even if you do not pass `-d` to `up`,
+`rancher-compose` will not delete your services.  To delete a service you must use `rm`.
+
+## Builds
+
+Docker builds are supported in two ways.  First is to set `build:` to a git or HTTP URL that is compatible with the remote parameter in https://docs.docker.com/reference/api/docker_remote_api_v1.18/#build-image-from-a-dockerfile.  The second approach is to set `build:` to a local directory and the build context will be uploaded to S3 and then built on demand on each node.
+
+
+
 ## Contact
 For bugs, questions, comments, corrections, suggestions, etc., open an issue in
  [rancherio/rancher](//github.com/rancherio/rancher/issues) with a title starting with `[rancher-compose] `.

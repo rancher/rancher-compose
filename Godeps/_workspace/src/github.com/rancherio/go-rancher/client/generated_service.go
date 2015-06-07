@@ -13,25 +13,23 @@ type Service struct {
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
 
-	DataVolumesFromService []string `json:"dataVolumesFromService,omitempty" yaml:"data_volumes_from_service,omitempty"`
-
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
 	EnvironmentId string `json:"environmentId,omitempty" yaml:"environment_id,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
-	LaunchConfig Container `json:"launchConfig,omitempty" yaml:"launch_config,omitempty"`
+	LaunchConfig LaunchConfig `json:"launchConfig,omitempty" yaml:"launch_config,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
-
-	NetworkServiceId string `json:"networkServiceId,omitempty" yaml:"network_service_id,omitempty"`
 
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
 
 	Scale int64 `json:"scale,omitempty" yaml:"scale,omitempty"`
+
+	SecondaryLaunchConfigs []interface{} `json:"secondaryLaunchConfigs,omitempty" yaml:"secondary_launch_configs,omitempty"`
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 

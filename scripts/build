@@ -22,3 +22,8 @@ fi
 echo export GOPATH=$GOPATH
 
 go build -o bin/${PROJECT}
+
+if [ -n "$BUILD_CROSS" ]; then
+    mkdir -p dist/artifacts
+    gox -os="darwin linux windows" -arch="386 amd64 arm" -output="dist/artifacts/rancher-compose_{{.OS}}-{{.Arch}}"
+fi

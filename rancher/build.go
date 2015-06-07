@@ -84,8 +84,6 @@ func createTar(p *project.Project, name string) (io.ReadCloser, error) {
 	root := serviceConfig.Build
 	dockerfileName := filepath.Join(root, serviceConfig.Dockerfile)
 
-	fmt.Println("!!!!!!!!!2 " + root + " " + dockerfileName)
-
 	absRoot, err := filepath.Abs(root)
 	if err != nil {
 		return nil, err
@@ -114,15 +112,12 @@ func createTar(p *project.Project, name string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	fmt.Println("!!!!!f " + filename)
-
 	// Now reset the dockerfileName to be relative to the build context
 	dockerfileName, err = filepath.Rel(absRoot, filename)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("!!!!!d " + dockerfileName)
 	// And canonicalize dockerfile name to a platform-independent one
 	dockerfileName, err = archive.CanonicalTarNameForPath(dockerfileName)
 	if err != nil {

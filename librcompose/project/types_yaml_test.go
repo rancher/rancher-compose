@@ -2,8 +2,10 @@ package project
 
 import (
 	"testing"
-	"github.com/stretchr/testify/assert"
+
 	"gopkg.in/yaml.v2"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type StructStringorslice struct {
@@ -37,7 +39,7 @@ func TestSliceOrMapYaml(t *testing.T) {
 	s := StructSliceorMap{}
 	yaml.Unmarshal([]byte(str), &s)
 
-	assert.Equal(t, map[string]string{"bar":"baz", "far":"faz"}, s.Foo.parts)
+	assert.Equal(t, map[string]string{"bar": "baz", "far": "faz"}, s.Foo.parts)
 
 	d, err := yaml.Marshal(&s)
 	assert.Nil(t, err)
@@ -45,11 +47,20 @@ func TestSliceOrMapYaml(t *testing.T) {
 	s2 := StructSliceorMap{}
 	yaml.Unmarshal(d, &s2)
 
-	assert.Equal(t, map[string]string{"bar":"baz", "far":"faz"}, s2.Foo.parts)
+	assert.Equal(t, map[string]string{"bar": "baz", "far": "faz"}, s2.Foo.parts)
 }
 
 type StructMaporslice struct {
 	Foo Maporslice
+}
+
+func contains(list []string, item string) bool {
+	for _, test := range list {
+		if test == item {
+			return true
+		}
+	}
+	return false
 }
 
 func TestMaporsliceYaml(t *testing.T) {
@@ -58,7 +69,9 @@ func TestMaporsliceYaml(t *testing.T) {
 	s := StructMaporslice{}
 	yaml.Unmarshal([]byte(str), &s)
 
-	assert.Equal(t, []string{"bar=baz", "far=faz"}, s.Foo.parts)
+	assert.Equal(t, 2, len(s.Foo.parts))
+	assert.True(t, contains(s.Foo.parts, "bar=baz"))
+	assert.True(t, contains(s.Foo.parts, "far=faz"))
 
 	d, err := yaml.Marshal(&s)
 	assert.Nil(t, err)
@@ -66,5 +79,7 @@ func TestMaporsliceYaml(t *testing.T) {
 	s2 := StructMaporslice{}
 	yaml.Unmarshal(d, &s2)
 
-	assert.Equal(t, []string{"bar=baz", "far=faz"}, s2.Foo.parts)
+	assert.Equal(t, 2, len(s2.Foo.parts))
+	assert.True(t, contains(s2.Foo.parts, "bar=baz"))
+	assert.True(t, contains(s2.Foo.parts, "far=faz"))
 }

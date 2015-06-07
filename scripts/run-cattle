@@ -1,0 +1,33 @@
+#!/bin/bash
+set -e
+
+URL=https://github.com/ibuildthecloud/cattle/releases/download/sidekick/cattle.jar
+
+cd $(dirname $0)/..
+
+mkdir -p build
+
+cd build
+
+for i in success error; do
+    rm -f run-${i}
+    cat > run-${i}.sh << EOF
+#!/bin/bash
+touch run-${i}
+EOF
+    chmod +x run-${i}.sh
+done
+
+if [ ! -e cattle.jar ]; then
+    curl -L -O $URL
+fi
+
+java -jar cattle.jar --notify $(pwd)/run-success.sh --notify-error $(pwd)/run-error.sh &
+
+while sleep .5; do
+    if [ -f run-success ]; then
+        break
+    elif [ -f run-error ]; then
+        exit 1
+    fi
+done

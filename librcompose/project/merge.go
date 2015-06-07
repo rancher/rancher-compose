@@ -125,15 +125,11 @@ func resolveBuild(inFile string, serviceData rawService) (rawService, error) {
 
 	current := path.Dir(inFile)
 
-	fmt.Println("!!!!!!!!!!" + build + " " + current)
-
 	if build == "." {
 		build = current
 	} else {
 		current = path.Join(current, build)
 	}
-
-	fmt.Println("!!!!!!!!!!" + build + " " + current)
 
 	serviceData["build"] = current
 

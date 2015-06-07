@@ -1,0 +1,3 @@
+image: golang:1.4.1-cross
+script:
+ - ./scripts/ci

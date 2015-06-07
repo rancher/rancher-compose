@@ -28,11 +28,13 @@ type Context struct {
 	Environment        *rancherClient.Environment
 	isOpen             bool
 	Project            *project.Project
+	SidekickInfo       *SidekickInfo
 }
 
 type RancherConfig struct {
 	Scale              int                               `yaml:"scale,omitempty"`
 	LoadBalancerConfig *rancherClient.LoadBalancerConfig `yaml:"load_balancer_config,omitempty"`
+	ExternalIps        []string                          `yaml:"external_ips,omitempty"`
 }
 
 func (c *Context) readComposeFile() error {

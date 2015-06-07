@@ -1,6 +1,9 @@
 {
 	"ImportPath": "github.com/rancherio/rancher-compose",
 	"GoVersion": "go1.4.1",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
@@ -164,7 +167,7 @@
 		},
 		{
 			"ImportPath": "github.com/flynn/go-shlex",
-			"Rev": "70644ac2a65dbf1691ce00c209d185163a14edc6"
+			"Rev": "3f9db97f856818214da2e1057f8ad84803971cff"
 		},
 		{
 			"ImportPath": "github.com/gorilla/websocket",
@@ -172,11 +175,16 @@
 		},
 		{
 			"ImportPath": "github.com/rancherio/go-rancher/client",
-			"Rev": "5eebc3c8fbd09bb73e327bde365e5615b4008e33"
+			"Rev": "8895837b17d074c542292a3b854318386003c3ac"
 		},
 		{
 			"ImportPath": "github.com/rancherio/go-rancher/hostaccess",
-			"Rev": "5eebc3c8fbd09bb73e327bde365e5615b4008e33"
+			"Rev": "8895837b17d074c542292a3b854318386003c3ac"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.0-12-g7e4a149",
+			"Rev": "7e4a149930b09fe4c2b134c50ce637457ba6e966"
 		},
 		{
 			"ImportPath": "github.com/vaughan0/go-ini",

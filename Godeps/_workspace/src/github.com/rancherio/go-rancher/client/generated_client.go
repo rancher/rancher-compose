@@ -3,7 +3,6 @@ package client
 type RancherClient struct {
 	RancherBaseClient
 
-	Subscribe                                SubscribeOperations
 	Publish                                  PublishOperations
 	LogConfig                                LogConfigOperations
 	RestartPolicy                            RestartPolicyOperations
@@ -42,6 +41,8 @@ type RancherClient struct {
 	LoadBalancerService                      LoadBalancerServiceOperations
 	ExternalService                          ExternalServiceOperations
 	DnsService                               DnsServiceOperations
+	LaunchConfig                             LaunchConfigOperations
+	SecondaryLaunchConfig                    SecondaryLaunchConfigOperations
 	Account                                  AccountOperations
 	Agent                                    AgentOperations
 	Certificate                              CertificateOperations
@@ -76,6 +77,7 @@ type RancherClient struct {
 	ProcessInstance                          ProcessInstanceOperations
 	ProjectMember                            ProjectMemberOperations
 	Service                                  ServiceOperations
+	ServiceConsumeMap                        ServiceConsumeMapOperations
 	ServiceEvent                             ServiceEventOperations
 	ServiceExposeMap                         ServiceExposeMapOperations
 	Setting                                  SettingOperations
@@ -83,6 +85,7 @@ type RancherClient struct {
 	StoragePool                              StoragePoolOperations
 	Task                                     TaskOperations
 	TaskInstance                             TaskInstanceOperations
+	UserPreference                           UserPreferenceOperations
 	Volume                                   VolumeOperations
 	TypeDocumentation                        TypeDocumentationOperations
 	ContainerExec                            ContainerExecOperations
@@ -120,7 +123,6 @@ func constructClient() *RancherClient {
 		},
 	}
 
-	client.Subscribe = newSubscribeClient(client)
 	client.Publish = newPublishClient(client)
 	client.LogConfig = newLogConfigClient(client)
 	client.RestartPolicy = newRestartPolicyClient(client)
@@ -159,6 +161,8 @@ func constructClient() *RancherClient {
 	client.LoadBalancerService = newLoadBalancerServiceClient(client)
 	client.ExternalService = newExternalServiceClient(client)
 	client.DnsService = newDnsServiceClient(client)
+	client.LaunchConfig = newLaunchConfigClient(client)
+	client.SecondaryLaunchConfig = newSecondaryLaunchConfigClient(client)
 	client.Account = newAccountClient(client)
 	client.Agent = newAgentClient(client)
 	client.Certificate = newCertificateClient(client)
@@ -193,6 +197,7 @@ func constructClient() *RancherClient {
 	client.ProcessInstance = newProcessInstanceClient(client)
 	client.ProjectMember = newProjectMemberClient(client)
 	client.Service = newServiceClient(client)
+	client.ServiceConsumeMap = newServiceConsumeMapClient(client)
 	client.ServiceEvent = newServiceEventClient(client)
 	client.ServiceExposeMap = newServiceExposeMapClient(client)
 	client.Setting = newSettingClient(client)
@@ -200,6 +205,7 @@ func constructClient() *RancherClient {
 	client.StoragePool = newStoragePoolClient(client)
 	client.Task = newTaskClient(client)
 	client.TaskInstance = newTaskInstanceClient(client)
+	client.UserPreference = newUserPreferenceClient(client)
 	client.Volume = newVolumeClient(client)
 	client.TypeDocumentation = newTypeDocumentationClient(client)
 	client.ContainerExec = newContainerExecClient(client)

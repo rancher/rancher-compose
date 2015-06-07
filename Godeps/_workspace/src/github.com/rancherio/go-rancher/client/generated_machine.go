@@ -31,8 +31,6 @@ type Machine struct {
 
 	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
 
-	ExtractedConfig string `json:"extractedConfig,omitempty" yaml:"extracted_config,omitempty"`
-
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
 	Labels map[string]interface{} `json:"labels,omitempty" yaml:"labels,omitempty"`

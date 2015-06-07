@@ -7,6 +7,8 @@
 /build
 /dist
 /gopath
+/tests/integration/.tox
 /tests/integration/.venv
+/tests/integration/MANIFEST
 
 __pycache__

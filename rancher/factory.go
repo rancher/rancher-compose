@@ -1,15 +1,21 @@
 package rancher
 
-import "github.com/Sirupsen/logrus"
+import (
+	"github.com/Sirupsen/logrus"
 
-import "github.com/rancherio/rancher-compose/librcompose/project"
+	"github.com/rancherio/rancher-compose/librcompose/project"
+)
 
 type RancherServiceFactory struct {
 	context *Context
 }
 
 func (r *RancherServiceFactory) Create(project *project.Project, name string, serviceConfig *project.ServiceConfig) (project.Service, error) {
-	return NewService(name, serviceConfig, r.context), nil
+	if len(r.context.SidekickInfo.sidekickToPrimaries[name]) > 0 {
+		return NewSidekick(name, serviceConfig, r.context), nil
+	} else {
+		return NewService(name, serviceConfig, r.context), nil
+	}
 }
 
 func NewProject(c *Context) (*project.Project, error) {
@@ -34,5 +40,7 @@ func NewProject(c *Context) (*project.Project, error) {
 	err := p.Load(c.ComposeBytes)
 
 	c.Project = p
+	c.SidekickInfo = NewSidekickInfo(p)
+
 	return p, err
 }

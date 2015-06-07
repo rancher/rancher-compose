@@ -1,7 +1,7 @@
 from common_fixtures import *  # NOQA
 
-import subprocess32
-from subprocess32 import Popen
+import subprocess
+from subprocess import Popen
 from os import path
 import os
 
@@ -13,6 +13,7 @@ import ConfigParser
 
 PROJECTS = []
 
+
 class Compose(object):
     def __init__(self, client, compose_bin):
         self.compose_bin = compose_bin
@@ -21,7 +22,7 @@ class Compose(object):
     def check_call(self, input, *args):
         print args
         p = self.call(*args)
-        p.communicate(input=input, timeout=120)
+        p.communicate(input=input)
         retcode = p.wait()
         assert 0 == retcode
         return p
@@ -34,11 +35,11 @@ class Compose(object):
         }
         cmd = [self.compose_bin]
         cmd.extend(args)
-        return Popen(cmd, env=env, stdin=subprocess32.PIPE, stdout=sys.stdout,
+        return Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=sys.stdout,
                      stderr=sys.stderr, cwd=_base())
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def client(admin_user_client, request):
     try:
         return cattle.from_env(url=os.environ['RANCHER_URL'],
@@ -75,8 +76,8 @@ def compose_bin():
 
 
 def _clean_all(client):
-    for e in client.list_environment():
-        client.delete(e)
+    for p in PROJECTS:
+        client.delete(p)
 
 
 @pytest.fixture(scope='session')
@@ -96,6 +97,7 @@ def create_project(compose, file=None, input=None):
     return project_name
 
 
+@pytest.mark.skipif('True')
 def test_build(client, compose):
     project_name = create_project(compose, file='assets/build/test.yml')
 
@@ -114,10 +116,12 @@ def test_args(client, compose):
     assert project.name == project_name
 
     service = find_one(project.services)
+    print service.id
     assert service.name == 'web'
     assert service.launchConfig.command == ['/bin/sh', '-c']
     assert service.launchConfig.imageUuid == 'docker:nginx'
-    assert set(service.launchConfig.ports) == {'80:81/tcp', '123/tcp', '21/tcp'}
+    assert set(service.launchConfig.ports) == {'80:81/tcp', '123/tcp',
+                                               '21/tcp'}
     assert service.launchConfig.dataVolumes == ['/tmp/foo', '/tmp/x:/tmp/y']
     assert service.launchConfig.environment == {'foo': 'bar', 'a': 'b'}
     assert service.launchConfig.dns == ['8.8.8.8', '1.1.1.1']
@@ -137,7 +141,7 @@ def test_args(client, compose):
     }
     assert service.launchConfig.stdinOpen
     assert service.launchConfig.tty
-    assert service.launchConfig.name == 'foo'
+    assert 'name' not in service.launchConfig
     assert service.launchConfig.cpuShares == 42
     assert service.launchConfig.cpuSet == '1,2'
     assert service.launchConfig.devices == ['/dev/sda:/dev/a:rwm',
@@ -157,6 +161,82 @@ def test_args(client, compose):
         'dockerfile': 'something/other',
         'remote': 'github.com/ibuildthecloud/tiny-build',
     }
+
+
+def test_network_bridge(client, compose):
+    template = '''
+web:
+    net: bridge
+    image: nginx
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.launchConfig.networkMode == 'bridge'
+
+
+def test_network_none(client, compose):
+    template = '''
+web:
+    net: none
+    image: nginx
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.launchConfig.networkMode == 'none'
+
+
+def test_network_container(compose, client):
+    template = '''
+foo:
+    labels:
+        io.rancher.sidekicks: web
+    image: nginx
+
+web:
+    net: container:foo
+    image: nginx
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.launchConfig.networkMode == 'managed'
+    assert service.secondaryLaunchConfigs[0].networkMode == 'container'
+    assert service.secondaryLaunchConfigs[0].networkLaunchConfig == 'foo'
+
+
+def test_network_managed(client, compose):
+    template = '''
+web:
+    net: managed
+    image: nginx
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.launchConfig.networkMode == 'managed'
+
+
+def test_network_default(client, compose):
+    template = '''
+web:
+    image: nginx
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.launchConfig.networkMode == 'managed'
 
 
 def test_env_file(client, compose):
@@ -248,8 +328,8 @@ web2:
     project = find_one(client.list_environment, name=project_name)
     assert len(project.services()) == 3
     lb = _get_service(project.services(), 'lb')
-    web = _get_service(project.services(), 'web')
-    web2 = _get_service(project.services(), 'web2')
+    _get_service(project.services(), 'web')
+    _get_service(project.services(), 'web2')
 
     assert lb.type == 'loadBalancerService'
 
@@ -260,7 +340,7 @@ def test_lb_full_config(client, compose):
     assert len(project.services()) == 2
 
     lb = _get_service(project.services(), 'lb')
-    web = _get_service(project.services(), 'web')
+    _get_service(project.services(), 'web')
 
     assert lb.type == 'loadBalancerService'
 
@@ -318,6 +398,8 @@ other:
 def test_volumes_from(client, compose):
     template = '''
 web:
+    labels:
+        io.rancher.sidekicks: db
     image: nginx
 db:
     image: mysql
@@ -327,13 +409,108 @@ db:
     project_name = create_project(compose, input=template)
 
     project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
 
-    web = _get_service(project.services(), 'web')
-    db = _get_service(project.services(), 'db')
+    assert service.secondaryLaunchConfigs[0].dataVolumesFromLaunchConfigs == \
+        ['web']
 
-    assert web.dataVolumesFromService is None
-    assert len(db.dataVolumesFromService) == 1
-    assert db.dataVolumesFromService[0] == web.id
+
+def test_sidekick_simple(client, compose):
+    template = '''
+web:
+    labels:
+        io.rancher.sidekicks: log
+    image: nginx
+log:
+    image: mysql
+log2:
+    image: bar
+'''
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_environment, name=project_name)
+    services = project.services()
+
+    service = _get_service(services, 'web')
+    log2 = _get_service(services, 'log2')
+
+    assert len(services) == 2
+    assert service.name == 'web'
+    assert service.launchConfig.imageUuid == 'docker:nginx'
+    assert service.launchConfig.networkMode == 'managed'
+    assert len(service.secondaryLaunchConfigs) == 1
+    assert service.secondaryLaunchConfigs[0].name == 'log'
+    assert service.secondaryLaunchConfigs[0].imageUuid == 'docker:mysql'
+    assert service.secondaryLaunchConfigs[0].networkMode == 'managed'
+
+    assert log2.name == 'log2'
+    assert log2.launchConfig.imageUuid == 'docker:bar'
+
+
+def test_sidekick_container_network(client, compose):
+    template = '''
+web:
+    labels:
+        io.rancher.sidekicks: log
+    image: nginx
+log:
+    net: container:web
+    image: mysql
+'''
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.name == 'web'
+    assert service.launchConfig.imageUuid == 'docker:nginx'
+    assert len(service.secondaryLaunchConfigs) == 1
+    assert service.secondaryLaunchConfigs[0].name == 'log'
+    assert service.secondaryLaunchConfigs[0].imageUuid == 'docker:mysql'
+    assert service.secondaryLaunchConfigs[0].networkMode == 'container'
+    assert service.secondaryLaunchConfigs[0].networkLaunchConfig == 'web'
+
+
+def test_external_ip(client, compose):
+    project_name = create_project(compose, file='assets/externalip/test.yml')
+
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.name == 'web'
+    assert service.type == 'externalService'
+    assert 'launchConfig' not in service
+    assert service.externalIpAddresses == ['1.1.1.1', '2.2.2.2']
+
+
+def test_dns_service(client, compose):
+    template = '''
+web1:
+    image: nginx
+web2:
+    image: nginx
+web:
+    image: rancher/dns-service
+    links:
+    - web1
+    - web2
+'''
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_environment, name=project_name)
+    services = project.services()
+
+    assert len(services) == 3
+
+    web = _get_service(services, 'web')
+
+    assert web.type == 'dnsService'
+    consumed = web.consumedservices()
+
+    assert len(consumed) == 2
+    names = {x.name for x in consumed}
+
+    assert names == {'web1', 'web2'}
 
 
 def _get_service(services, name):
@@ -346,5 +523,3 @@ def _get_service(services, name):
 
     assert service is not None
     return service
-
-

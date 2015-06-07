@@ -3,6 +3,9 @@ set -e
 
 cd $(dirname $0)/..
 
+export PATH=$GOPATH/bin:$PATH
+
 ./scripts/bootstrap
-./scripts/build
+BUILD_CROSS=true ./scripts/build
+./scripts/run-cattle
 ./scripts/test

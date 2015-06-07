@@ -1,22 +1,17 @@
 #!/bin/bash
 set -e
 
-install_go()
-{
-    # Taken from Google/golang Dockerfile...
-    apt-get update -y && apt-get install --no-install-recommends -y -q curl build-essential \
-        ca-certificates git mercurial bzr
-    mkdir /goroot && curl https://storage.googleapis.com/golang/go1.3.1.linux-amd64.tar.gz | tar xvzf - -C /goroot --strip-components=1
-    echo $PWD
-    echo "export GOROOT=\"/goroot\"" > ./build/bootstrap.envs
-    echo "export PATH=\"$PATH:/goroot/bin\"" >> ./build/bootstrap.envs
-}
+if [ ! $(command -v gox) ]; then
+    echo Instaling gox
+    go get github.com/mitchellh/gox
+fi
 
-cd $(dirname $0)
+if [ ! $(command -v java) ]; then
+    apt-get update
+    apt-get install -y --no-install-recommends default-jre
+fi
 
-mkdir -p ./build
-
-if [ ! $(command -v go) ]; then
-    echo "Going to try installing Go..."
-    install_go
+if [ ! $(command -v tox) ]; then
+    apt-get install -y --no-install-recommends python-pip
+    pip install --upgrade pip==6.0.3 tox==1.8.1 virtualenv==12.0.4
 fi

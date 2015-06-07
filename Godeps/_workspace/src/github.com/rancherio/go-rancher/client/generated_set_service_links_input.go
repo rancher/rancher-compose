@@ -7,6 +7,8 @@ const (
 type SetServiceLinksInput struct {
 	Resource
 
+	ServiceIds []string `json:"serviceIds,omitempty" yaml:"service_ids,omitempty"`
+
 	ServiceLinks map[string]interface{} `json:"serviceLinks,omitempty" yaml:"service_links,omitempty"`
 }
 

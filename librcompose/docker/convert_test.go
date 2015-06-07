@@ -1,10 +1,10 @@
 package docker
 
 import (
-	"testing"
+	shlex "github.com/flynn/go-shlex"
 	"github.com/rancherio/rancher-compose/librcompose/project"
 	"github.com/stretchr/testify/assert"
-	shlex "github.com/flynn/go-shlex"
+	"testing"
 )
 
 func TestParseCommand(t *testing.T) {

@@ -4,4 +4,4 @@ cd $(dirname $0)/..
 
 rm -rf build dist bin gopath
 find tests -name "*.pyc" -exec rm {} \;
-rm -rf tests/integration/.venv
+rm -rf tests/integration/{.venv,.tox}

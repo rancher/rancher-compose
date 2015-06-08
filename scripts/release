@@ -1,0 +1,4 @@
+#!/bin/bash
+
+$(dirname $0)/clean
+$(dirname $0)/ci

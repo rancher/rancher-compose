@@ -20,7 +20,6 @@ class Compose(object):
         self.client = client
 
     def check_call(self, input, *args):
-        print args
         p = self.call(*args)
         p.communicate(input=input)
         retcode = p.wait()
@@ -86,12 +85,16 @@ def compose(client, compose_bin, request):
     return Compose(client, compose_bin)
 
 
-def create_project(compose, file=None, input=None):
-    project_name = random_str()
+def create_project(compose, operation='create', project_name=None, file=None,
+                   input=None):
+    if project_name is None:
+        project_name = random_str()
     if file is not None:
-        compose.check_call(None, '-f', file, '-p', project_name, 'create')
+        compose.check_call(None, '--debug', '-f', file, '-p', project_name,
+                           operation)
     elif input is not None:
-        compose.check_call(input, '-f', '-', '-p', project_name, 'create')
+        compose.check_call(input, '--debug', '-f', '-', '-p', project_name,
+                           operation)
 
     PROJECTS.append(project_name)
     return project_name
@@ -116,7 +119,6 @@ def test_args(client, compose):
     assert project.name == project_name
 
     service = find_one(project.services)
-    print service.id
     assert service.name == 'web'
     assert service.launchConfig.command == ['/bin/sh', '-c']
     assert service.launchConfig.imageUuid == 'docker:nginx'
@@ -511,6 +513,39 @@ web:
     names = {x.name for x in consumed}
 
     assert names == {'web1', 'web2'}
+
+
+def test_up_relink(client, compose):
+    template = '''
+lb:
+    image: rancher/load-balancer
+    links:
+    - web
+web:
+    image: nginx
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    lb = _get_service(project.services(), 'lb')
+
+    consumed = lb.consumedservices()
+    assert len(consumed) == 1
+    assert consumed[0].name == 'web'
+
+    template2 = '''
+lb:
+    image: nginx
+    links:
+    - web2
+web2:
+    image: nginx
+'''
+    compose.check_call(template2, '--debug', '-f', '-', '-p', project_name,
+                       'up', '-d')
+    consumed = lb.consumedservices()
+    assert len(consumed) == 1
+    assert consumed[0].name == 'web2'
 
 
 def _get_service(services, name):

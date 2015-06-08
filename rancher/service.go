@@ -80,9 +80,14 @@ func (r *RancherService) Up() error {
 	}()
 
 	service, err := r.findExisting(r.name)
+	if err != nil {
+		return err
+	}
 
-	if err == nil && service == nil {
+	if service == nil {
 		service, err = r.createService()
+	} else {
+		err = r.setupLinks(service)
 	}
 
 	if err != nil {
@@ -301,15 +306,22 @@ func (r *RancherService) createService() (*rancherClient.Service, error) {
 		return nil, err
 	}
 
+	if err := r.setupLinks(service); err != nil {
+		return nil, err
+	}
+
+	err = r.wait(service)
+	return service, err
+}
+
+func (r *RancherService) setupLinks(service *rancherClient.Service) error {
 	links, err := r.getLinks()
 	if err == nil && len(links) > 0 {
 		_, err = r.context.Client.Service.ActionSetservicelinks(service, &rancherClient.SetServiceLinksInput{
 			ServiceLinks: links,
 		})
 	}
-
-	err = r.wait(service)
-	return service, err
+	return err
 }
 
 func (r *RancherService) getLinks() (map[string]interface{}, error) {

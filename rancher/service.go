@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	LB_IMAGE  = "rancher/load-balancer"
-	DNS_IMAGE = "rancher/dns-service"
+	LB_IMAGE       = "rancher/load-balancer-service"
+	DNS_IMAGE      = "rancher/dns-service"
+	EXTERNAL_IMAGE = "rancher/external-service"
 )
 
 var (

@@ -2,6 +2,10 @@
 
 Docker compose compatible client that deploys to [Rancher](https://github.com/rancherio/rancher).
 
+## Binaries
+
+Binaries are available for Linux, OS X, and Windows. Refer to the latest [release](https://github.com/rancherio/rancher-compose/releases).
+
 ## Building
 Run `./scripts/build` to create `./bin/rancher-compose`
 
@@ -58,6 +62,7 @@ do nothing.  This is because the first up will create everything and leave it ru
 
 Docker builds are supported in two ways.  First is to set `build:` to a git or HTTP URL that is compatible with the remote parameter in https://docs.docker.com/reference/api/docker_remote_api_v1.18/#build-image-from-a-dockerfile.  The second approach is to set `build:` to a local directory and the build context will be uploaded to S3 and then built on demand on each node.
 
+For S3 based builds to work you must [setup AWS credentials](https://github.com/aws/aws-sdk-go/#configuring-credentials).
 
 
 ## Contact

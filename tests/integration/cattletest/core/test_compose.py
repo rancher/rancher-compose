@@ -316,7 +316,7 @@ web:
 def test_lb(client, compose):
     template = '''
 lb:
-    image: rancher/load-balancer
+    image: rancher/load-balancer-service
     links:
     - web
     - web2
@@ -518,7 +518,7 @@ web:
 def test_up_relink(client, compose):
     template = '''
 lb:
-    image: rancher/load-balancer
+    image: rancher/load-balancer-service
     links:
     - web
 web:

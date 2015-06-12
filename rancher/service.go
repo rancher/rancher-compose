@@ -327,7 +327,7 @@ func (r *RancherService) setupLinks(service *rancherClient.Service) error {
 func (r *RancherService) getLinks() (map[string]interface{}, error) {
 	result := map[string]interface{}{}
 
-	for _, link := range r.serviceConfig.Links {
+	for _, link := range r.serviceConfig.Links.Slice() {
 		parts := strings.SplitN(link, ":", 2)
 		name := parts[0]
 		alias := name

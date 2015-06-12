@@ -19,6 +19,6 @@ func TestParseBindsAndVolumes(t *testing.T) {
 		Volumes: []string{"/foo", "/home:/home", "/bar/baz", "/usr/lib:/usr/lib:ro"},
 	})
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]struct{}{"/foo": struct{}{}, "/bar/baz": struct{}{}}, cfg.Volumes)
+	assert.Equal(t, map[string]struct{}{"/foo": {}, "/bar/baz": {}}, cfg.Volumes)
 	assert.Equal(t, []string{"/home:/home", "/usr/lib:/usr/lib:ro"}, hostCfg.Binds)
 }

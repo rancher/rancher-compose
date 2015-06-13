@@ -105,7 +105,7 @@ func (s *serviceWrapper) Delete(wrappers map[string]*serviceWrapper) {
 }
 
 func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
-	for _, link := range append(s.service.Config().Links, s.service.Config().VolumesFrom...) {
+	for _, link := range append(s.service.Config().Links.Slice(), s.service.Config().VolumesFrom...) {
 		name := strings.Split(link, ":")[0]
 		if wrapper, ok := wrappers[name]; ok {
 			if wrapper.Wait() == ErrRestart {

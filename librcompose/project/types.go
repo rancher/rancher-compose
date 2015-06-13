@@ -57,7 +57,7 @@ type ServiceConfig struct {
 	Hostname      string            `yaml:"hostname,omitempty"`
 	Image         string            `yaml:"image,omitempty"`
 	Labels        SliceorMap        `yaml:"labels,omitempty"`
-	Links         []string          `yaml:"links,omitempty"`
+	Links         Maporslice        `yaml:"links,omitempty"`
 	LogDriver     string            `yaml:"log_driver,omitempty"`
 	MemLimit      int64             `yaml:"mem_limit,omitempty"`
 	MemSwapLimit  int64             `yaml:"mem_swap_limit,omitempty"`

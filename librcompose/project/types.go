@@ -44,7 +44,7 @@ type ServiceConfig struct {
 	CapDrop       []string          `yaml:"cap_drop,omitempty"`
 	CpuSet        string            `yaml:"cpu_set,omitempty"`
 	CpuShares     int64             `yaml:"cpu_shares,omitempty"`
-	Command       string            `yaml:"command,omitempty"`
+	Command       SliceorString     `yaml:"command,omitempty"`
 	Detach        string            `yaml:"detach,omitempty"`
 	Devices       []string          `yaml:"devices,omitempty"`
 	Dns           Stringorslice     `yaml:"dns,omitempty"`

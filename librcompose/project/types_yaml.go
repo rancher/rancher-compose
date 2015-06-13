@@ -48,6 +48,43 @@ func NewStringorslice(parts ...string) Stringorslice {
 	return Stringorslice{parts}
 }
 
+type SliceorString struct {
+	parts string
+}
+
+func (s SliceorString) MarshalYAML() (interface{}, error) {
+	return s.parts, nil
+}
+
+func (s *SliceorString) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var stringType string
+	err := unmarshal(&stringType)
+	if err == nil {
+		s.parts = stringType
+		return nil
+	}
+
+	var sliceType []string
+	err = unmarshal(&sliceType)
+	if err == nil {
+		s.parts = strings.Join(sliceType, " ")
+		return nil
+	}
+
+	return err
+}
+
+func (s *SliceorString) ToString() string {
+	if s == nil {
+		return ""
+	}
+	return s.parts
+}
+
+func NewSliceorString(parts string) SliceorString {
+	return SliceorString{parts}
+}
+
 type SliceorMap struct {
 	parts map[string]string
 }
@@ -73,21 +110,22 @@ func (s *SliceorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err == nil {
 		mapType = make(map[string]string)
 		for _, slice := range sliceType {
+			slice = strings.Trim(slice, " ")
 			//split up key and value into []string based on separator
 			if strings.Contains(slice, "=") {
 				keyValueSlice = strings.Split(slice, "=")
 			} else if strings.Contains(slice, ":") {
 				keyValueSlice = strings.Split(slice, ":")
-			} else if strings.Contains(slice, " ") {
+			} else if strings.Count(slice, " ") == 1 && strings.Contains(slice, " ") {
 				keyValueSlice = strings.Split(slice, " ")
 			} else {
-				//if no separator, use slice as key and value
+				//if no clear separator, use slice as key and value
 				keyValueSlice[0] = slice
 				keyValueSlice[1] = slice
 			}
 
-			key = strings.Trim(keyValueSlice[0], " ")
-			value = strings.Trim(keyValueSlice[1], " ")
+			key = keyValueSlice[0]
+			value = keyValueSlice[1]
 			mapType[key] = value
 		}
 		s.parts = mapType

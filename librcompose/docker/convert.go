@@ -36,7 +36,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		volumes[v] = struct{}{}
 	}
 
-	cmd, err := shlex.Split(c.Command)
+	cmd, err := shlex.Split(c.Command.ToString())
 	if err != nil {
 		return nil, nil, err
 	}

@@ -7,14 +7,17 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	cliApp "github.com/rancherio/rancher-compose/app"
+	"github.com/rancherio/rancher-compose/librcompose"
 )
+
+var VERSION = "0.0.0-dev"
 
 func main() {
 	app := cli.NewApp()
 
 	app.Name = "rancher-compose"
 	app.Usage = "Docker-compose to Rancher"
-	app.Version = "0.1.0"
+	app.Version = librcompose.VERSION
 	app.Author = "Rancher"
 	app.Email = ""
 	app.Before = func(c *cli.Context) error {
@@ -118,7 +121,7 @@ func main() {
 			Action: cliApp.ProjectDelete,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
-					Name:  "force",
+					Name:  "force,f",
 					Usage: "Allow deletion of all services",
 				},
 			},

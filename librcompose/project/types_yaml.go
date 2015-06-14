@@ -2,6 +2,8 @@ package project
 
 import (
 	"strings"
+
+	"github.com/flynn/go-shlex"
 )
 
 type Stringorslice struct {
@@ -48,41 +50,42 @@ func NewStringorslice(parts ...string) Stringorslice {
 	return Stringorslice{parts}
 }
 
-type SliceorString struct {
-	parts string
+type Command struct {
+	parts []string
 }
 
-func (s SliceorString) MarshalYAML() (interface{}, error) {
+func (s Command) MarshalYAML() (interface{}, error) {
 	return s.parts, nil
 }
 
-func (s *SliceorString) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (s *Command) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var stringType string
 	err := unmarshal(&stringType)
 	if err == nil {
-		s.parts = stringType
-		return nil
+		s.parts, err = shlex.Split(stringType)
+		return err
 	}
 
 	var sliceType []string
 	err = unmarshal(&sliceType)
 	if err == nil {
-		s.parts = strings.Join(sliceType, " ")
+		s.parts = sliceType
 		return nil
 	}
 
 	return err
 }
 
-func (s *SliceorString) ToString() string {
-	if s == nil {
-		return ""
-	}
+func (s *Command) ToString() string {
+	return strings.Join(s.parts, " ")
+}
+
+func (s *Command) Slice() []string {
 	return s.parts
 }
 
-func NewSliceorString(parts string) SliceorString {
-	return SliceorString{parts}
+func NewCommand(parts []string) Command {
+	return Command{parts}
 }
 
 type SliceorMap struct {
@@ -102,36 +105,29 @@ func (s *SliceorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	var sliceType []string
-	var keyValueSlice []string
 	var key string
 	var value string
 
 	err = unmarshal(&sliceType)
-	if err == nil {
-		mapType = make(map[string]string)
-		for _, slice := range sliceType {
-			slice = strings.Trim(slice, " ")
-			//split up key and value into []string based on separator
-			if strings.Contains(slice, "=") {
-				keyValueSlice = strings.Split(slice, "=")
-			} else if strings.Contains(slice, ":") {
-				keyValueSlice = strings.Split(slice, ":")
-			} else if strings.Count(slice, " ") == 1 && strings.Contains(slice, " ") {
-				keyValueSlice = strings.Split(slice, " ")
-			} else {
-				//if no clear separator, use slice as key and value
-				keyValueSlice[0] = slice
-				keyValueSlice[1] = slice
-			}
-
-			key = keyValueSlice[0]
-			value = keyValueSlice[1]
-			mapType[key] = value
-		}
-		s.parts = mapType
-		return nil
+	if err != nil {
+		return err
 	}
-	return err
+
+	mapType = make(map[string]string)
+	for _, slice := range sliceType {
+		slice = strings.TrimSpace(slice)
+		keyValueSlice := strings.SplitN(slice, "=", 2)
+
+		key = keyValueSlice[0]
+		value = ""
+		if len(keyValueSlice) == 2 {
+			value = keyValueSlice[1]
+		}
+
+		mapType[key] = value
+	}
+	s.parts = mapType
+	return nil
 }
 
 func (s *SliceorMap) MapParts() map[string]string {

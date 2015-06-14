@@ -1,0 +1,8 @@
+web:
+  health_check:
+    port: 80
+    interval: 2000
+    unhealthy_threshold: 3
+    request_line: "OPTIONS /ping HTTP/1.1\r\nHost:\\ www.example.com"
+    healthy_threshold: 2
+    response_timeout: 2000

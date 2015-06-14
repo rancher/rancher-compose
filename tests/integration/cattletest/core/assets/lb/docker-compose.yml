@@ -1,5 +1,5 @@
 lb:
-    image: rancher/load-balancer
+    image: rancher/load-balancer-service
     ports:
     - "80:80"
     links:

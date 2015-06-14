@@ -51,7 +51,7 @@ func TestSliceOrMapYaml(t *testing.T) {
 }
 
 type StructMaporslice struct {
-	Foo Maporslice
+	Foo MaporEqualSlice
 }
 
 func contains(list []string, item string) bool {

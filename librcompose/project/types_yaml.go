@@ -2,6 +2,8 @@ package project
 
 import (
 	"strings"
+
+	"github.com/flynn/go-shlex"
 )
 
 type Stringorslice struct {
@@ -48,41 +50,42 @@ func NewStringorslice(parts ...string) Stringorslice {
 	return Stringorslice{parts}
 }
 
-type SliceorString struct {
-	parts string
+type Command struct {
+	parts []string
 }
 
-func (s SliceorString) MarshalYAML() (interface{}, error) {
+func (s Command) MarshalYAML() (interface{}, error) {
 	return s.parts, nil
 }
 
-func (s *SliceorString) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (s *Command) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var stringType string
 	err := unmarshal(&stringType)
 	if err == nil {
-		s.parts = stringType
-		return nil
+		s.parts, err = shlex.Split(stringType)
+		return err
 	}
 
 	var sliceType []string
 	err = unmarshal(&sliceType)
 	if err == nil {
-		s.parts = strings.Join(sliceType, " ")
+		s.parts = sliceType
 		return nil
 	}
 
 	return err
 }
 
-func (s *SliceorString) ToString() string {
-	if s == nil {
-		return ""
-	}
+func (s *Command) ToString() string {
+	return strings.Join(s.parts, " ")
+}
+
+func (s *Command) Slice() []string {
 	return s.parts
 }
 
-func NewSliceorString(parts string) SliceorString {
-	return SliceorString{parts}
+func NewCommand(parts []string) Command {
+	return Command{parts}
 }
 
 type SliceorMap struct {

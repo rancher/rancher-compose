@@ -48,6 +48,43 @@ func NewStringorslice(parts ...string) Stringorslice {
 	return Stringorslice{parts}
 }
 
+type SliceorString struct {
+	parts string
+}
+
+func (s SliceorString) MarshalYAML() (interface{}, error) {
+	return s.parts, nil
+}
+
+func (s *SliceorString) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var stringType string
+	err := unmarshal(&stringType)
+	if err == nil {
+		s.parts = stringType
+		return nil
+	}
+
+	var sliceType []string
+	err = unmarshal(&sliceType)
+	if err == nil {
+		s.parts = strings.Join(sliceType, " ")
+		return nil
+	}
+
+	return err
+}
+
+func (s *SliceorString) ToString() string {
+	if s == nil {
+		return ""
+	}
+	return s.parts
+}
+
+func NewSliceorString(parts string) SliceorString {
+	return SliceorString{parts}
+}
+
 type SliceorMap struct {
 	parts map[string]string
 }
@@ -73,7 +110,20 @@ func (s *SliceorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err == nil {
 		mapType = make(map[string]string)
 		for _, slice := range sliceType {
-			keyValueSlice = strings.Split(slice, "=") //split up key and value into []string
+			slice = strings.Trim(slice, " ")
+			//split up key and value into []string based on separator
+			if strings.Contains(slice, "=") {
+				keyValueSlice = strings.Split(slice, "=")
+			} else if strings.Contains(slice, ":") {
+				keyValueSlice = strings.Split(slice, ":")
+			} else if strings.Count(slice, " ") == 1 && strings.Contains(slice, " ") {
+				keyValueSlice = strings.Split(slice, " ")
+			} else {
+				//if no clear separator, use slice as key and value
+				keyValueSlice[0] = slice
+				keyValueSlice[1] = slice
+			}
+
 			key = keyValueSlice[0]
 			value = keyValueSlice[1]
 			mapType[key] = value
@@ -95,15 +145,15 @@ func NewSliceorMap(parts map[string]string) SliceorMap {
 	return SliceorMap{parts}
 }
 
-type Maporslice struct {
+type MaporEqualSlice struct {
 	parts []string
 }
 
-func (s Maporslice) MarshalYAML() (interface{}, error) {
+func (s MaporEqualSlice) MarshalYAML() (interface{}, error) {
 	return s.parts, nil
 }
 
-func (s *Maporslice) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (s *MaporEqualSlice) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	err := unmarshal(&s.parts)
 	if err == nil {
 		return nil
@@ -123,10 +173,82 @@ func (s *Maporslice) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
-func (s *Maporslice) Slice() []string {
+func (s *MaporEqualSlice) Slice() []string {
 	return s.parts
 }
 
-func NewMaporslice(parts []string) Maporslice {
-	return Maporslice{parts}
+func NewMaporEqualSlice(parts []string) MaporEqualSlice {
+	return MaporEqualSlice{parts}
+}
+
+type MaporColonSlice struct {
+	parts []string
+}
+
+func (s MaporColonSlice) MarshalYAML() (interface{}, error) {
+	return s.parts, nil
+}
+
+func (s *MaporColonSlice) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	err := unmarshal(&s.parts)
+	if err == nil {
+		return nil
+	}
+
+	var mapType map[string]string
+
+	err = unmarshal(&mapType)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range mapType {
+		s.parts = append(s.parts, strings.Join([]string{k, v}, ":"))
+	}
+
+	return nil
+}
+
+func (s *MaporColonSlice) Slice() []string {
+	return s.parts
+}
+
+func NewMaporColonSlice(parts []string) MaporColonSlice {
+	return MaporColonSlice{parts}
+}
+
+type MaporSpaceSlice struct {
+	parts []string
+}
+
+func (s MaporSpaceSlice) MarshalYAML() (interface{}, error) {
+	return s.parts, nil
+}
+
+func (s *MaporSpaceSlice) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	err := unmarshal(&s.parts)
+	if err == nil {
+		return nil
+	}
+
+	var mapType map[string]string
+
+	err = unmarshal(&mapType)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range mapType {
+		s.parts = append(s.parts, strings.Join([]string{k, v}, " "))
+	}
+
+	return nil
+}
+
+func (s *MaporSpaceSlice) Slice() []string {
+	return s.parts
+}
+
+func NewMaporSpaceSlice(parts []string) MaporSpaceSlice {
+	return MaporSpaceSlice{parts}
 }

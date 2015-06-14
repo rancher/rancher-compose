@@ -34,7 +34,7 @@ func (s *Sidekick) Config() *project.ServiceConfig {
 	}
 
 	config := *s.serviceConfig
-	config.Links = project.NewMaporslice(links)
+	config.Links = project.NewMaporColonSlice(links)
 	config.VolumesFrom = []string{}
 
 	return &config

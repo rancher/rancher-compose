@@ -44,7 +44,7 @@ type ServiceConfig struct {
 	CapDrop       []string          `yaml:"cap_drop,omitempty"`
 	CpuSet        string            `yaml:"cpu_set,omitempty"`
 	CpuShares     int64             `yaml:"cpu_shares,omitempty"`
-	Command       string            `yaml:"command,omitempty"`
+	Command       SliceorString     `yaml:"command,omitempty"`
 	Detach        string            `yaml:"detach,omitempty"`
 	Devices       []string          `yaml:"devices,omitempty"`
 	Dns           Stringorslice     `yaml:"dns,omitempty"`
@@ -53,11 +53,11 @@ type ServiceConfig struct {
 	DomainName    string            `yaml:"domainname,omitempty"`
 	Entrypoint    string            `yaml:"entrypoint,omitempty"`
 	EnvFile       Stringorslice     `yaml:"env_file,omitempty"`
-	Environment   Maporslice        `yaml:"environment,omitempty"`
+	Environment   MaporEqualSlice   `yaml:"environment,omitempty"`
 	Hostname      string            `yaml:"hostname,omitempty"`
 	Image         string            `yaml:"image,omitempty"`
 	Labels        SliceorMap        `yaml:"labels,omitempty"`
-	Links         Maporslice        `yaml:"links,omitempty"`
+	Links         MaporColonSlice   `yaml:"links,omitempty"`
 	LogDriver     string            `yaml:"log_driver,omitempty"`
 	MemLimit      int64             `yaml:"mem_limit,omitempty"`
 	MemSwapLimit  int64             `yaml:"mem_swap_limit,omitempty"`

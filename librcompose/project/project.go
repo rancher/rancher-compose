@@ -66,7 +66,7 @@ func (p *Project) CreateService(name string) (Service, error) {
 			}
 		}
 
-		config.Environment = NewMaporslice(parsedEnv)
+		config.Environment = NewMaporEqualSlice(parsedEnv)
 	}
 
 	return p.factory.Create(p, name, &config)

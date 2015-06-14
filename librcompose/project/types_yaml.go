@@ -105,36 +105,29 @@ func (s *SliceorMap) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	var sliceType []string
-	var keyValueSlice []string
 	var key string
 	var value string
 
 	err = unmarshal(&sliceType)
-	if err == nil {
-		mapType = make(map[string]string)
-		for _, slice := range sliceType {
-			slice = strings.Trim(slice, " ")
-			//split up key and value into []string based on separator
-			if strings.Contains(slice, "=") {
-				keyValueSlice = strings.Split(slice, "=")
-			} else if strings.Contains(slice, ":") {
-				keyValueSlice = strings.Split(slice, ":")
-			} else if strings.Count(slice, " ") == 1 && strings.Contains(slice, " ") {
-				keyValueSlice = strings.Split(slice, " ")
-			} else {
-				//if no clear separator, use slice as key and value
-				keyValueSlice[0] = slice
-				keyValueSlice[1] = slice
-			}
-
-			key = keyValueSlice[0]
-			value = keyValueSlice[1]
-			mapType[key] = value
-		}
-		s.parts = mapType
-		return nil
+	if err != nil {
+		return err
 	}
-	return err
+
+	mapType = make(map[string]string)
+	for _, slice := range sliceType {
+		slice = strings.TrimSpace(slice)
+		keyValueSlice := strings.SplitN(slice, "=", 2)
+
+		key = keyValueSlice[0]
+		value = ""
+		if len(keyValueSlice) == 2 {
+			value = keyValueSlice[1]
+		}
+
+		mapType[key] = value
+	}
+	s.parts = mapType
+	return nil
 }
 
 func (s *SliceorMap) MapParts() map[string]string {

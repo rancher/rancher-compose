@@ -275,9 +275,17 @@ func (r *RancherService) createNormalService() (*rancherClient.Service, error) {
 	})
 }
 
+func (r *RancherService) getHealthCheck() *rancherClient.InstanceHealthCheck {
+	if config, ok := r.context.RancherConfig[r.name]; ok {
+		return config.HealthCheck
+	}
+
+	return nil
+}
+
 func (r *RancherService) getConfiguredScale() int {
 	scale := 1
-	if config, ok := r.context.RancherConfig[r.Name()]; ok {
+	if config, ok := r.context.RancherConfig[r.name]; ok {
 		if config.Scale > 0 {
 			scale = config.Scale
 		}
@@ -335,6 +343,10 @@ func (r *RancherService) getLinks() (map[string]interface{}, error) {
 		if len(parts) == 2 {
 			alias = parts[1]
 		}
+
+		name = strings.TrimSpace(name)
+		alias = strings.TrimSpace(alias)
+
 		linkedService, err := r.findExisting(name)
 		if err != nil {
 			return nil, err
@@ -431,6 +443,8 @@ func (r *RancherService) createLaunchConfig(serviceConfig *project.ServiceConfig
 	if err != nil {
 		return result, err
 	}
+
+	result.HealthCheck = r.getHealthCheck()
 
 	setupNetworking(serviceConfig.Net, &result)
 	setupVolumesFrom(serviceConfig.VolumesFrom, &result)

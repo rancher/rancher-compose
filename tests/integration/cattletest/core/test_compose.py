@@ -548,6 +548,58 @@ web2:
     assert consumed[0].name == 'web2'
 
 
+def test_service_map_syntax(client, compose):
+    template = '''
+foo:
+    image: nginx
+    links:
+        web: alias
+web:
+    image: nginx
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    foo = _get_service(project.services(), 'foo')
+    maps = client.list_serviceConsumeMap(serviceId=foo.id)
+
+    assert len(maps) == 1
+    assert maps[0].name == 'alias'
+
+
+def test_service_link_with_space(client, compose):
+    template = '''
+foo:
+    image: nginx
+    links:
+    - "web: alias"
+web:
+    image: nginx
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    foo = _get_service(project.services(), 'foo')
+    maps = client.list_serviceConsumeMap(serviceId=foo.id)
+
+    assert len(maps) == 1
+    assert maps[0].name == 'alias'
+
+
+def test_healthchecks(client, compose):
+    project_name = create_project(compose, file='assets/health/test.yml')
+
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.name == 'web'
+    assert service.launchConfig.healthCheck.port == 80
+    assert service.launchConfig.healthCheck.interval == 2000
+    assert service.launchConfig.healthCheck.unhealthyThreshold == 3
+    assert service.launchConfig.healthCheck.requestLine == \
+        "OPTIONS /ping HTTP/1.1\r\nHost:\\ www.example.com"
+
+
 def _get_service(services, name):
     service = None
 

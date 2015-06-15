@@ -19,10 +19,7 @@ if [ ! -e ${PACKAGE} ]; then
     ln -s $(pwd) $PACKAGE
 fi
 
-VERSION=$(git tag -l --contains HEAD)
-if [ -z "$VERSION" ]; then
-    VERSION=$(git rev-parse --short HEAD)
-fi
+get_version
 
 echo export GOPATH=$GOPATH
 echo VERSION=$VERSION
@@ -30,6 +27,7 @@ echo VERSION=$VERSION
 go build -ldflags="-w -X github.com/rancherio/rancher-compose/librcompose.VERSION $VERSION" -o bin/${PROJECT}
 
 if [ -n "$BUILD_CROSS" ]; then
-    mkdir -p dist/artifacts
-    gox -os="darwin linux windows" -arch="386 amd64 arm" -output="dist/artifacts/rancher-compose_{{.OS}}-{{.Arch}}" -ldflags="-w -X github.com/rancherio/rancher-compose/librcompose.VERSION $VERSION"
+    rm -rf build/bin
+    mkdir -p build/bin
+    gox -os="darwin linux windows" -arch="386 amd64 arm" -output="build/bin/rancher-compose_{{.OS}}-{{.Arch}}" -ldflags="-w -X github.com/rancherio/rancher-compose/librcompose.VERSION $VERSION"
 fi

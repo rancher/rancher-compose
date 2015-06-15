@@ -84,7 +84,7 @@ func (s *Command) Slice() []string {
 	return s.parts
 }
 
-func NewCommand(parts []string) Command {
+func NewCommand(parts ...string) Command {
 	return Command{parts}
 }
 

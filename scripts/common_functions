@@ -8,3 +8,11 @@ set_project_vars()
 
     export GOPATH=$(pwd)/Godeps/_workspace:$(pwd)/gopath
 }
+
+get_version()
+{
+    VERSION=$(git tag -l --contains HEAD)
+    if [ -z "$VERSION" ]; then
+        VERSION=$(git rev-parse --short HEAD)
+    fi
+}

@@ -51,7 +51,7 @@ type ServiceConfig struct {
 	DnsSearch     Stringorslice     `yaml:"dns_search"` // omitempty breaks serialization!
 	Dockerfile    string            `yaml:"dockerfile,omitempty"`
 	DomainName    string            `yaml:"domainname,omitempty"`
-	Entrypoint    string            `yaml:"entrypoint,omitempty"`
+	Entrypoint    Command           `yaml:"entrypoint"`  // omitempty breaks serialization!
 	EnvFile       Stringorslice     `yaml:"env_file"`    // omitempty breaks serialization!
 	Environment   MaporEqualSlice   `yaml:"environment"` // omitempty breaks serialization!
 	Hostname      string            `yaml:"hostname,omitempty"`

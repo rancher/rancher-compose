@@ -21,6 +21,7 @@ func newTestConfig() TestConfig {
 		SystemContainers: map[string]*ServiceConfig{
 			"udev": {
 				Image:      "udev",
+				Entrypoint: Command{[]string{}},
 				Command:    Command{[]string{}},
 				Restart:    "always",
 				Net:        "host",
@@ -28,20 +29,21 @@ func newTestConfig() TestConfig {
 				Dns:        Stringorslice{[]string{"8.8.8.8", "8.8.4.4"}},
 				DnsSearch:  Stringorslice{[]string{}},
 				EnvFile:    Stringorslice{[]string{}},
+				Environment: MaporEqualSlice{[]string{
+					"DAEMON=true",
+				}},
 				Labels: SliceorMap{map[string]string{
 					"io.rancher.os.detach": "true",
 					"io.rancher.os.scope":  "system",
 				}},
 				Links: MaporColonSlice{[]string{}},
-				Environment: MaporEqualSlice{[]string{
-					"DAEMON=true",
-				}},
 				VolumesFrom: []string{
 					"system-volumes",
 				},
 			},
 			"system-volumes": {
 				Image:       "state",
+				Entrypoint:  Command{[]string{}},
 				Command:     Command{[]string{}},
 				Net:         "none",
 				ReadOnly:    true,

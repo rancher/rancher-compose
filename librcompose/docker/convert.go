@@ -6,8 +6,6 @@ import (
 	"github.com/docker/docker/nat"
 	"github.com/docker/docker/runconfig"
 	"github.com/rancherio/rancher-compose/librcompose/project"
-
-	shlex "github.com/flynn/go-shlex"
 )
 
 func Filter(vs []string, f func(string) bool) []string {
@@ -36,10 +34,6 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		volumes[v] = struct{}{}
 	}
 
-	entrypoint, err := shlex.Split(c.Entrypoint)
-	if err != nil {
-		return nil, nil, err
-	}
 	ports, binding, err := nat.ParsePortSpecs(c.Ports)
 	if err != nil {
 		return nil, nil, err
@@ -63,7 +57,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 	}
 
 	config := &runconfig.Config{
-		Entrypoint:   runconfig.NewEntrypoint(entrypoint...),
+		Entrypoint:   runconfig.NewEntrypoint(c.Entrypoint.Slice()...),
 		Hostname:     c.Hostname,
 		Domainname:   c.DomainName,
 		User:         c.User,

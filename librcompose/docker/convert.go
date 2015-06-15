@@ -92,6 +92,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		NetworkMode:    runconfig.NetworkMode(c.Net),
 		ReadonlyRootfs: c.ReadOnly,
 		PidMode:        runconfig.PidMode(c.Pid),
+		UTSMode:        runconfig.UTSMode(c.Uts),
 		IpcMode:        runconfig.IpcMode(c.Ipc),
 		PortBindings:   binding,
 		RestartPolicy:  restart,

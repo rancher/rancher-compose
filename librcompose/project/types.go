@@ -64,6 +64,7 @@ type ServiceConfig struct {
 	Name          string            `yaml:"name,omitempty"`
 	Net           string            `yaml:"net,omitempty"`
 	Pid           string            `yaml:"pid,omitempty"`
+	Uts           string            `yaml:"uts,omitempty"`
 	Ipc           string            `yaml:"ipc,omitempty"`
 	Ports         []string          `yaml:"ports,omitempty"`
 	Privileged    bool              `yaml:"privileged,omitempty"`

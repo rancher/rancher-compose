@@ -12,6 +12,90 @@ type StructStringorslice struct {
 	Foo Stringorslice
 }
 
+type TestConfig struct {
+	SystemContainers map[string]*ServiceConfig
+}
+
+func newTestConfig() TestConfig {
+	return TestConfig{
+		SystemContainers: map[string]*ServiceConfig{
+			"udev": {
+				Image:      "udev",
+				Command:    Command{[]string{}},
+				Restart:    "always",
+				Net:        "host",
+				Privileged: true,
+				Dns:        Stringorslice{[]string{"8.8.8.8", "8.8.4.4"}},
+				DnsSearch:  Stringorslice{[]string{}},
+				EnvFile:    Stringorslice{[]string{}},
+				Labels: SliceorMap{map[string]string{
+					"io.rancher.os.detach": "true",
+					"io.rancher.os.scope":  "system",
+				}},
+				Links: MaporColonSlice{[]string{}},
+				Environment: MaporEqualSlice{[]string{
+					"DAEMON=true",
+				}},
+				VolumesFrom: []string{
+					"system-volumes",
+				},
+			},
+			"system-volumes": {
+				Image:       "state",
+				Command:     Command{[]string{}},
+				Net:         "none",
+				ReadOnly:    true,
+				Privileged:  true,
+				Dns:         Stringorslice{[]string{}},
+				DnsSearch:   Stringorslice{[]string{}},
+				EnvFile:     Stringorslice{[]string{}},
+				Environment: MaporEqualSlice{[]string{}},
+				Labels: SliceorMap{map[string]string{
+					"io.rancher.os.createonly": "true",
+					"io.rancher.os.scope":      "system",
+				}},
+				Links: MaporColonSlice{[]string{}},
+				Volumes: []string{
+					"/dev:/host/dev",
+					"/var/lib/rancher/conf:/var/lib/rancher/conf",
+					"/etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt.rancher",
+					"/lib/modules:/lib/modules",
+					"/lib/firmware:/lib/firmware",
+					"/var/run:/var/run",
+					"/var/log:/var/log",
+				},
+				LogDriver: "json-file",
+			},
+		},
+	}
+}
+
+func TestMarshalConfig(t *testing.T) {
+	config := newTestConfig()
+	bytes, err := yaml.Marshal(config)
+	assert.Nil(t, err)
+
+	config2 := TestConfig{}
+
+	err = yaml.Unmarshal(bytes, &config2)
+	assert.Nil(t, err)
+
+	assert.Equal(t, config, config2)
+}
+
+func TestMarshalServiceConfig(t *testing.T) {
+	configPtr := newTestConfig().SystemContainers["udev"]
+	bytes, err := yaml.Marshal(configPtr)
+	assert.Nil(t, err)
+
+	configPtr2 := &ServiceConfig{}
+
+	err = yaml.Unmarshal(bytes, configPtr2)
+	assert.Nil(t, err)
+
+	assert.Equal(t, configPtr, configPtr2)
+}
+
 func TestStringorsliceYaml(t *testing.T) {
 	str := `{foo: [bar, baz]}`
 
@@ -30,16 +114,17 @@ func TestStringorsliceYaml(t *testing.T) {
 }
 
 type StructSliceorMap struct {
-	Foo SliceorMap
+	Foos SliceorMap //`yaml:",omitempty"` /*uncomment that `yaml` nonsense to crash the tests*/
+	Bars []string
 }
 
 func TestSliceOrMapYaml(t *testing.T) {
-	str := `{foo: [bar=baz, far=faz]}`
+	str := `{foos: [bar=baz, far=faz]}`
 
 	s := StructSliceorMap{}
 	yaml.Unmarshal([]byte(str), &s)
 
-	assert.Equal(t, map[string]string{"bar": "baz", "far": "faz"}, s.Foo.parts)
+	assert.Equal(t, map[string]string{"bar": "baz", "far": "faz"}, s.Foos.parts)
 
 	d, err := yaml.Marshal(&s)
 	assert.Nil(t, err)
@@ -47,7 +132,29 @@ func TestSliceOrMapYaml(t *testing.T) {
 	s2 := StructSliceorMap{}
 	yaml.Unmarshal(d, &s2)
 
-	assert.Equal(t, map[string]string{"bar": "baz", "far": "faz"}, s2.Foo.parts)
+	assert.Equal(t, map[string]string{"bar": "baz", "far": "faz"}, s2.Foos.parts)
+}
+
+var sampleStructSliceorMap = `udav:
+  foos:
+    io.rancher.os.bar: baz
+    io.rancher.os.far: faz
+  bars: []
+`
+
+func TestStr2SliceOrMapPtrMap(t *testing.T) {
+	s := map[string]*StructSliceorMap{"udav": {
+		Foos: SliceorMap{map[string]string{"io.rancher.os.bar": "baz", "io.rancher.os.far": "faz"}},
+		Bars: []string{},
+	}}
+	d, err := yaml.Marshal(&s)
+	assert.Nil(t, err)
+	assert.Equal(t, sampleStructSliceorMap, string(d))
+
+	s2 := map[string]*StructSliceorMap{}
+	yaml.Unmarshal(d, &s2)
+
+	assert.Equal(t, s, s2)
 }
 
 type StructMaporslice struct {

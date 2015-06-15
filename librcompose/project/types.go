@@ -44,20 +44,20 @@ type ServiceConfig struct {
 	CapDrop       []string          `yaml:"cap_drop,omitempty"`
 	CpuSet        string            `yaml:"cpu_set,omitempty"`
 	CpuShares     int64             `yaml:"cpu_shares,omitempty"`
-	Command       Command           `yaml:"command,omitempty"`
+	Command       Command           `yaml:"command"` // omitempty breaks serialization!
 	Detach        string            `yaml:"detach,omitempty"`
 	Devices       []string          `yaml:"devices,omitempty"`
-	Dns           Stringorslice     `yaml:"dns,omitempty"`
-	DnsSearch     Stringorslice     `yaml:"dns_search,omitempty"`
+	Dns           Stringorslice     `yaml:"dns"`        // omitempty breaks serialization!
+	DnsSearch     Stringorslice     `yaml:"dns_search"` // omitempty breaks serialization!
 	Dockerfile    string            `yaml:"dockerfile,omitempty"`
 	DomainName    string            `yaml:"domainname,omitempty"`
 	Entrypoint    string            `yaml:"entrypoint,omitempty"`
-	EnvFile       Stringorslice     `yaml:"env_file,omitempty"`
-	Environment   MaporEqualSlice   `yaml:"environment,omitempty"`
+	EnvFile       Stringorslice     `yaml:"env_file"`    // omitempty breaks serialization!
+	Environment   MaporEqualSlice   `yaml:"environment"` // omitempty breaks serialization!
 	Hostname      string            `yaml:"hostname,omitempty"`
 	Image         string            `yaml:"image,omitempty"`
-	Labels        SliceorMap        `yaml:"labels,omitempty"`
-	Links         MaporColonSlice   `yaml:"links,omitempty"`
+	Labels        SliceorMap        `yaml:"labels"` // omitempty breaks serialization!
+	Links         MaporColonSlice   `yaml:"links"`  // omitempty breaks serialization!
 	LogDriver     string            `yaml:"log_driver,omitempty"`
 	MemLimit      int64             `yaml:"mem_limit,omitempty"`
 	MemSwapLimit  int64             `yaml:"mem_swap_limit,omitempty"`

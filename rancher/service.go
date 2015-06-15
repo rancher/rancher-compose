@@ -572,7 +572,7 @@ func (r *RancherService) Log() error {
 
 func (r *RancherService) getLogFmt(container *rancherClient.Container) (string, string) {
 	pad := 0
-	for name, _ := range r.context.Project.Configs {
+	for name := range r.context.Project.Configs {
 		if len(name) > pad {
 			pad = len(name)
 		}

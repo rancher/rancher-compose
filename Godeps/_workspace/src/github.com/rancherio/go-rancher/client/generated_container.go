@@ -133,6 +133,8 @@ type Container struct {
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 
+	VolumeDriver string `json:"volumeDriver,omitempty" yaml:"volume_driver,omitempty"`
+
 	WorkingDir string `json:"workingDir,omitempty" yaml:"working_dir,omitempty"`
 }
 

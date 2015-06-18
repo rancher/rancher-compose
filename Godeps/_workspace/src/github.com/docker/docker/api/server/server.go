@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -13,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"code.google.com/p/go.net/websocket"
 	"github.com/gorilla/mux"
+	"golang.org/x/net/websocket"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api"
@@ -44,11 +45,7 @@ type ServerConfig struct {
 	CorsHeaders string
 	Version     string
 	SocketGroup string
-	Tls         bool
-	TlsVerify   bool
-	TlsCa       string
-	TlsCert     string
-	TlsKey      string
+	TLSConfig   *tls.Config
 }
 
 type Server struct {
@@ -253,6 +250,11 @@ func (s *Server) getVersion(version version.Version, w http.ResponseWriter, r *h
 		Os:         runtime.GOOS,
 		Arch:       runtime.GOARCH,
 	}
+
+	if version.GreaterThanOrEqualTo("1.19") {
+		v.Experimental = utils.ExperimentalBuild()
+	}
+
 	if kernelVersion, err := kernel.GetKernelVersion(); err == nil {
 		v.KernelVersion = kernelVersion.String()
 	}
@@ -272,14 +274,20 @@ func (s *Server) postContainersKill(version version.Version, w http.ResponseWrit
 	name := vars["name"]
 
 	// If we have a signal, look at it. Otherwise, do nothing
-	if sigStr := vars["signal"]; sigStr != "" {
+	if sigStr := r.Form.Get("signal"); sigStr != "" {
 		// Check if we passed the signal as a number:
 		// The largest legal signal is 31, so let's parse on 5 bits
-		sig, err := strconv.ParseUint(sigStr, 10, 5)
+		sigN, err := strconv.ParseUint(sigStr, 10, 5)
 		if err != nil {
 			// The signal is not a number, treat it as a string (either like
 			// "KILL" or like "SIGKILL")
-			sig = uint64(signal.SignalMap[strings.TrimPrefix(sigStr, "SIG")])
+			syscallSig, ok := signal.SignalMap[strings.TrimPrefix(sigStr, "SIG")]
+			if !ok {
+				return fmt.Errorf("Invalid signal: %s", sigStr)
+			}
+			sig = uint64(syscallSig)
+		} else {
+			sig = sigN
 		}
 
 		if sig == 0 {
@@ -387,6 +395,7 @@ func (s *Server) getEvents(version version.Version, w http.ResponseWriter, r *ht
 		}
 		until = u
 	}
+
 	timer := time.NewTimer(0)
 	timer.Stop()
 	if until > 0 {
@@ -445,6 +454,9 @@ func (s *Server) getEvents(version version.Version, w http.ResponseWriter, r *ht
 	}
 
 	current, l := es.Subscribe()
+	if since == -1 {
+		current = nil
+	}
 	defer es.Evict(l)
 	for _, ev := range current {
 		if ev.Time < since {
@@ -454,6 +466,12 @@ func (s *Server) getEvents(version version.Version, w http.ResponseWriter, r *ht
 			return err
 		}
 	}
+
+	var closeNotify <-chan bool
+	if closeNotifier, ok := w.(http.CloseNotifier); ok {
+		closeNotify = closeNotifier.CloseNotify()
+	}
+
 	for {
 		select {
 		case ev := <-l:
@@ -465,6 +483,9 @@ func (s *Server) getEvents(version version.Version, w http.ResponseWriter, r *ht
 				return err
 			}
 		case <-timer.C:
+			return nil
+		case <-closeNotify:
+			logrus.Debug("Client disconnected, stop sending events")
 			return nil
 		}
 	}
@@ -551,7 +572,16 @@ func (s *Server) getContainersStats(version version.Version, w http.ResponseWrit
 		return fmt.Errorf("Missing parameter")
 	}
 
-	return s.daemon.ContainerStats(vars["name"], boolValueOrDefault(r, "stream", true), ioutils.NewWriteFlusher(w))
+	stream := boolValueOrDefault(r, "stream", true)
+	var out io.Writer
+	if !stream {
+		w.Header().Set("Content-Type", "application/json")
+		out = w
+	} else {
+		out = ioutils.NewWriteFlusher(w)
+	}
+
+	return s.daemon.ContainerStats(vars["name"], stream, out)
 }
 
 func (s *Server) getContainersLogs(version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
@@ -577,6 +607,11 @@ func (s *Server) getContainersLogs(version version.Version, w http.ResponseWrite
 		since = time.Unix(s, 0)
 	}
 
+	var closeNotifier <-chan bool
+	if notifier, ok := w.(http.CloseNotifier); ok {
+		closeNotifier = notifier.CloseNotify()
+	}
+
 	logsConfig := &daemon.ContainerLogsConfig{
 		Follow:     boolValue(r, "follow"),
 		Timestamps: boolValue(r, "timestamps"),
@@ -585,6 +620,7 @@ func (s *Server) getContainersLogs(version version.Version, w http.ResponseWrite
 		UseStdout:  stdout,
 		UseStderr:  stderr,
 		OutStream:  ioutils.NewWriteFlusher(w),
+		Stop:       closeNotifier,
 	}
 
 	if err := s.daemon.ContainerLogs(vars["name"], logsConfig); err != nil {
@@ -633,10 +669,6 @@ func (s *Server) postCommit(version version.Version, w http.ResponseWriter, r *h
 	c, _, err := runconfig.DecodeContainerConfig(r.Body)
 	if err != nil && err != io.EOF { //Do not fail if body is empty.
 		return err
-	}
-
-	if c == nil {
-		c = &runconfig.Config{}
 	}
 
 	containerCommitConfig := &daemon.ContainerCommitConfig{
@@ -874,6 +906,7 @@ func (s *Server) postContainersCreate(version version.Version, w http.ResponseWr
 	if err != nil {
 		return err
 	}
+	adjustCpuShares(version, hostConfig)
 
 	containerId, warnings, err := s.daemon.ContainerCreate(name, config, hostConfig)
 	if err != nil {
@@ -1091,7 +1124,6 @@ func (s *Server) postContainersAttach(version version.Version, w http.ResponseWr
 		UseStderr: boolValue(r, "stderr"),
 		Logs:      boolValue(r, "logs"),
 		Stream:    boolValue(r, "stream"),
-		Multiplex: version.GreaterThanOrEqualTo("1.6"),
 	}
 
 	if err := s.daemon.ContainerAttachWithLogs(vars["name"], attachWithLogsConfig); err != nil {
@@ -1132,6 +1164,14 @@ func (s *Server) wsContainersAttach(version version.Version, w http.ResponseWrit
 func (s *Server) getContainersByName(version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	if vars == nil {
 		return fmt.Errorf("Missing parameter")
+	}
+
+	if version.LessThan("1.19") {
+		containerJSONRaw, err := s.daemon.ContainerInspectRaw(vars["name"])
+		if err != nil {
+			return err
+		}
+		return writeJSON(w, http.StatusOK, containerJSONRaw)
 	}
 
 	containerJSON, err := s.daemon.ContainerInspect(vars["name"])
@@ -1401,22 +1441,15 @@ func (s *Server) ping(version version.Version, w http.ResponseWriter, r *http.Re
 }
 
 func (s *Server) initTcpSocket(addr string) (l net.Listener, err error) {
-	if !s.cfg.TlsVerify {
+	if s.cfg.TLSConfig == nil || s.cfg.TLSConfig.ClientAuth != tls.RequireAndVerifyClientCert {
 		logrus.Warn("/!\\ DON'T BIND ON ANY IP ADDRESS WITHOUT setting -tlsverify IF YOU DON'T KNOW WHAT YOU'RE DOING /!\\")
 	}
-
-	var c *sockets.TlsConfig
-	if s.cfg.Tls || s.cfg.TlsVerify {
-		c = sockets.NewTlsConfig(s.cfg.TlsCert, s.cfg.TlsKey, s.cfg.TlsCa, s.cfg.TlsVerify)
-	}
-
-	if l, err = sockets.NewTcpSocket(addr, c, s.start); err != nil {
+	if l, err = sockets.NewTcpSocket(addr, s.cfg.TLSConfig, s.start); err != nil {
 		return nil, err
 	}
 	if err := allocateDaemonPort(addr); err != nil {
 		return nil, err
 	}
-
 	return
 }
 
@@ -1431,6 +1464,13 @@ func makeHttpHandler(logging bool, localMethod string, localRoute string, handle
 
 		if strings.Contains(r.Header.Get("User-Agent"), "Docker-Client/") {
 			userAgent := strings.Split(r.Header.Get("User-Agent"), "/")
+
+			// v1.20 onwards includes the GOOS of the client after the version
+			// such as Docker/1.7.0 (linux)
+			if len(userAgent) == 2 && strings.Contains(userAgent[1], " ") {
+				userAgent[1] = strings.Split(userAgent[1], " ")[0]
+			}
+
 			if len(userAgent) == 2 && !dockerVersion.Equal(version.Version(userAgent[1])) {
 				logrus.Debugf("Warning: client and server don't have the same version (client: %s, server: %s)", userAgent[1], dockerVersion)
 			}

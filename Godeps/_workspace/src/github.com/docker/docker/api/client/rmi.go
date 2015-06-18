@@ -14,7 +14,7 @@ import (
 // Usage: docker rmi [OPTIONS] IMAGE [IMAGE...]
 func (cli *DockerCli) CmdRmi(args ...string) error {
 	var (
-		cmd     = cli.Subcmd("rmi", "IMAGE [IMAGE...]", "Remove one or more images", true)
+		cmd     = cli.Subcmd("rmi", []string{"IMAGE [IMAGE...]"}, "Remove one or more images", true)
 		force   = cmd.Bool([]string{"f", "-force"}, false, "Force removal of the image")
 		noprune = cmd.Bool([]string{"-no-prune"}, false, "Do not delete untagged parents")
 	)
@@ -31,7 +31,7 @@ func (cli *DockerCli) CmdRmi(args ...string) error {
 
 	var errNames []string
 	for _, name := range cmd.Args() {
-		rdr, _, err := cli.call("DELETE", "/images/"+name+"?"+v.Encode(), nil, nil)
+		rdr, _, _, err := cli.call("DELETE", "/images/"+name+"?"+v.Encode(), nil, nil)
 		if err != nil {
 			fmt.Fprintf(cli.err, "%s\n", err)
 			errNames = append(errNames, name)

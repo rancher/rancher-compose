@@ -3,6 +3,7 @@ package client
 type RancherClient struct {
 	RancherBaseClient
 
+	Subscribe                                SubscribeOperations
 	Publish                                  PublishOperations
 	LogConfig                                LogConfigOperations
 	RestartPolicy                            RestartPolicyOperations
@@ -85,9 +86,9 @@ type RancherClient struct {
 	StoragePool                              StoragePoolOperations
 	Task                                     TaskOperations
 	TaskInstance                             TaskInstanceOperations
-	UserPreference                           UserPreferenceOperations
 	Volume                                   VolumeOperations
 	TypeDocumentation                        TypeDocumentationOperations
+	FieldDocumentation                       FieldDocumentationOperations
 	ContainerExec                            ContainerExecOperations
 	ContainerLogs                            ContainerLogsOperations
 	HostAccess                               HostAccessOperations
@@ -112,6 +113,7 @@ type RancherClient struct {
 	VmwarevcloudairConfig                    VmwarevcloudairConfigOperations
 	VmwarevsphereConfig                      VmwarevsphereConfigOperations
 	Machine                                  MachineOperations
+	HostApiProxyToken                        HostApiProxyTokenOperations
 	Register                                 RegisterOperations
 	RegistrationToken                        RegistrationTokenOperations
 }
@@ -123,6 +125,7 @@ func constructClient() *RancherClient {
 		},
 	}
 
+	client.Subscribe = newSubscribeClient(client)
 	client.Publish = newPublishClient(client)
 	client.LogConfig = newLogConfigClient(client)
 	client.RestartPolicy = newRestartPolicyClient(client)
@@ -205,9 +208,9 @@ func constructClient() *RancherClient {
 	client.StoragePool = newStoragePoolClient(client)
 	client.Task = newTaskClient(client)
 	client.TaskInstance = newTaskInstanceClient(client)
-	client.UserPreference = newUserPreferenceClient(client)
 	client.Volume = newVolumeClient(client)
 	client.TypeDocumentation = newTypeDocumentationClient(client)
+	client.FieldDocumentation = newFieldDocumentationClient(client)
 	client.ContainerExec = newContainerExecClient(client)
 	client.ContainerLogs = newContainerLogsClient(client)
 	client.HostAccess = newHostAccessClient(client)
@@ -232,6 +235,7 @@ func constructClient() *RancherClient {
 	client.VmwarevcloudairConfig = newVmwarevcloudairConfigClient(client)
 	client.VmwarevsphereConfig = newVmwarevsphereConfigClient(client)
 	client.Machine = newMachineClient(client)
+	client.HostApiProxyToken = newHostApiProxyTokenClient(client)
 	client.Register = newRegisterClient(client)
 	client.RegistrationToken = newRegistrationTokenClient(client)
 

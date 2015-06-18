@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/pkg/ioutils"
 	flag "github.com/docker/docker/pkg/mflag"
 	"github.com/docker/docker/pkg/units"
 )
@@ -13,11 +14,11 @@ import (
 //
 // Usage: docker info
 func (cli *DockerCli) CmdInfo(args ...string) error {
-	cmd := cli.Subcmd("info", "", "Display system-wide information", true)
+	cmd := cli.Subcmd("info", nil, "Display system-wide information", true)
 	cmd.Require(flag.Exact, 0)
 	cmd.ParseFlags(args, true)
 
-	rdr, _, err := cli.call("GET", "/info", nil, nil)
+	rdr, _, _, err := cli.call("GET", "/info", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -29,20 +30,20 @@ func (cli *DockerCli) CmdInfo(args ...string) error {
 
 	fmt.Fprintf(cli.out, "Containers: %d\n", info.Containers)
 	fmt.Fprintf(cli.out, "Images: %d\n", info.Images)
-	fmt.Fprintf(cli.out, "Storage Driver: %s\n", info.Driver)
+	ioutils.FprintfIfNotEmpty(cli.out, "Storage Driver: %s\n", info.Driver)
 	if info.DriverStatus != nil {
 		for _, pair := range info.DriverStatus {
 			fmt.Fprintf(cli.out, " %s: %s\n", pair[0], pair[1])
 		}
 	}
-	fmt.Fprintf(cli.out, "Execution Driver: %s\n", info.ExecutionDriver)
-	fmt.Fprintf(cli.out, "Logging Driver: %s\n", info.LoggingDriver)
-	fmt.Fprintf(cli.out, "Kernel Version: %s\n", info.KernelVersion)
-	fmt.Fprintf(cli.out, "Operating System: %s\n", info.OperatingSystem)
+	ioutils.FprintfIfNotEmpty(cli.out, "Execution Driver: %s\n", info.ExecutionDriver)
+	ioutils.FprintfIfNotEmpty(cli.out, "Logging Driver: %s\n", info.LoggingDriver)
+	ioutils.FprintfIfNotEmpty(cli.out, "Kernel Version: %s\n", info.KernelVersion)
+	ioutils.FprintfIfNotEmpty(cli.out, "Operating System: %s\n", info.OperatingSystem)
 	fmt.Fprintf(cli.out, "CPUs: %d\n", info.NCPU)
 	fmt.Fprintf(cli.out, "Total Memory: %s\n", units.BytesSize(float64(info.MemTotal)))
-	fmt.Fprintf(cli.out, "Name: %s\n", info.Name)
-	fmt.Fprintf(cli.out, "ID: %s\n", info.ID)
+	ioutils.FprintfIfNotEmpty(cli.out, "Name: %s\n", info.Name)
+	ioutils.FprintfIfNotEmpty(cli.out, "ID: %s\n", info.ID)
 
 	if info.Debug {
 		fmt.Fprintf(cli.out, "Debug mode (server): %v\n", info.Debug)
@@ -55,15 +56,9 @@ func (cli *DockerCli) CmdInfo(args ...string) error {
 		fmt.Fprintf(cli.out, "Docker Root Dir: %s\n", info.DockerRootDir)
 	}
 
-	if info.HttpProxy != "" {
-		fmt.Fprintf(cli.out, "Http Proxy: %s\n", info.HttpProxy)
-	}
-	if info.HttpsProxy != "" {
-		fmt.Fprintf(cli.out, "Https Proxy: %s\n", info.HttpsProxy)
-	}
-	if info.NoProxy != "" {
-		fmt.Fprintf(cli.out, "No Proxy: %s\n", info.NoProxy)
-	}
+	ioutils.FprintfIfNotEmpty(cli.out, "Http Proxy: %s\n", info.HttpProxy)
+	ioutils.FprintfIfNotEmpty(cli.out, "Https Proxy: %s\n", info.HttpsProxy)
+	ioutils.FprintfIfNotEmpty(cli.out, "No Proxy: %s\n", info.NoProxy)
 
 	if info.IndexServerAddress != "" {
 		u := cli.configFile.AuthConfigs[info.IndexServerAddress].Username
@@ -80,6 +75,12 @@ func (cli *DockerCli) CmdInfo(args ...string) error {
 	}
 	if !info.IPv4Forwarding {
 		fmt.Fprintf(cli.err, "WARNING: IPv4 forwarding is disabled.\n")
+	}
+	if !info.BridgeNfIptables {
+		fmt.Fprintf(cli.err, "WARNING: bridge-nf-call-iptables is disabled\n")
+	}
+	if !info.BridgeNfIp6tables {
+		fmt.Fprintf(cli.err, "WARNING: bridge-nf-call-ip6tables is disabled\n")
 	}
 	if info.Labels != nil {
 		fmt.Fprintln(cli.out, "Labels:")

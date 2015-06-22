@@ -5,7 +5,9 @@ cd $(dirname $0)/..
 
 export PATH=$GOPATH/bin:$PATH
 
+./scripts/clean
 ./scripts/bootstrap
 BUILD_CROSS=true ./scripts/build
 ./scripts/run-cattle
 ./scripts/test
+./scripts/package

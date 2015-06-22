@@ -57,3 +57,4 @@ web:
     security_opt:
     - "label:foo"
     - "label:bar"
+    volume_driver: foo

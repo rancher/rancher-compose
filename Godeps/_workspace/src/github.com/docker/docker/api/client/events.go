@@ -2,6 +2,7 @@ package client
 
 import (
 	"net/url"
+	"time"
 
 	"github.com/docker/docker/opts"
 	flag "github.com/docker/docker/pkg/mflag"
@@ -13,7 +14,7 @@ import (
 //
 // Usage: docker events [OPTIONS]
 func (cli *DockerCli) CmdEvents(args ...string) error {
-	cmd := cli.Subcmd("events", "", "Get real time events from the server", true)
+	cmd := cli.Subcmd("events", nil, "Get real time events from the server", true)
 	since := cmd.String([]string{"#since", "-since"}, "", "Show all events created since timestamp")
 	until := cmd.String([]string{"-until"}, "", "Stream events until this timestamp")
 	flFilter := opts.NewListOpts(nil)
@@ -36,11 +37,12 @@ func (cli *DockerCli) CmdEvents(args ...string) error {
 			return err
 		}
 	}
+	ref := time.Now()
 	if *since != "" {
-		v.Set("since", timeutils.GetTimestamp(*since))
+		v.Set("since", timeutils.GetTimestamp(*since, ref))
 	}
 	if *until != "" {
-		v.Set("until", timeutils.GetTimestamp(*until))
+		v.Set("until", timeutils.GetTimestamp(*until, ref))
 	}
 	if len(eventFilterArgs) > 0 {
 		filterJSON, err := filters.ToParam(eventFilterArgs)

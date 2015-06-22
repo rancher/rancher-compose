@@ -74,6 +74,7 @@ type ServiceConfig struct {
 	SecurityOpt   []string          `yaml:"security_opt,omitempty"`
 	Tty           bool              `yaml:"tty,omitempty"`
 	User          string            `yaml:"user,omitempty"`
+	VolumeDriver  string            `yaml:"volume_driver,omitempty"`
 	Volumes       []string          `yaml:"volumes,omitempty"`
 	VolumesFrom   []string          `yaml:"volumes_from,omitempty"`
 	WorkingDir    string            `yaml:"working_dir,omitempty"`

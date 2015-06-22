@@ -58,11 +58,15 @@ type LoadBalancerOperations interface {
 	ById(id string) (*LoadBalancer, error)
 	Delete(container *LoadBalancer) error
 
+	ActionActivate(*LoadBalancer) (*LoadBalancer, error)
+
 	ActionAddhost(*LoadBalancer, *AddRemoveLoadBalancerHostInput) (*LoadBalancer, error)
 
 	ActionAddtarget(*LoadBalancer, *AddRemoveLoadBalancerTargetInput) (*LoadBalancer, error)
 
 	ActionCreate(*LoadBalancer) (*LoadBalancer, error)
+
+	ActionDeactivate(*LoadBalancer) (*LoadBalancer, error)
 
 	ActionRemove(*LoadBalancer) (*LoadBalancer, error)
 
@@ -111,6 +115,15 @@ func (c *LoadBalancerClient) Delete(container *LoadBalancer) error {
 	return c.rancherClient.doResourceDelete(LOAD_BALANCER_TYPE, &container.Resource)
 }
 
+func (c *LoadBalancerClient) ActionActivate(resource *LoadBalancer) (*LoadBalancer, error) {
+
+	resp := &LoadBalancer{}
+
+	err := c.rancherClient.doAction(LOAD_BALANCER_TYPE, "activate", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
 func (c *LoadBalancerClient) ActionAddhost(resource *LoadBalancer, input *AddRemoveLoadBalancerHostInput) (*LoadBalancer, error) {
 
 	resp := &LoadBalancer{}
@@ -134,6 +147,15 @@ func (c *LoadBalancerClient) ActionCreate(resource *LoadBalancer) (*LoadBalancer
 	resp := &LoadBalancer{}
 
 	err := c.rancherClient.doAction(LOAD_BALANCER_TYPE, "create", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *LoadBalancerClient) ActionDeactivate(resource *LoadBalancer) (*LoadBalancer, error) {
+
+	resp := &LoadBalancer{}
+
+	err := c.rancherClient.doAction(LOAD_BALANCER_TYPE, "deactivate", &resource.Resource, nil, resp)
 
 	return resp, err
 }

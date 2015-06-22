@@ -48,7 +48,7 @@ func (cli *DockerCli) CmdStart(args ...string) error {
 		cErr chan error
 		tty  bool
 
-		cmd       = cli.Subcmd("start", "CONTAINER [CONTAINER...]", "Start one or more stopped containers", true)
+		cmd       = cli.Subcmd("start", []string{"CONTAINER [CONTAINER...]"}, "Start one or more stopped containers", true)
 		attach    = cmd.Bool([]string{"a", "-attach"}, false, "Attach STDOUT/STDERR and forward signals")
 		openStdin = cmd.Bool([]string{"i", "-interactive"}, false, "Attach container's STDIN")
 	)
@@ -61,7 +61,7 @@ func (cli *DockerCli) CmdStart(args ...string) error {
 			return fmt.Errorf("You cannot start and attach multiple containers at once.")
 		}
 
-		stream, _, err := cli.call("GET", "/containers/"+cmd.Arg(0)+"/json", nil, nil)
+		stream, _, _, err := cli.call("GET", "/containers/"+cmd.Arg(0)+"/json", nil, nil)
 		if err != nil {
 			return err
 		}

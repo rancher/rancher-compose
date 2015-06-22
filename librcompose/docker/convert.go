@@ -69,6 +69,7 @@ func Convert(c *project.ServiceConfig) (*runconfig.Config, *runconfig.HostConfig
 		Tty:          c.Tty,
 		OpenStdin:    c.StdinOpen,
 		WorkingDir:   c.WorkingDir,
+		VolumeDriver: c.VolumeDriver,
 		Volumes:      volumes,
 	}
 	host_config := &runconfig.HostConfig{

@@ -11,6 +11,8 @@ type Cluster struct {
 
 	AgentId string `json:"agentId,omitempty" yaml:"agent_id,omitempty"`
 
+	AgentState string `json:"agentState,omitempty" yaml:"agent_state,omitempty"`
+
 	ApiProxy string `json:"apiProxy,omitempty" yaml:"api_proxy,omitempty"`
 
 	ComputeTotal int64 `json:"computeTotal,omitempty" yaml:"compute_total,omitempty"`

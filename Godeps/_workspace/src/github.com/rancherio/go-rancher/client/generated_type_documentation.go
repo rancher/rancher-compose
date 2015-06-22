@@ -8,6 +8,8 @@ type TypeDocumentation struct {
 	Resource
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+
+	ResourceFields map[string]interface{} `json:"resourceFields,omitempty" yaml:"resource_fields,omitempty"`
 }
 
 type TypeDocumentationCollection struct {

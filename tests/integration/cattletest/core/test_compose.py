@@ -28,6 +28,7 @@ class Compose(object):
 
     def call(self, *args):
         env = {
+            'RANCHER_CLIENT_DEBUG': 'true',
             'RANCHER_ACCESS_KEY': self.client._access_key,
             'RANCHER_SECRET_KEY': self.client._secret_key,
             'RANCHER_URL': self.client._url,
@@ -159,6 +160,7 @@ def test_args(client, compose):
     }
     assert service.launchConfig.extraHosts == ['host:1.1.1.1', 'host:2.2.2.2']
     assert service.launchConfig.networkMode == 'host'
+    assert service.launchConfig.volumeDriver == 'foo'
     assert service.launchConfig.build == {
         'dockerfile': 'something/other',
         'remote': 'github.com/ibuildthecloud/tiny-build',

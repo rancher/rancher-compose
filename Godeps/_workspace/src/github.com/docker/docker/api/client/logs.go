@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	flag "github.com/docker/docker/pkg/mflag"
@@ -15,7 +16,7 @@ import (
 // docker logs [OPTIONS] CONTAINER
 func (cli *DockerCli) CmdLogs(args ...string) error {
 	var (
-		cmd    = cli.Subcmd("logs", "CONTAINER", "Fetch the logs of a container", true)
+		cmd    = cli.Subcmd("logs", []string{"CONTAINER"}, "Fetch the logs of a container", true)
 		follow = cmd.Bool([]string{"f", "-follow"}, false, "Follow log output")
 		since  = cmd.String([]string{"-since"}, "", "Show logs since timestamp")
 		times  = cmd.Bool([]string{"t", "-timestamps"}, false, "Show timestamps")
@@ -27,7 +28,7 @@ func (cli *DockerCli) CmdLogs(args ...string) error {
 
 	name := cmd.Arg(0)
 
-	stream, _, err := cli.call("GET", "/containers/"+name+"/json", nil, nil)
+	stream, _, _, err := cli.call("GET", "/containers/"+name+"/json", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -46,7 +47,7 @@ func (cli *DockerCli) CmdLogs(args ...string) error {
 	v.Set("stderr", "1")
 
 	if *since != "" {
-		v.Set("since", timeutils.GetTimestamp(*since))
+		v.Set("since", timeutils.GetTimestamp(*since, time.Now()))
 	}
 
 	if *times {

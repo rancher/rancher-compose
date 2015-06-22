@@ -21,7 +21,7 @@ import (
 //
 // Usage: docker images [OPTIONS] [REPOSITORY]
 func (cli *DockerCli) CmdImages(args ...string) error {
-	cmd := cli.Subcmd("images", "[REPOSITORY]", "List images", true)
+	cmd := cli.Subcmd("images", []string{"[REPOSITORY]"}, "List images", true)
 	quiet := cmd.Bool([]string{"q", "-quiet"}, false, "Only show numeric IDs")
 	all := cmd.Bool([]string{"a", "-all"}, false, "Show all images (default hides intermediate images)")
 	noTrunc := cmd.Bool([]string{"#notrunc", "-no-trunc"}, false, "Don't truncate output")
@@ -61,7 +61,7 @@ func (cli *DockerCli) CmdImages(args ...string) error {
 		v.Set("all", "1")
 	}
 
-	rdr, _, err := cli.call("GET", "/images/json?"+v.Encode(), nil, nil)
+	rdr, _, _, err := cli.call("GET", "/images/json?"+v.Encode(), nil, nil)
 	if err != nil {
 		return err
 	}

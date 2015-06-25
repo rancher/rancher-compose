@@ -17,6 +17,7 @@ import (
 	"github.com/rancherio/go-rancher/hostaccess"
 	"github.com/rancherio/rancher-compose/librcompose/docker"
 	"github.com/rancherio/rancher-compose/librcompose/project"
+	"github.com/rancherio/rancher-compose/librcompose/util"
 )
 
 const (
@@ -227,7 +228,8 @@ func (r *RancherService) createLbService() (*rancherClient.Service, error) {
 		Name:               r.name,
 		LoadBalancerConfig: lbConfig,
 		LaunchConfig: rancherClient.LaunchConfig{
-			Ports: r.serviceConfig.Ports,
+			Ports:  r.serviceConfig.Ports,
+			Labels: util.ConvertToInterfaceMap(r.serviceConfig.Labels.MapParts()),
 		},
 		Scale:         int64(r.getConfiguredScale()),
 		EnvironmentId: r.context.Environment.Id,

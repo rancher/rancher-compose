@@ -10,3 +10,12 @@ func Convert(src, target interface{}) error {
 
 	return yaml.Unmarshal(newBytes, target)
 }
+
+func ConvertToInterfaceMap(input map[string]string) map[string]interface{} {
+	result := map[string]interface{}{}
+	for k, v := range input {
+		result[k] = v
+	}
+
+	return result
+}

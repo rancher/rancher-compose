@@ -586,7 +586,7 @@ func (r *RancherService) getLogFmt(container *rancherClient.Container) (string, 
 
 	name := fmt.Sprintf("%-"+strconv.Itoa(pad)+"s", strings.TrimPrefix(container.Name, r.context.ProjectName+"_"))
 
-	return logFmt, name
+	return logFmt + "\n", name
 }
 
 func (r *RancherService) pipeLogs(container *rancherClient.Container, conn *websocket.Conn) {

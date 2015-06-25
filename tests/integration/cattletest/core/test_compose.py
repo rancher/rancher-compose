@@ -523,6 +523,9 @@ lb:
     image: rancher/load-balancer-service
     links:
     - web
+    labels:
+      a: b
+      c: d
 web:
     image: nginx
 '''
@@ -534,6 +537,11 @@ web:
     consumed = lb.consumedservices()
     assert len(consumed) == 1
     assert consumed[0].name == 'web'
+
+    assert lb.launchConfig.labels == {
+        'a': 'b',
+        'c': 'd',
+    }
 
     template2 = '''
 lb:

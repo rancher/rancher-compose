@@ -167,6 +167,25 @@ def test_args(client, compose):
     }
 
 
+def test_git_build(client, compose):
+    template = '''
+nginx:
+  build: github.com/ibuildthecloud/tiny-build
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.launchConfig.build == {
+        'remote': 'github.com/ibuildthecloud/tiny-build',
+    }
+    assert service.launchConfig.imageUuid is not None
+
+    prefix = 'docker:{}_nginx_'.format(project_name)
+    assert service.launchConfig.imageUuid.startswith(prefix)
+
+
 def test_network_bridge(client, compose):
     template = '''
 web:

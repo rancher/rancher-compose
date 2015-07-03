@@ -121,6 +121,7 @@ type Service interface {
 	Restart() error
 	Log() error
 	Config() *ServiceConfig
+	DependentServices() []string
 	Scale(count int) error
 }
 

@@ -574,6 +574,10 @@ func (r *RancherService) Log() error {
 	return nil
 }
 
+func (r *RancherService) DependentServices() []string {
+	return r.Config().Links.Slice()
+}
+
 func (r *RancherService) getLogFmt(container *rancherClient.Container) (string, string) {
 	pad := 0
 	for name := range r.context.Project.Configs {

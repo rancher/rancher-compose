@@ -411,6 +411,8 @@ func (r *RancherService) setupBuild(result *rancherClient.LaunchConfig, serviceC
 				Dockerfile: serviceConfig.Dockerfile,
 			}
 			result.ImageUuid = "docker:" + image
+		} else if result.ImageUuid == "" {
+			result.ImageUuid = fmt.Sprintf("docker:%s_%s_%d", r.context.ProjectName, r.name, time.Now().UnixNano()/int64(time.Millisecond))
 		}
 	}
 

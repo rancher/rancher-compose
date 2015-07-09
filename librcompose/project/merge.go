@@ -202,7 +202,7 @@ func parse(configLookup ConfigLookup, inFile string, serviceData rawService, dat
 
 	baseService = clone(baseService)
 
-	fmt.Printf("merging\n%#v\n %#v\n", baseService, serviceData)
+	logrus.Debugf("Merging %#v, %#v", baseService, serviceData)
 
 	for k, v := range serviceData {
 		if ignore[k] {
@@ -217,7 +217,7 @@ func parse(configLookup ConfigLookup, inFile string, serviceData rawService, dat
 		}
 	}
 
-	fmt.Printf("result\n%#v\n", baseService)
+	logrus.Debugf("Merged result %#v", baseService)
 
 	return baseService, nil
 }

@@ -26,9 +26,12 @@ func (s *S3Uploader) Upload(p *project.Project, name string, reader io.ReadSeeke
 	bucketName := fmt.Sprintf("%s-%s", p.Name, someHash())
 	objectKey := fmt.Sprintf("%s-%s", name, hash[:12])
 
-	svc := s3.New(&aws.Config{
-		Region: "us-west-1",
-	})
+	config := aws.DefaultConfig.Copy()
+	if config.Region == "" {
+		config.Region = "us-east-1"
+	}
+
+	svc := s3.New(&config)
 
 	if err := getOrCreateBucket(svc, bucketName); err != nil {
 		return "", "", err

@@ -186,6 +186,32 @@ nginx:
     assert service.launchConfig.imageUuid.startswith(prefix)
 
 
+def test_circular_sidekick(client, compose):
+    template = '''
+primary:
+  stdin_open: true
+  image: busybox
+  command: cat
+  labels:
+    io.rancher.sidekicks: secondary
+  volumes_from:
+  - secondary
+
+secondary:
+  stdin_open: true
+  image: busybox
+  command: cat
+'''
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.launchConfig.dataVolumesFromLaunchConfigs == ['secondary']
+    secondary = filter(lambda x: x.name == 'secondary',
+                       service.secondaryLaunchConfigs)
+    assert len(secondary) == 1
+
+
 def test_network_bridge(client, compose):
     template = '''
 web:
@@ -572,6 +598,7 @@ web2:
 '''
     compose.check_call(template2, '--debug', '-f', '-', '-p', project_name,
                        'up', '-d')
+    lb = client.wait_success(lb)
     consumed = lb.consumedservices()
     assert len(consumed) == 1
     assert consumed[0].name == 'web2'

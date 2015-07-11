@@ -16,7 +16,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/docker/docker/utils"
-	"github.com/rancherio/rancher-compose/librcompose/project"
+	"github.com/docker/libcompose/project"
 )
 
 type Uploader interface {

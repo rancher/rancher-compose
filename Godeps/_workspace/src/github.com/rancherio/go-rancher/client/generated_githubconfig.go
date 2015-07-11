@@ -20,6 +20,8 @@ type Githubconfig struct {
 	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
 
 	Hostname string `json:"hostname,omitempty" yaml:"hostname,omitempty"`
+
+	Scheme string `json:"scheme,omitempty" yaml:"scheme,omitempty"`
 }
 
 type GithubconfigCollection struct {

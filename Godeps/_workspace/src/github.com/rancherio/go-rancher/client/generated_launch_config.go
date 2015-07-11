@@ -79,8 +79,6 @@ type LaunchConfig struct {
 
 	MemorySwap int64 `json:"memorySwap,omitempty" yaml:"memory_swap,omitempty"`
 
-	Name string `json:"name,omitempty" yaml:"name,omitempty"`
-
 	NativeContainer bool `json:"nativeContainer,omitempty" yaml:"native_container,omitempty"`
 
 	NetworkContainerId string `json:"networkContainerId,omitempty" yaml:"network_container_id,omitempty"`

@@ -1,6 +1,6 @@
 package rancher
 
-import "github.com/rancherio/rancher-compose/librcompose/project"
+import "github.com/docker/libcompose/project"
 
 type Sidekick struct {
 	project.EmptyService

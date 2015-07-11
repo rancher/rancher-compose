@@ -9,6 +9,8 @@ type OpenstackConfig struct {
 
 	AuthUrl string `json:"authUrl,omitempty" yaml:"auth_url,omitempty"`
 
+	AvailabilityZone string `json:"availabilityZone,omitempty" yaml:"availability_zone,omitempty"`
+
 	DomainId string `json:"domainId,omitempty" yaml:"domain_id,omitempty"`
 
 	DomainName string `json:"domainName,omitempty" yaml:"domain_name,omitempty"`

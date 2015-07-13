@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"gopkg.in/yaml.v2"
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/logger"
 )
@@ -15,6 +16,8 @@ type Context struct {
 	Log                 bool
 	ComposeFile         string
 	ComposeBytes        []byte
+	AnswersFile         string
+	Answers             map[string]string
 	ProjectName         string
 	isOpen              bool
 	ServiceFactory      ServiceFactory
@@ -57,6 +60,22 @@ func (c *Context) readComposeFile() error {
 	return nil
 }
 
+func (c *Context) readAnswersFile() error {
+	if c.AnswersFile != "" {
+		logrus.Debugf("Opening answers file: %s", c.AnswersFile)
+		if answersBytes, err := ioutil.ReadFile(c.AnswersFile); os.IsNotExist(err) {
+			logrus.Errorf("Failed to find %s", c.AnswersFile)
+		} else if err != nil {
+			logrus.Errorf("Failed to open %s", c.AnswersFile)
+			return err
+		} else {
+			return yaml.Unmarshal(answersBytes, &c.Answers)
+		}
+	}
+
+	return nil
+}
+
 func (c *Context) determineProject() error {
 	if c.ProjectName == "" {
 		f, err := filepath.Abs(c.ComposeFile)
@@ -88,6 +107,10 @@ func (c *Context) open() error {
 	}
 
 	if err := c.determineProject(); err != nil {
+		return err
+	}
+
+	if err := c.readAnswersFile(); err != nil {
 		return err
 	}
 

@@ -9,14 +9,25 @@ import (
 type Service struct {
 	project.EmptyService
 
-	tty           bool
 	name          string
 	serviceConfig *project.ServiceConfig
 	context       *Context
 }
 
+func (s *Service) Name() string {
+	return s.name
+}
+
+func (s *Service) Config() *project.ServiceConfig {
+	return s.serviceConfig
+}
+
+func (s *Service) DependentServices() []project.ServiceRelationship {
+	return project.DefaultDependentServices(s.context.Project, s)
+}
+
 func (s *Service) Create() error {
-	_, err := s.doCreate()
+	_, err := s.doCreate(true)
 	return err
 }
 
@@ -29,13 +40,20 @@ func (s *Service) collectContainers() ([]*Container, error) {
 	result := []*Container{}
 
 	for _, container := range containers {
-		result = append(result, NewContainer(container.Names[0][1:], s))
+		result = append(result, NewContainer(container.Labels[NAME.Str()], s))
 	}
 
 	return result, nil
 }
 
-func (s *Service) doCreate() (*Container, error) {
+func (s *Service) doCreate(create bool) (*Container, error) {
+	containers, err := s.collectContainers()
+	if err != nil {
+		return nil, err
+	} else if len(containers) > 0 {
+		return containers[0], err
+	}
+
 	containerName, err := OneName(s.context.Client, s.context.Project.Name, s.name)
 	if err != nil {
 		return nil, err
@@ -43,7 +61,9 @@ func (s *Service) doCreate() (*Container, error) {
 
 	c := NewContainer(containerName, s)
 
-	_, err = c.Create()
+	if create {
+		_, err = c.Create()
+	}
 	return c, err
 }
 
@@ -66,7 +86,7 @@ func (s *Service) up(create bool) error {
 	//TODO: Replace here if needed
 
 	if len(containers) == 0 && create {
-		c, err := s.doCreate()
+		c, err := s.doCreate(true)
 		if err != nil {
 			return err
 		}
@@ -104,8 +124,43 @@ func (s *Service) Down() error {
 	})
 }
 
+func (s *Service) Restart() error {
+	return s.eachContainer(func(c *Container) error {
+		return c.Restart()
+	})
+}
+
+func (s *Service) Delete() error {
+	return s.eachContainer(func(c *Container) error {
+		return c.Delete()
+	})
+}
+
 func (s *Service) Log() error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Log()
 	})
+}
+
+func (s *Service) Pull() error {
+	c, err := s.doCreate(false)
+	if err != nil {
+		return err
+	}
+
+	return c.Pull()
+}
+
+func (s *Service) Containers() ([]project.Container, error) {
+	result := []project.Container{}
+	containers, err := s.collectContainers()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range containers {
+		result = append(result, c)
+	}
+
+	return result, nil
 }

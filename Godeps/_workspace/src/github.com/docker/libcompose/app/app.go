@@ -69,6 +69,13 @@ func ProjectLog(p *project.Project, c *cli.Context) {
 	wait()
 }
 
+func ProjectPull(p *project.Project, c *cli.Context) {
+	err := p.Pull(c.Args()...)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
 func ProjectDelete(p *project.Project, c *cli.Context) {
 	if !c.Bool("force") && len(c.Args()) == 0 {
 		logrus.Fatal("Will not remove all services with out --force")

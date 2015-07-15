@@ -36,6 +36,14 @@ func StartCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+func PullCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "pull",
+		Usage:  "Pulls images for services",
+		Action: app.WithProject(factory, app.ProjectPull),
+	}
+}
+
 func LogsCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "logs",
@@ -56,6 +64,13 @@ func RestartCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "restart",
 		Usage:  "Restart services",
 		Action: app.WithProject(factory, app.ProjectRestart),
+		Flags: []cli.Flag{
+			cli.IntFlag{
+				Name:  "timeout,t",
+				Usage: "Specify a shutdown timeout in seconds.",
+				Value: 10,
+			},
+		},
 	}
 }
 
@@ -67,7 +82,7 @@ func StopCommand(factory app.ProjectFactory) cli.Command {
 		Action:    app.WithProject(factory, app.ProjectDown),
 		Flags: []cli.Flag{
 			cli.IntFlag{
-				Name:  "timeout",
+				Name:  "timeout,t",
 				Usage: "Specify a shutdown timeout in seconds.",
 				Value: 10,
 			},
@@ -123,7 +138,7 @@ func Populate(context *project.Context, c *cli.Context) {
 		context.Log = true
 	} else if c.Command.Name == "up" {
 		context.Log = !c.Bool("d")
-	} else if c.Command.Name == "stop" {
+	} else if c.Command.Name == "stop" || c.Command.Name == "restart" {
 		context.Timeout = c.Int("timeout")
 	}
 }

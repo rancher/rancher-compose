@@ -431,7 +431,8 @@ func (r *RancherService) getLinks() (map[Link]string, error) {
 func setupNetworking(netMode string, launchConfig *rancherClient.LaunchConfig) {
 	if netMode == "" {
 		launchConfig.NetworkMode = "managed"
-	} else if runconfig.NetworkMode(netMode).IsContainer() {
+	} else if runconfig.IpcMode(netMode).IsContainer() {
+		// For some reason NetworkMode object is gone runconfig, but IpcMode works the same for this
 		launchConfig.NetworkMode = "container"
 		launchConfig.NetworkLaunchConfig = strings.TrimPrefix(netMode, "container:")
 	} else {
@@ -571,6 +572,25 @@ func (r *RancherService) Scale(count int) error {
 	return r.wait(service)
 }
 
+func (r *RancherService) Containers() ([]project.Container, error) {
+	result := []project.Container{}
+
+	containers, err := r.containers()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range containers {
+		name := c.Name
+		if name == "" {
+			name = c.Uuid
+		}
+		result = append(result, NewContainer(c.Id, name))
+	}
+
+	return result, nil
+}
+
 func (r *RancherService) containers() ([]rancherClient.Container, error) {
 	service, err := r.findExisting(r.name)
 	if err != nil {
@@ -638,10 +658,6 @@ func (r *RancherService) Log() error {
 	return nil
 }
 
-func (r *RancherService) DependentServices() []string {
-	return r.Config().Links.Slice()
-}
-
 func (r *RancherService) pipeLogs(container *rancherClient.Container, conn *websocket.Conn) {
 	defer conn.Close()
 
@@ -676,4 +692,21 @@ func (r *RancherService) pipeLogs(container *rancherClient.Container, conn *webs
 			logger.Err(message)
 		}
 	}
+}
+
+func (r *RancherService) DependentServices() []project.ServiceRelationship {
+	result := []project.ServiceRelationship{}
+
+	for _, rel := range project.DefaultDependentServices(r.context.Project, r) {
+		if rel.Type == project.REL_TYPE_LINK {
+			rel.Optional = true
+			result = append(result, rel)
+		}
+	}
+
+	return result
+}
+
+func (r *RancherService) Pull() error {
+	return nil
 }

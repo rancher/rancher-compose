@@ -1,16 +1,6 @@
 package project
 
 type EmptyService struct {
-	ServiceName   string
-	ServiceConfig *ServiceConfig
-}
-
-func (e *EmptyService) Name() string {
-	return e.ServiceName
-}
-
-func (e *EmptyService) Config() *ServiceConfig {
-	return e.ServiceConfig
 }
 
 func (e *EmptyService) Create() error {
@@ -35,16 +25,16 @@ func (e *EmptyService) Restart() error {
 
 func (e *EmptyService) Log() error {
 	return nil
-
 }
-func (e *EmptyService) Scale(count int) error {
+
+func (e *EmptyService) Pull() error {
 	return nil
 }
 
-func (e *EmptyService) DependentServices() []string {
-	config := e.Config()
-	if config != nil {
-		return append(config.Links.Slice(), config.VolumesFrom...)
-	}
-	return []string{}
+func (e *EmptyService) Containers() ([]Container, error) {
+	return []Container{}, nil
+}
+
+func (e *EmptyService) Scale(count int) error {
+	return nil
 }

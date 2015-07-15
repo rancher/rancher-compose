@@ -201,6 +201,12 @@ func (p *Project) Log(services ...string) error {
 	}))
 }
 
+func (p *Project) Pull(services ...string) error {
+	return p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Pull(wrappers)
+	}))
+}
+
 func (p *Project) Delete(services ...string) error {
 	p.Notify(PROJECT_DELETE_START, "", nil)
 

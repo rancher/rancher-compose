@@ -40,6 +40,10 @@ func (s *Sidekick) Config() *project.ServiceConfig {
 	return &config
 }
 
+func (s *Sidekick) DependentServices() []project.ServiceRelationship {
+	return project.DefaultDependentServices(s.context.Project, s)
+}
+
 func (s *Sidekick) Log() error {
 	return nil
 }

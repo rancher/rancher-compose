@@ -248,31 +248,31 @@
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/app",
-			"Rev": "b182def01e07acaa6c8aa436c1ba08f934242a37"
+			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/command",
-			"Rev": "b182def01e07acaa6c8aa436c1ba08f934242a37"
+			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/docker",
-			"Rev": "b182def01e07acaa6c8aa436c1ba08f934242a37"
+			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/logger",
-			"Rev": "b182def01e07acaa6c8aa436c1ba08f934242a37"
+			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/lookup",
-			"Rev": "b182def01e07acaa6c8aa436c1ba08f934242a37"
+			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/project",
-			"Rev": "b182def01e07acaa6c8aa436c1ba08f934242a37"
+			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/utils",
-			"Rev": "b182def01e07acaa6c8aa436c1ba08f934242a37"
+			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
 		},
 		{
 			"ImportPath": "github.com/docker/libcontainer/user",

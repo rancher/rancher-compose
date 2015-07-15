@@ -1,7 +1,6 @@
 package project
 
 import (
-	"strings"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
@@ -14,6 +13,7 @@ type serviceWrapper struct {
 	state   ServiceState
 	err     error
 	project *Project
+	noWait  bool
 }
 
 func newServiceWrapper(name string, p *Project) (*serviceWrapper, error) {
@@ -104,17 +104,39 @@ func (s *serviceWrapper) Delete(wrappers map[string]*serviceWrapper) {
 	}
 }
 
+func (s *serviceWrapper) Pull(wrappers map[string]*serviceWrapper) {
+	defer s.done.Done()
+
+	if s.state == EXECUTED {
+		return
+	}
+
+	s.state = EXECUTED
+
+	s.project.Notify(SERVICE_PULL_START, s.service.Name(), nil)
+
+	s.err = s.service.Pull()
+	if s.err != nil {
+		log.Errorf("Failed to pull %s : %v", s.service.Config().Image, s.err)
+	} else {
+		s.project.Notify(SERVICE_PULL, s.service.Name(), nil)
+	}
+}
+
 func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
-	for _, link := range s.service.DependentServices() {
-		name := strings.Split(link, ":")[0]
-		if wrapper, ok := wrappers[name]; ok {
+	if s.noWait {
+		return true
+	}
+
+	for _, dep := range s.service.DependentServices() {
+		if wrapper, ok := wrappers[dep.Target]; ok {
 			if wrapper.Wait() == ErrRestart {
 				s.project.Notify(PROJECT_RELOAD, wrapper.service.Name(), nil)
 				s.err = ErrRestart
 				return false
 			}
 		} else {
-			log.Errorf("Failed to find %s", name)
+			log.Errorf("Failed to find %s", dep.Target)
 		}
 	}
 
@@ -187,7 +209,7 @@ func (s *serviceWrapper) Create(wrappers map[string]*serviceWrapper) {
 
 	s.err = s.service.Create()
 	if s.err != nil {
-		log.Errorf("Failed to start %s : %v", s.name, s.err)
+		log.Errorf("Failed to create %s : %v", s.name, s.err)
 	} else {
 		s.project.Notify(SERVICE_CREATE, s.service.Name(), nil)
 	}

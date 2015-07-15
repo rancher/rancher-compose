@@ -2,6 +2,8 @@ package docker
 
 import (
 	"bufio"
+	"fmt"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/cliconfig"
@@ -30,16 +32,6 @@ func NewContainer(name string, service *Service) *Container {
 }
 
 func (c *Container) findExisting() (*dockerclient.Container, error) {
-	//if c.id != "" {
-	//	info, err := c.service.context.Client.InspectContainer(c.id)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	if c != nil {
-	//		c.name = info.Name[1:]
-	//	}
-	//}
-
 	return GetContainerByName(c.service.context.Client, c.name)
 }
 
@@ -72,6 +64,27 @@ func (c *Container) Down() error {
 	return nil
 }
 
+func (c *Container) Delete() error {
+	container, err := c.findExisting()
+	if err != nil || container == nil {
+		return err
+	}
+
+	info, err := c.service.context.Client.InspectContainer(container.Id)
+	if err != nil {
+		return err
+	}
+
+	if info.State.Running {
+		err := c.service.context.Client.StopContainer(container.Id, c.service.context.Timeout)
+		if err != nil {
+			return err
+		}
+	}
+
+	return c.service.context.Client.RemoveContainer(container.Id, true, false)
+}
+
 func (c *Container) Up() error {
 	var err error
 
@@ -92,7 +105,11 @@ func (c *Container) Up() error {
 	}
 
 	if !info.State.Running {
-		logrus.Debugf("Starting container: %s", container.Id)
+		logrus.Debugf("Starting container: %s: %#v", container.Id, info.HostConfig)
+		err = c.populateAdditionalHostConfig(info.HostConfig)
+		if err != nil {
+			return err
+		}
 		err := c.service.context.Client.StartContainer(container.Id, info.HostConfig)
 		return err
 	}
@@ -114,6 +131,11 @@ func (c *Container) createContainer() (*dockerclient.Container, error) {
 	config.Labels[SERVICE.Str()] = c.service.name
 	config.Labels[PROJECT.Str()] = c.service.context.Project.Name
 
+	err = c.populateAdditionalHostConfig(&config.HostConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	logrus.Debugf("Creating container %s %#v", c.name, config)
 
 	_, err = c.service.context.Client.CreateContainer(config, c.name)
@@ -129,8 +151,107 @@ func (c *Container) createContainer() (*dockerclient.Container, error) {
 	return c.findExisting()
 }
 
+func (c *Container) populateAdditionalHostConfig(hostConfig *dockerclient.HostConfig) error {
+	links := map[string]string{}
+
+	for _, link := range c.service.DependentServices() {
+		if _, ok := c.service.context.Project.Configs[link.Target]; !ok {
+			continue
+		}
+
+		service, err := c.service.context.Project.CreateService(link.Target)
+		if err != nil {
+			return err
+		}
+
+		containers, err := service.Containers()
+		if err != nil {
+			return err
+		}
+
+		if link.Type == project.REL_TYPE_LINK {
+			c.addLinks(links, service, link, containers)
+		} else if link.Type == project.REL_TYPE_IPC_NAMESPACE {
+			hostConfig, err = c.addIpc(hostConfig, service, containers)
+		} else if link.Type == project.REL_TYPE_NET_NAMESPACE {
+			hostConfig, err = c.addNetNs(hostConfig, service, containers)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	hostConfig.Links = []string{}
+	for k, v := range links {
+		hostConfig.Links = append(hostConfig.Links, strings.Join([]string{v, k}, ":"))
+	}
+
+	return nil
+}
+
+func (c *Container) addLinks(links map[string]string, service project.Service, rel project.ServiceRelationship, containers []project.Container) {
+	for _, container := range containers {
+		if _, ok := links[rel.Alias]; !ok {
+			links[rel.Alias] = container.Name()
+		}
+
+		links[container.Name()] = container.Name()
+	}
+}
+
+func (c *Container) addIpc(config *dockerclient.HostConfig, service project.Service, containers []project.Container) (*dockerclient.HostConfig, error) {
+	if len(containers) == 0 {
+		return nil, fmt.Errorf("Failed to find container for IPC %", c.service.Config().Ipc)
+	}
+
+	id, err := containers[0].Id()
+	if err != nil {
+		return nil, err
+	}
+
+	config.IpcMode = "container:" + id
+	return config, nil
+}
+
+func (c *Container) addNetNs(config *dockerclient.HostConfig, service project.Service, containers []project.Container) (*dockerclient.HostConfig, error) {
+	if len(containers) == 0 {
+		return nil, fmt.Errorf("Failed to find container for networks ns %", c.service.Config().Net)
+	}
+
+	id, err := containers[0].Id()
+	if err != nil {
+		return nil, err
+	}
+
+	config.NetworkMode = "container:" + id
+	return config, nil
+}
+
+func (c *Container) Id() (string, error) {
+	container, err := c.findExisting()
+	if container == nil {
+		return "", err
+	} else {
+		return container.Id, err
+	}
+}
+
+func (c *Container) Name() string {
+	return c.name
+}
+
 func (c *Container) Pull() error {
 	return c.pull(c.service.serviceConfig.Image)
+}
+
+func (c *Container) Restart() error {
+	container, err := c.findExisting()
+	if err != nil || container == nil {
+		return err
+	}
+
+	return c.service.context.Client.RestartContainer(container.Id, c.service.context.Timeout)
 }
 
 func (c *Container) Log() error {

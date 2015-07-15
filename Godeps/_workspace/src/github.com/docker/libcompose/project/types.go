@@ -21,6 +21,8 @@ const (
 	SERVICE_DOWN          = Event("Stopped")
 	SERVICE_RESTART_START = Event("Restarting")
 	SERVICE_RESTART       = Event("Restarted")
+	SERVICE_PULL_START    = Event("Pulling")
+	SERVICE_PULL          = Event("Pulled")
 
 	PROJECT_DOWN_START     = Event("Stopping project")
 	PROJECT_DOWN_DONE      = Event("Project stopped")
@@ -102,11 +104,6 @@ type Project struct {
 	hasListeners   bool
 }
 
-type Container struct {
-	Name  string
-	State string
-}
-
 type Service interface {
 	Name() string
 	Create() error
@@ -115,11 +112,40 @@ type Service interface {
 	Delete() error
 	Restart() error
 	Log() error
+	Pull() error
 	Config() *ServiceConfig
-	DependentServices() []string
+	DependentServices() []ServiceRelationship
+	Containers() ([]Container, error)
 	Scale(count int) error
+}
+
+type Container interface {
+	Id() (string, error)
+	Name() string
 }
 
 type ServiceFactory interface {
 	Create(project *Project, name string, serviceConfig *ServiceConfig) (Service, error)
+}
+
+type ServiceRelationshipType string
+
+const REL_TYPE_LINK = ServiceRelationshipType("")
+const REL_TYPE_NET_NAMESPACE = ServiceRelationshipType("netns")
+const REL_TYPE_IPC_NAMESPACE = ServiceRelationshipType("ipc")
+const REL_TYPE_VOLUMES_FROM = ServiceRelationshipType("volumesFrom")
+
+type ServiceRelationship struct {
+	Target, Alias string
+	Type          ServiceRelationshipType
+	Optional      bool
+}
+
+func NewServiceRelationship(nameAlias string, relType ServiceRelationshipType) ServiceRelationship {
+	name, alias := NameAlias(nameAlias)
+	return ServiceRelationship{
+		Target: name,
+		Alias:  alias,
+		Type:   relType,
+	}
 }

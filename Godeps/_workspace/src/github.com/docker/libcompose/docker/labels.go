@@ -12,6 +12,7 @@ const (
 	NAME    = Label("io.docker.compose.name")
 	PROJECT = Label("io.docker.compose.project")
 	SERVICE = Label("io.docker.compose.service")
+	HASH    = Label("io.docker.compose.config-hash")
 )
 
 func (f Label) Eq(value string) string {

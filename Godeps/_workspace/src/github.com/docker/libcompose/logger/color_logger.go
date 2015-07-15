@@ -38,12 +38,18 @@ func (c *ColorLoggerFactory) Create(name string) Logger {
 }
 
 func (c *ColorLogger) Out(bytes []byte) {
+	if len(bytes) == 0 {
+		return
+	}
 	logFmt, name := c.getLogFmt()
 	message := fmt.Sprintf(logFmt, name, string(bytes))
 	fmt.Print(message)
 }
 
 func (c *ColorLogger) Err(bytes []byte) {
+	if len(bytes) == 0 {
+		return
+	}
 	logFmt, name := c.getLogFmt()
 	message := fmt.Sprintf(logFmt, name, string(bytes))
 	fmt.Fprint(os.Stderr, message)

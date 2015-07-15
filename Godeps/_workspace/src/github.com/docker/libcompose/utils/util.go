@@ -83,3 +83,13 @@ func LabelFilter(key, value string) string {
 		"label": {fmt.Sprintf("%s=%s", key, value)},
 	})
 }
+
+func Contains(collection []string, key string) bool {
+	for _, value := range collection {
+		if value == key {
+			return true
+		}
+	}
+
+	return false
+}

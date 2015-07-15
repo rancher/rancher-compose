@@ -364,11 +364,11 @@ func (r *RancherService) getLbLinks() ([]interface{}, error) {
 func (r *RancherService) getLbLinkPorts(name string) ([]string, error) {
 	labelName := "io.rancher.loadbalancer.target." + name
 	v := r.serviceConfig.Labels.MapParts()[labelName]
-	if len(v) == 0 {
+	if v == "" {
 		if len(r.serviceConfig.Ports) != 1 {
 			return nil, fmt.Errorf("Failed to find target ports for %s, add label %s", name, labelName)
 		}
-		parts := strings.SplitN(r.serviceConfig.Ports[0], ",", 2)
+		parts := TrimSplit(TrimSplit(r.serviceConfig.Ports[0], "/", 2)[0], ":", 2)
 		if len(parts) == 2 {
 			return []string{parts[1]}, nil
 		} else {
@@ -376,7 +376,7 @@ func (r *RancherService) getLbLinkPorts(name string) ([]string, error) {
 		}
 	}
 
-	return strings.Split(v, ","), nil
+	return TrimSplit(v, ",", -1), nil
 }
 
 func (r *RancherService) getServiceLinks() ([]interface{}, error) {
@@ -709,4 +709,13 @@ func (r *RancherService) DependentServices() []project.ServiceRelationship {
 
 func (r *RancherService) Pull() error {
 	return nil
+}
+
+func TrimSplit(str, sep string, count int) []string {
+	result := []string{}
+	for _, i := range strings.SplitN(strings.TrimSpace(str), sep, count) {
+		result = append(result, strings.TrimSpace(i))
+	}
+
+	return result
 }

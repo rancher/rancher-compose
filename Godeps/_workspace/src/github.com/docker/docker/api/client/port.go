@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker/docker/nat"
 	flag "github.com/docker/docker/pkg/mflag"
+	"github.com/docker/docker/pkg/nat"
 )
 
 // CmdPort lists port mappings for a container.
@@ -22,6 +22,8 @@ func (cli *DockerCli) CmdPort(args ...string) error {
 	if err != nil {
 		return err
 	}
+
+	defer stream.Close()
 
 	var c struct {
 		NetworkSettings struct {

@@ -52,7 +52,7 @@ func (cli *DockerCli) pullImageCustomOut(image string, out io.Writer) error {
 		out:         out,
 		headers:     map[string][]string{"X-Registry-Auth": registryAuthHeader},
 	}
-	if err := cli.stream("POST", "/images/create?"+v.Encode(), sopts); err != nil {
+	if _, err := cli.stream("POST", "/images/create?"+v.Encode(), sopts); err != nil {
 		return err
 	}
 	return nil
@@ -115,6 +115,8 @@ func (cli *DockerCli) createContainer(config *runconfig.Config, hostConfig *runc
 	} else if err != nil {
 		return nil, err
 	}
+
+	defer stream.Close()
 
 	var response types.ContainerCreateResponse
 	if err := json.NewDecoder(stream).Decode(&response); err != nil {

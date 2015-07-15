@@ -21,6 +21,8 @@ type ServiceConsumeMap struct {
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
+	Ports []string `json:"ports,omitempty" yaml:"ports,omitempty"`
+
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`

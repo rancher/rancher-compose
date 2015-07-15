@@ -7,9 +7,7 @@ const (
 type AddRemoveServiceLinkInput struct {
 	Resource
 
-	Name string `json:"name,omitempty" yaml:"name,omitempty"`
-
-	ServiceId string `json:"serviceId,omitempty" yaml:"service_id,omitempty"`
+	ServiceLink ServiceLink `json:"serviceLink,omitempty" yaml:"service_link,omitempty"`
 }
 
 type AddRemoveServiceLinkInputCollection struct {

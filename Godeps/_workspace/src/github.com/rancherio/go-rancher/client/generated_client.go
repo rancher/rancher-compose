@@ -15,6 +15,7 @@ type RancherClient struct {
 	ExternalHandlerProcessConfig             ExternalHandlerProcessConfigOperations
 	ComposeConfig                            ComposeConfigOperations
 	InstanceHealthCheck                      InstanceHealthCheckOperations
+	ServiceLink                              ServiceLinkOperations
 	AddLoadBalancerInput                     AddLoadBalancerInputOperations
 	AddRemoveClusterHostInput                AddRemoveClusterHostInputOperations
 	AddRemoveLoadBalancerHostInput           AddRemoveLoadBalancerHostInputOperations
@@ -44,6 +45,9 @@ type RancherClient struct {
 	DnsService                               DnsServiceOperations
 	LaunchConfig                             LaunchConfigOperations
 	SecondaryLaunchConfig                    SecondaryLaunchConfigOperations
+	AddRemoveLoadBalancerServiceLinkInput    AddRemoveLoadBalancerServiceLinkInputOperations
+	SetLoadBalancerServiceLinksInput         SetLoadBalancerServiceLinksInputOperations
+	LoadBalancerServiceLink                  LoadBalancerServiceLinkOperations
 	Account                                  AccountOperations
 	Agent                                    AgentOperations
 	Certificate                              CertificateOperations
@@ -137,6 +141,7 @@ func constructClient() *RancherClient {
 	client.ExternalHandlerProcessConfig = newExternalHandlerProcessConfigClient(client)
 	client.ComposeConfig = newComposeConfigClient(client)
 	client.InstanceHealthCheck = newInstanceHealthCheckClient(client)
+	client.ServiceLink = newServiceLinkClient(client)
 	client.AddLoadBalancerInput = newAddLoadBalancerInputClient(client)
 	client.AddRemoveClusterHostInput = newAddRemoveClusterHostInputClient(client)
 	client.AddRemoveLoadBalancerHostInput = newAddRemoveLoadBalancerHostInputClient(client)
@@ -166,6 +171,9 @@ func constructClient() *RancherClient {
 	client.DnsService = newDnsServiceClient(client)
 	client.LaunchConfig = newLaunchConfigClient(client)
 	client.SecondaryLaunchConfig = newSecondaryLaunchConfigClient(client)
+	client.AddRemoveLoadBalancerServiceLinkInput = newAddRemoveLoadBalancerServiceLinkInputClient(client)
+	client.SetLoadBalancerServiceLinksInput = newSetLoadBalancerServiceLinksInputClient(client)
+	client.LoadBalancerServiceLink = newLoadBalancerServiceLinkClient(client)
 	client.Account = newAccountClient(client)
 	client.Agent = newAgentClient(client)
 	client.Certificate = newCertificateClient(client)

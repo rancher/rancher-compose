@@ -60,7 +60,7 @@ type LoadBalancerServiceOperations interface {
 
 	ActionActivate(*LoadBalancerService) (*Service, error)
 
-	ActionAddservicelink(*LoadBalancerService, *AddRemoveServiceLinkInput) (*Service, error)
+	ActionAddservicelink(*LoadBalancerService, *AddRemoveLoadBalancerServiceLinkInput) (*Service, error)
 
 	ActionCreate(*LoadBalancerService) (*Service, error)
 
@@ -68,9 +68,9 @@ type LoadBalancerServiceOperations interface {
 
 	ActionRemove(*LoadBalancerService) (*Service, error)
 
-	ActionRemoveservicelink(*LoadBalancerService, *AddRemoveServiceLinkInput) (*Service, error)
+	ActionRemoveservicelink(*LoadBalancerService, *AddRemoveLoadBalancerServiceLinkInput) (*Service, error)
 
-	ActionSetservicelinks(*LoadBalancerService, *SetServiceLinksInput) (*Service, error)
+	ActionSetservicelinks(*LoadBalancerService, *SetLoadBalancerServiceLinksInput) (*Service, error)
 
 	ActionUpdate(*LoadBalancerService) (*Service, error)
 }
@@ -118,7 +118,7 @@ func (c *LoadBalancerServiceClient) ActionActivate(resource *LoadBalancerService
 	return resp, err
 }
 
-func (c *LoadBalancerServiceClient) ActionAddservicelink(resource *LoadBalancerService, input *AddRemoveServiceLinkInput) (*Service, error) {
+func (c *LoadBalancerServiceClient) ActionAddservicelink(resource *LoadBalancerService, input *AddRemoveLoadBalancerServiceLinkInput) (*Service, error) {
 
 	resp := &Service{}
 
@@ -154,7 +154,7 @@ func (c *LoadBalancerServiceClient) ActionRemove(resource *LoadBalancerService) 
 	return resp, err
 }
 
-func (c *LoadBalancerServiceClient) ActionRemoveservicelink(resource *LoadBalancerService, input *AddRemoveServiceLinkInput) (*Service, error) {
+func (c *LoadBalancerServiceClient) ActionRemoveservicelink(resource *LoadBalancerService, input *AddRemoveLoadBalancerServiceLinkInput) (*Service, error) {
 
 	resp := &Service{}
 
@@ -163,7 +163,7 @@ func (c *LoadBalancerServiceClient) ActionRemoveservicelink(resource *LoadBalanc
 	return resp, err
 }
 
-func (c *LoadBalancerServiceClient) ActionSetservicelinks(resource *LoadBalancerService, input *SetServiceLinksInput) (*Service, error) {
+func (c *LoadBalancerServiceClient) ActionSetservicelinks(resource *LoadBalancerService, input *SetLoadBalancerServiceLinksInput) (*Service, error) {
 
 	resp := &Service{}
 

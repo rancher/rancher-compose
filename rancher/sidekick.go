@@ -1,6 +1,6 @@
 package rancher
 
-import "github.com/rancherio/rancher-compose/librcompose/project"
+import "github.com/docker/libcompose/project"
 
 type Sidekick struct {
 	project.EmptyService
@@ -38,6 +38,10 @@ func (s *Sidekick) Config() *project.ServiceConfig {
 	config.VolumesFrom = []string{}
 
 	return &config
+}
+
+func (s *Sidekick) DependentServices() []project.ServiceRelationship {
+	return project.DefaultDependentServices(s.context.Project, s)
 }
 
 func (s *Sidekick) Log() error {

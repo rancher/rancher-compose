@@ -91,10 +91,10 @@ def create_project(compose, operation='create', project_name=None, file=None,
     if project_name is None:
         project_name = random_str()
     if file is not None:
-        compose.check_call(None, '--debug', '-f', file, '-p', project_name,
+        compose.check_call(None, '--verbose', '-f', file, '-p', project_name,
                            operation)
     elif input is not None:
-        compose.check_call(input, '--debug', '-f', '-', '-p', project_name,
+        compose.check_call(input, '--verbose', '-f', '-', '-p', project_name,
                            operation)
 
     PROJECTS.append(project_name)
@@ -169,9 +169,9 @@ def test_args(client, compose):
 
 def test_git_build(client, compose):
     template = '''
-nginx:
-  build: github.com/ibuildthecloud/tiny-build
-'''
+    nginx:
+      build: github.com/ibuildthecloud/tiny-build
+    '''
 
     project_name = create_project(compose, input=template)
     project = find_one(client.list_environment, name=project_name)
@@ -188,20 +188,20 @@ nginx:
 
 def test_circular_sidekick(client, compose):
     template = '''
-primary:
-  stdin_open: true
-  image: busybox
-  command: cat
-  labels:
-    io.rancher.sidekicks: secondary
-  volumes_from:
-  - secondary
+    primary:
+      stdin_open: true
+      image: busybox
+      command: cat
+      labels:
+        io.rancher.sidekicks: secondary
+      volumes_from:
+      - secondary
 
-secondary:
-  stdin_open: true
-  image: busybox
-  command: cat
-'''
+    secondary:
+      stdin_open: true
+      image: busybox
+      command: cat
+    '''
     project_name = create_project(compose, input=template)
     project = find_one(client.list_environment, name=project_name)
     service = find_one(project.services)
@@ -214,10 +214,10 @@ secondary:
 
 def test_network_bridge(client, compose):
     template = '''
-web:
-    net: bridge
-    image: nginx
-'''
+    web:
+        net: bridge
+        image: nginx
+    '''
 
     project_name = create_project(compose, input=template)
     project = find_one(client.list_environment, name=project_name)
@@ -228,10 +228,10 @@ web:
 
 def test_network_none(client, compose):
     template = '''
-web:
-    net: none
-    image: nginx
-'''
+    web:
+        net: none
+        image: nginx
+    '''
 
     project_name = create_project(compose, input=template)
     project = find_one(client.list_environment, name=project_name)
@@ -242,15 +242,15 @@ web:
 
 def test_network_container(compose, client):
     template = '''
-foo:
-    labels:
-        io.rancher.sidekicks: web
-    image: nginx
+    foo:
+        labels:
+            io.rancher.sidekicks: web
+        image: nginx
 
-web:
-    net: container:foo
-    image: nginx
-'''
+    web:
+        net: container:foo
+        image: nginx
+    '''
 
     project_name = create_project(compose, input=template)
     project = find_one(client.list_environment, name=project_name)
@@ -263,10 +263,10 @@ web:
 
 def test_network_managed(client, compose):
     template = '''
-web:
-    net: managed
-    image: nginx
-'''
+    web:
+        net: managed
+        image: nginx
+    '''
 
     project_name = create_project(compose, input=template)
     project = find_one(client.list_environment, name=project_name)
@@ -277,9 +277,9 @@ web:
 
 def test_network_default(client, compose):
     template = '''
-web:
-    image: nginx
-'''
+    web:
+        image: nginx
+    '''
 
     project_name = create_project(compose, input=template)
     project = find_one(client.list_environment, name=project_name)
@@ -327,10 +327,10 @@ def test_extends(client, compose):
 
 def test_restart_policies(client, compose):
     template = '''
-web:
-    restart: on-failure:5
-    image: nginx
-'''
+    web:
+        restart: on-failure:5
+        image: nginx
+    '''
 
     project_name = create_project(compose, input=template)
 
@@ -345,10 +345,10 @@ web:
 
 def test_restart_policies_on_failure_default(client, compose):
     template = '''
-web:
-    restart: on-failure
-    image: nginx
-'''
+    web:
+        restart: on-failure
+        image: nginx
+    '''
 
     project_name = create_project(compose, input=template)
 
@@ -362,15 +362,17 @@ web:
 
 def test_lb(client, compose):
     template = '''
-lb:
-    image: rancher/load-balancer-service
-    links:
-    - web
-    - web2
-web:
-    image: nginx
-web2:
-    image: nginx'''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 80
+        links:
+        - web
+        - web2
+    web:
+        image: nginx
+    web2:
+        image: nginx'''
 
     project_name = create_project(compose, input=template)
 
@@ -379,6 +381,76 @@ web2:
     lb = _get_service(project.services(), 'lb')
     _get_service(project.services(), 'web')
     _get_service(project.services(), 'web2')
+
+    assert lb.type == 'loadBalancerService'
+
+
+def test_lb_path_name(client, compose):
+    template = '''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 80:8080
+        labels:
+          io.rancher.loadbalancer.target.web: 6000:hostname/path,7000:hostname
+          io.rancher.loadbalancer.target.web2: 9000
+        links:
+        - web
+        - web2
+        - web3
+    web:
+        image: nginx
+    web2:
+        image: nginx
+    web3:
+        image: nginx'''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 4
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+    web2 = _get_service(project.services(), 'web2')
+    web3 = _get_service(project.services(), 'web2')
+
+    maps = client.list_service_consume_map(serviceId=lb.id)
+    assert len(maps) == 3
+
+    for map in maps:
+        if map.consumedServiceId == web.id:
+            assert map.ports == ['6000:hostname/path',
+                                 '7000:hostname']
+        elif map.consumedServiceId == web2.id:
+            assert map.ports == ['9000']
+        elif map.consumedServiceId == web3.id:
+            assert map.ports == ['8080']
+
+    assert lb.type == 'loadBalancerService'
+
+
+def test_lb_path_name_minimal(client, compose):
+    template = '''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 84
+        links:
+        - web
+    web:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 2
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+
+    map = find_one(client.list_service_consume_map, serviceId=lb.id)
+    assert map.ports == ['84']
+    assert map.consumedServiceId == web.id
 
     assert lb.type == 'loadBalancerService'
 
@@ -411,18 +483,18 @@ def test_lb_full_config(client, compose):
 
 def test_links(client, compose):
     template = '''
-web:
-    image: nginx
-db:
-    image: mysql
-    links:
-    - web
-other:
-    image: foo
-    links:
-    - web
-    - db
-'''
+    web:
+        image: nginx
+    db:
+        image: mysql
+        links:
+        - web
+    other:
+        image: foo
+        links:
+        - web
+        - db
+    '''
 
     project_name = create_project(compose, input=template)
 
@@ -446,15 +518,15 @@ other:
 
 def test_volumes_from(client, compose):
     template = '''
-web:
-    labels:
-        io.rancher.sidekicks: db
-    image: nginx
-db:
-    image: mysql
-    volumes_from:
-    - web
-'''
+    web:
+        labels:
+            io.rancher.sidekicks: db
+        image: nginx
+    db:
+        image: mysql
+        volumes_from:
+        - web
+    '''
     project_name = create_project(compose, input=template)
 
     project = find_one(client.list_environment, name=project_name)
@@ -466,15 +538,15 @@ db:
 
 def test_sidekick_simple(client, compose):
     template = '''
-web:
-    labels:
-        io.rancher.sidekicks: log
-    image: nginx
-log:
-    image: mysql
-log2:
-    image: bar
-'''
+    web:
+        labels:
+            io.rancher.sidekicks: log
+        image: nginx
+    log:
+        image: mysql
+    log2:
+        image: bar
+    '''
     project_name = create_project(compose, input=template)
 
     project = find_one(client.list_environment, name=project_name)
@@ -498,14 +570,14 @@ log2:
 
 def test_sidekick_container_network(client, compose):
     template = '''
-web:
-    labels:
-        io.rancher.sidekicks: log
-    image: nginx
-log:
-    net: container:web
-    image: mysql
-'''
+    web:
+        labels:
+            io.rancher.sidekicks: log
+        image: nginx
+    log:
+        net: container:web
+        image: mysql
+    '''
     project_name = create_project(compose, input=template)
 
     project = find_one(client.list_environment, name=project_name)
@@ -534,16 +606,16 @@ def test_external_ip(client, compose):
 
 def test_dns_service(client, compose):
     template = '''
-web1:
-    image: nginx
-web2:
-    image: nginx
-web:
-    image: rancher/dns-service
-    links:
-    - web1
-    - web2
-'''
+    web1:
+        image: nginx
+    web2:
+        image: nginx
+    web:
+        image: rancher/dns-service
+        links:
+        - web1
+        - web2
+    '''
     project_name = create_project(compose, input=template)
 
     project = find_one(client.list_environment, name=project_name)
@@ -564,16 +636,18 @@ web:
 
 def test_up_relink(client, compose):
     template = '''
-lb:
-    image: rancher/load-balancer-service
-    links:
-    - web
-    labels:
-      a: b
-      c: d
-web:
-    image: nginx
-'''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 80
+        links:
+        - web
+        labels:
+          a: b
+          c: d
+    web:
+        image: nginx
+    '''
 
     project_name = create_project(compose, input=template)
     project = find_one(client.list_environment, name=project_name)
@@ -589,30 +663,37 @@ web:
     }
 
     template2 = '''
-lb:
-    image: nginx
-    links:
-    - web2
-web2:
-    image: nginx
-'''
-    compose.check_call(template2, '--debug', '-f', '-', '-p', project_name,
+    lb:
+        image: nginx
+        ports:
+        - 80
+        links:
+        - web2
+    web2:
+        image: nginx
+    '''
+    compose.check_call(template2, '--verbose', '-f', '-', '-p', project_name,
                        'up', '-d')
-    lb = client.wait_success(lb)
-    consumed = lb.consumedservices()
+
+    def check():
+        x = lb.consumedservices()
+        if len(x) == 1:
+            return x
+
+    consumed = wait_for(check, timeout=5)
     assert len(consumed) == 1
     assert consumed[0].name == 'web2'
 
 
 def test_service_map_syntax(client, compose):
     template = '''
-foo:
-    image: nginx
-    links:
-        web: alias
-web:
-    image: nginx
-'''
+    foo:
+        image: nginx
+        links:
+            web: alias
+    web:
+        image: nginx
+    '''
 
     project_name = create_project(compose, input=template)
     project = find_one(client.list_environment, name=project_name)
@@ -625,13 +706,13 @@ web:
 
 def test_service_link_with_space(client, compose):
     template = '''
-foo:
-    image: nginx
-    links:
-    - "web: alias"
-web:
-    image: nginx
-'''
+    foo:
+        image: nginx
+        links:
+        - "web: alias"
+    web:
+        image: nginx
+    '''
 
     project_name = create_project(compose, input=template)
     project = find_one(client.list_environment, name=project_name)

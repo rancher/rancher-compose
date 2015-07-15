@@ -117,6 +117,9 @@ type Container struct {
 	SizeRootFs int `json:",omitempty"`
 	Labels     map[string]string
 	Status     string
+	HostConfig struct {
+		NetworkMode string `json:",omitempty"`
+	}
 }
 
 // POST "/containers/"+containerID+"/copy"
@@ -139,6 +142,7 @@ type Version struct {
 	Arch          string
 	KernelVersion string `json:",omitempty"`
 	Experimental  bool   `json:",omitempty"`
+	BuildTime     string `json:",omitempty"`
 }
 
 // GET "/info"

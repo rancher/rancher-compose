@@ -3,21 +3,17 @@ package rancher
 import (
 	"fmt"
 	"io"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/ssh/terminal"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/runconfig"
+	"github.com/docker/libcompose/docker"
+	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/utils"
 	"github.com/gorilla/websocket"
 	rancherClient "github.com/rancherio/go-rancher/client"
 	"github.com/rancherio/go-rancher/hostaccess"
-	"github.com/rancherio/rancher-compose/librcompose/docker"
-	"github.com/rancherio/rancher-compose/librcompose/project"
-	"github.com/rancherio/rancher-compose/librcompose/util"
 )
 
 const (
@@ -26,9 +22,9 @@ const (
 	EXTERNAL_IMAGE = "rancher/external-service"
 )
 
-var (
-	colorPrefix chan string = make(chan string)
-)
+type Link struct {
+	ServiceName, Alias string
+}
 
 type IsDone func(*rancherClient.Resource) (bool, error)
 
@@ -39,7 +35,6 @@ type ContainerInspect struct {
 }
 
 type RancherService struct {
-	tty           bool
 	name          string
 	serviceConfig *project.ServiceConfig
 	context       *Context
@@ -55,7 +50,6 @@ func (r *RancherService) Config() *project.ServiceConfig {
 
 func NewService(name string, config *project.ServiceConfig, context *Context) *RancherService {
 	return &RancherService{
-		tty:           terminal.IsTerminal(int(os.Stdout.Fd())),
 		name:          name,
 		serviceConfig: config,
 		context:       context,
@@ -198,7 +192,7 @@ func (r *RancherService) createDnsService() (*rancherClient.Service, error) {
 		return nil, err
 	}
 
-	links, err := r.getLinks()
+	links, err := r.getServiceLinks()
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +223,7 @@ func (r *RancherService) createLbService() (*rancherClient.Service, error) {
 		LoadBalancerConfig: lbConfig,
 		LaunchConfig: rancherClient.LaunchConfig{
 			Ports:  r.serviceConfig.Ports,
-			Labels: util.ConvertToInterfaceMap(r.serviceConfig.Labels.MapParts()),
+			Labels: utils.ConvertToInterfaceMap(r.serviceConfig.Labels.MapParts()),
 		},
 		Scale:         int64(r.getConfiguredScale()),
 		EnvironmentId: r.context.Environment.Id,
@@ -262,9 +256,11 @@ func (r *RancherService) createNormalService() (*rancherClient.Service, error) {
 				return nil, err
 			}
 
-			launchConfig.Name = secondaryName
+			var secondaryLaunchConfig rancherClient.SecondaryLaunchConfig
+			utils.Convert(launchConfig, &secondaryLaunchConfig)
+			secondaryLaunchConfig.Name = secondaryName
 
-			secondaryLaunchConfigs = append(secondaryLaunchConfigs, launchConfig)
+			secondaryLaunchConfigs = append(secondaryLaunchConfigs, secondaryLaunchConfig)
 		}
 	}
 
@@ -326,7 +322,15 @@ func (r *RancherService) createService() (*rancherClient.Service, error) {
 }
 
 func (r *RancherService) setupLinks(service *rancherClient.Service) error {
-	links, err := r.getLinks()
+	var err error
+	var links []interface{}
+
+	if service.Type == rancherClient.LOAD_BALANCER_SERVICE_TYPE {
+		links, err = r.getLbLinks()
+	} else {
+		links, err = r.getServiceLinks()
+	}
+
 	if err == nil && len(links) > 0 {
 		_, err = r.context.Client.Service.ActionSetservicelinks(service, &rancherClient.SetServiceLinksInput{
 			ServiceLinks: links,
@@ -335,8 +339,65 @@ func (r *RancherService) setupLinks(service *rancherClient.Service) error {
 	return err
 }
 
-func (r *RancherService) getLinks() (map[string]interface{}, error) {
-	result := map[string]interface{}{}
+func (r *RancherService) getLbLinks() ([]interface{}, error) {
+	links, err := r.getLinks()
+	if err != nil {
+		return nil, err
+	}
+
+	result := []interface{}{}
+	for link, id := range links {
+		ports, err := r.getLbLinkPorts(link.ServiceName)
+		if err != nil {
+			return nil, err
+		}
+
+		result = append(result, rancherClient.LoadBalancerServiceLink{
+			Ports:     ports,
+			ServiceId: id,
+		})
+	}
+
+	return result, nil
+}
+
+func (r *RancherService) getLbLinkPorts(name string) ([]string, error) {
+	labelName := "io.rancher.loadbalancer.target." + name
+	v := r.serviceConfig.Labels.MapParts()[labelName]
+	if len(v) == 0 {
+		if len(r.serviceConfig.Ports) != 1 {
+			return nil, fmt.Errorf("Failed to find target ports for %s, add label %s", name, labelName)
+		}
+		parts := strings.SplitN(r.serviceConfig.Ports[0], ",", 2)
+		if len(parts) == 2 {
+			return []string{parts[1]}, nil
+		} else {
+			return []string{parts[0]}, nil
+		}
+	}
+
+	return strings.Split(v, ","), nil
+}
+
+func (r *RancherService) getServiceLinks() ([]interface{}, error) {
+	links, err := r.getLinks()
+	if err != nil {
+		return nil, err
+	}
+
+	result := []interface{}{}
+	for link, id := range links {
+		result = append(result, rancherClient.ServiceLink{
+			Name:      link.Alias,
+			ServiceId: id,
+		})
+	}
+
+	return result, nil
+}
+
+func (r *RancherService) getLinks() (map[Link]string, error) {
+	result := map[Link]string{}
 
 	for _, link := range r.serviceConfig.Links.Slice() {
 		parts := strings.SplitN(link, ":", 2)
@@ -357,7 +418,10 @@ func (r *RancherService) getLinks() (map[string]interface{}, error) {
 		if linkedService == nil {
 			logrus.Warnf("Failed to find service %s to link to", name)
 		} else {
-			result[alias] = linkedService.Id
+			result[Link{
+				ServiceName: name,
+				Alias:       alias,
+			}] = linkedService.Id
 		}
 	}
 
@@ -367,7 +431,8 @@ func (r *RancherService) getLinks() (map[string]interface{}, error) {
 func setupNetworking(netMode string, launchConfig *rancherClient.LaunchConfig) {
 	if netMode == "" {
 		launchConfig.NetworkMode = "managed"
-	} else if runconfig.NetworkMode(netMode).IsContainer() {
+	} else if runconfig.IpcMode(netMode).IsContainer() {
+		// For some reason NetworkMode object is gone runconfig, but IpcMode works the same for this
 		launchConfig.NetworkMode = "container"
 		launchConfig.NetworkLaunchConfig = strings.TrimPrefix(netMode, "container:")
 	} else {
@@ -507,6 +572,25 @@ func (r *RancherService) Scale(count int) error {
 	return r.wait(service)
 }
 
+func (r *RancherService) Containers() ([]project.Container, error) {
+	result := []project.Container{}
+
+	containers, err := r.containers()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range containers {
+		name := c.Name
+		if name == "" {
+			name = c.Uuid
+		}
+		result = append(result, NewContainer(c.Id, name))
+	}
+
+	return result, nil
+}
+
 func (r *RancherService) containers() ([]rancherClient.Container, error) {
 	service, err := r.findExisting(r.name)
 	if err != nil {
@@ -574,33 +658,11 @@ func (r *RancherService) Log() error {
 	return nil
 }
 
-func (r *RancherService) DependentServices() []string {
-	return r.Config().Links.Slice()
-}
-
-func (r *RancherService) getLogFmt(container *rancherClient.Container) (string, string) {
-	pad := 0
-	for name := range r.context.Project.Configs {
-		if len(name) > pad {
-			pad = len(name)
-		}
-	}
-	pad += 3
-
-	logFmt := "%s | %s"
-	if r.tty {
-		logFmt = <-colorPrefix + " %s"
-	}
-
-	name := fmt.Sprintf("%-"+strconv.Itoa(pad)+"s", strings.TrimPrefix(container.Name, r.context.ProjectName+"_"))
-
-	return logFmt + "\n", name
-}
-
 func (r *RancherService) pipeLogs(container *rancherClient.Container, conn *websocket.Conn) {
 	defer conn.Close()
 
-	logFmt, name := r.getLogFmt(container)
+	log_name := strings.TrimPrefix(container.Name, r.context.ProjectName+"_")
+	logger := r.context.LoggerFactory.Create(log_name)
 
 	for {
 		messageType, bytes, err := conn.ReadMessage()
@@ -619,46 +681,32 @@ func (r *RancherService) pipeLogs(container *rancherClient.Container, conn *webs
 			continue
 		}
 
-		message := string(bytes[3:])
-
-		i := strings.Index(message, " ")
-		if i > 0 {
-			message = message[i+1:]
+		if bytes[len(bytes)-1] != '\n' {
+			bytes = append(bytes, '\n')
 		}
-
-		message = fmt.Sprintf(logFmt, name, string(message))
+		message := bytes[3:]
 
 		if "01" == string(bytes[:2]) {
-			fmt.Printf(message)
+			logger.Out(message)
 		} else {
-			fmt.Fprint(os.Stderr, message)
+			logger.Err(message)
 		}
 	}
 }
 
-func generateColors() {
-	i := 0
-	color_order := []string{
-		"36",   // cyan
-		"33",   // yellow
-		"32",   // green
-		"35",   // magenta
-		"31",   // red
-		"34",   // blue
-		"36;1", // intense cyan
-		"33;1", // intense yellow
-		"32;1", // intense green
-		"35;1", // intense magenta
-		"31;1", // intense red
-		"34;1", // intense blue
+func (r *RancherService) DependentServices() []project.ServiceRelationship {
+	result := []project.ServiceRelationship{}
+
+	for _, rel := range project.DefaultDependentServices(r.context.Project, r) {
+		if rel.Type == project.REL_TYPE_LINK {
+			rel.Optional = true
+			result = append(result, rel)
+		}
 	}
 
-	for {
-		colorPrefix <- fmt.Sprintf("\033[%sm%%s |\033[0m", color_order[i])
-		i = (i + 1) % len(color_order)
-	}
+	return result
 }
 
-func init() {
-	go generateColors()
+func (r *RancherService) Pull() error {
+	return nil
 }

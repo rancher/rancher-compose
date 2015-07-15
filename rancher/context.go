@@ -10,24 +10,21 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/libcompose/project"
 	rancherClient "github.com/rancherio/go-rancher/client"
-	"github.com/rancherio/rancher-compose/librcompose/project"
 )
 
 type Context struct {
+	project.Context
+
 	RancherConfig      map[string]RancherConfig
-	Log                bool
 	RancherComposeFile string
-	ComposeFile        string
-	ComposeBytes       []byte
-	ProjectName        string
 	Url                string
 	AccessKey          string
 	SecretKey          string
 	Client             *rancherClient.RancherClient
 	Environment        *rancherClient.Environment
 	isOpen             bool
-	Project            *project.Project
 	SidekickInfo       *SidekickInfo
 }
 
@@ -36,33 +33,6 @@ type RancherConfig struct {
 	LoadBalancerConfig *rancherClient.LoadBalancerConfig  `yaml:"load_balancer_config,omitempty"`
 	ExternalIps        []string                           `yaml:"external_ips,omitempty"`
 	HealthCheck        *rancherClient.InstanceHealthCheck `yaml:"health_check,omitempty"`
-}
-
-func (c *Context) readComposeFile() error {
-	if c.ComposeBytes != nil {
-		return nil
-	}
-
-	logrus.Debugf("Opening compose file: %s", c.ComposeFile)
-
-	if c.ComposeFile == "-" {
-		if composeBytes, err := ioutil.ReadAll(os.Stdin); err != nil {
-			logrus.Errorf("Failed to read compose file from stdin: %v", err)
-			return err
-		} else {
-			c.ComposeBytes = composeBytes
-		}
-	} else if composeBytes, err := ioutil.ReadFile(c.ComposeFile); os.IsNotExist(err) {
-		logrus.Errorf("Failed to find %s", c.ComposeFile)
-		return err
-	} else if err != nil {
-		logrus.Errorf("Failed to open %s", c.ComposeFile)
-		return err
-	} else {
-		c.ComposeBytes = composeBytes
-	}
-
-	return nil
 }
 
 func (c *Context) readRancherConfig() error {
@@ -88,41 +58,12 @@ func (c *Context) readRancherConfig() error {
 	}
 }
 
-func (c *Context) determineProject() error {
-	if c.ProjectName == "" {
-		f, err := filepath.Abs(c.ComposeFile)
-		if err != nil {
-			logrus.Errorf("Failed to get absolute directory for: %s", c.ComposeFile)
-			return err
-		}
-
-		parent := path.Base(path.Dir(f))
-		if parent != "" {
-			c.ProjectName = parent
-		} else if wd, err := os.Getwd(); err != nil {
-			return err
-		} else {
-			c.ProjectName = path.Base(wd)
-		}
-	}
-
-	return nil
-}
-
 func (c *Context) open() error {
 	if c.isOpen {
 		return nil
 	}
 
-	if err := c.readComposeFile(); err != nil {
-		return err
-	}
-
 	if err := c.readRancherConfig(); err != nil {
-		return err
-	}
-
-	if err := c.determineProject(); err != nil {
 		return err
 	}
 
@@ -178,13 +119,4 @@ func (c *Context) loadEnv() error {
 	c.Environment = env
 
 	return nil
-}
-
-func (c *Context) Lookup(key, serviceName string, config *project.ServiceConfig) []string {
-	ret := os.Getenv(key)
-	if ret == "" {
-		return []string{}
-	} else {
-		return []string{fmt.Sprintf("%s=%s", key, ret)}
-	}
 }

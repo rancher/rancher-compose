@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/docker/docker/nat"
+	"github.com/docker/docker/pkg/nat"
 	"github.com/docker/docker/pkg/ulimit"
 )
 
@@ -15,28 +15,6 @@ type KeyValuePair struct {
 }
 
 type NetworkMode string
-
-// IsPrivate indicates whether container use it's private network stack
-func (n NetworkMode) IsPrivate() bool {
-	return !(n.IsHost() || n.IsContainer())
-}
-
-func (n NetworkMode) IsBridge() bool {
-	return n == "bridge"
-}
-
-func (n NetworkMode) IsHost() bool {
-	return n == "host"
-}
-
-func (n NetworkMode) IsContainer() bool {
-	parts := strings.SplitN(string(n), ":", 2)
-	return len(parts) > 1 && parts[0] == "container"
-}
-
-func (n NetworkMode) IsNone() bool {
-	return n == "none"
-}
 
 type IpcMode string
 
@@ -195,6 +173,53 @@ func NewLxcConfig(values []KeyValuePair) *LxcConfig {
 	return &LxcConfig{values}
 }
 
+type CapList struct {
+	caps []string
+}
+
+func (c *CapList) MarshalJSON() ([]byte, error) {
+	if c == nil {
+		return []byte{}, nil
+	}
+	return json.Marshal(c.Slice())
+}
+
+func (c *CapList) UnmarshalJSON(b []byte) error {
+	if len(b) == 0 {
+		return nil
+	}
+
+	var caps []string
+	if err := json.Unmarshal(b, &caps); err != nil {
+		var s string
+		if err := json.Unmarshal(b, &s); err != nil {
+			return err
+		}
+		caps = append(caps, s)
+	}
+	c.caps = caps
+
+	return nil
+}
+
+func (c *CapList) Len() int {
+	if c == nil {
+		return 0
+	}
+	return len(c.caps)
+}
+
+func (c *CapList) Slice() []string {
+	if c == nil {
+		return nil
+	}
+	return c.caps
+}
+
+func NewCapList(caps []string) *CapList {
+	return &CapList{caps}
+}
+
 type HostConfig struct {
 	Binds           []string
 	ContainerIDFile string
@@ -221,8 +246,8 @@ type HostConfig struct {
 	IpcMode         IpcMode
 	PidMode         PidMode
 	UTSMode         UTSMode
-	CapAdd          []string
-	CapDrop         []string
+	CapAdd          *CapList
+	CapDrop         *CapList
 	RestartPolicy   RestartPolicy
 	SecurityOpt     []string
 	ReadonlyRootfs  bool
@@ -234,47 +259,15 @@ type HostConfig struct {
 func MergeConfigs(config *Config, hostConfig *HostConfig) *ContainerConfigWrapper {
 	return &ContainerConfigWrapper{
 		config,
-		&hostConfigWrapper{InnerHostConfig: hostConfig},
+		hostConfig,
+		"", nil,
 	}
-}
-
-type hostConfigWrapper struct {
-	InnerHostConfig *HostConfig `json:"HostConfig,omitempty"`
-	Cpuset          string      `json:",omitempty"` // Deprecated. Exported for backwards compatibility.
-
-	*HostConfig // Deprecated. Exported to read attrubutes from json that are not in the inner host config structure.
-}
-
-func (w hostConfigWrapper) GetHostConfig() *HostConfig {
-	hc := w.HostConfig
-
-	if hc == nil && w.InnerHostConfig != nil {
-		hc = w.InnerHostConfig
-	} else if w.InnerHostConfig != nil {
-		if hc.Memory != 0 && w.InnerHostConfig.Memory == 0 {
-			w.InnerHostConfig.Memory = hc.Memory
-		}
-		if hc.MemorySwap != 0 && w.InnerHostConfig.MemorySwap == 0 {
-			w.InnerHostConfig.MemorySwap = hc.MemorySwap
-		}
-		if hc.CpuShares != 0 && w.InnerHostConfig.CpuShares == 0 {
-			w.InnerHostConfig.CpuShares = hc.CpuShares
-		}
-
-		hc = w.InnerHostConfig
-	}
-
-	if hc != nil && w.Cpuset != "" && hc.CpusetCpus == "" {
-		hc.CpusetCpus = w.Cpuset
-	}
-
-	return hc
 }
 
 func DecodeHostConfig(src io.Reader) (*HostConfig, error) {
 	decoder := json.NewDecoder(src)
 
-	var w hostConfigWrapper
+	var w ContainerConfigWrapper
 	if err := decoder.Decode(&w); err != nil {
 		return nil, err
 	}

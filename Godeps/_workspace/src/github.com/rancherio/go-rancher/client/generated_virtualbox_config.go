@@ -13,6 +13,8 @@ type VirtualboxConfig struct {
 
 	DiskSize string `json:"diskSize,omitempty" yaml:"disk_size,omitempty"`
 
+	HostonlyCidr string `json:"hostonlyCidr,omitempty" yaml:"hostonly_cidr,omitempty"`
+
 	ImportBoot2dockerVm string `json:"importBoot2dockerVm,omitempty" yaml:"import_boot2docker_vm,omitempty"`
 
 	Memory string `json:"memory,omitempty" yaml:"memory,omitempty"`

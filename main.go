@@ -8,9 +8,8 @@ import (
 	cliApp "github.com/docker/libcompose/app"
 	"github.com/docker/libcompose/command"
 	"github.com/rancherio/rancher-compose/app"
+	"github.com/rancherio/rancher-compose/version"
 )
-
-var VERSION = "0.0.0-dev"
 
 func main() {
 	factory := &app.ProjectFactory{}
@@ -18,7 +17,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "rancher-compose"
 	app.Usage = "Docker-compose to Rancher"
-	app.Version = VERSION
+	app.Version = version.VERSION
 	app.Author = "Rancher Labs, Inc."
 	app.Email = ""
 	app.Before = cliApp.BeforeApp

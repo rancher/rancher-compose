@@ -35,6 +35,8 @@ type ExternalService struct {
 
 	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
 
+	Upgrade ServiceUpgrade `json:"upgrade,omitempty" yaml:"upgrade,omitempty"`
+
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
 
@@ -58,6 +60,8 @@ type ExternalServiceOperations interface {
 
 	ActionAddservicelink(*ExternalService, *AddRemoveServiceLinkInput) (*Service, error)
 
+	ActionCancelupgrade(*ExternalService) (*Service, error)
+
 	ActionCreate(*ExternalService) (*Service, error)
 
 	ActionDeactivate(*ExternalService) (*Service, error)
@@ -69,6 +73,8 @@ type ExternalServiceOperations interface {
 	ActionSetservicelinks(*ExternalService, *SetServiceLinksInput) (*Service, error)
 
 	ActionUpdate(*ExternalService) (*Service, error)
+
+	ActionUpgrade(*ExternalService, *ServiceUpgrade) (*Service, error)
 }
 
 func newExternalServiceClient(rancherClient *RancherClient) *ExternalServiceClient {
@@ -123,6 +129,15 @@ func (c *ExternalServiceClient) ActionAddservicelink(resource *ExternalService, 
 	return resp, err
 }
 
+func (c *ExternalServiceClient) ActionCancelupgrade(resource *ExternalService) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(EXTERNAL_SERVICE_TYPE, "cancelupgrade", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
 func (c *ExternalServiceClient) ActionCreate(resource *ExternalService) (*Service, error) {
 
 	resp := &Service{}
@@ -173,6 +188,15 @@ func (c *ExternalServiceClient) ActionUpdate(resource *ExternalService) (*Servic
 	resp := &Service{}
 
 	err := c.rancherClient.doAction(EXTERNAL_SERVICE_TYPE, "update", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *ExternalServiceClient) ActionUpgrade(resource *ExternalService, input *ServiceUpgrade) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(EXTERNAL_SERVICE_TYPE, "upgrade", &resource.Resource, input, resp)
 
 	return resp, err
 }

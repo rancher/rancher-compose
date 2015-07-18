@@ -16,6 +16,7 @@ type RancherClient struct {
 	ComposeConfig                            ComposeConfigOperations
 	InstanceHealthCheck                      InstanceHealthCheckOperations
 	ServiceLink                              ServiceLinkOperations
+	ServiceUpgrade                           ServiceUpgradeOperations
 	AddLoadBalancerInput                     AddLoadBalancerInputOperations
 	AddRemoveClusterHostInput                AddRemoveClusterHostInputOperations
 	AddRemoveLoadBalancerHostInput           AddRemoveLoadBalancerHostInputOperations
@@ -142,6 +143,7 @@ func constructClient() *RancherClient {
 	client.ComposeConfig = newComposeConfigClient(client)
 	client.InstanceHealthCheck = newInstanceHealthCheckClient(client)
 	client.ServiceLink = newServiceLinkClient(client)
+	client.ServiceUpgrade = newServiceUpgradeClient(client)
 	client.AddLoadBalancerInput = newAddLoadBalancerInputClient(client)
 	client.AddRemoveClusterHostInput = newAddRemoveClusterHostInputClient(client)
 	client.AddRemoveLoadBalancerHostInput = newAddRemoveLoadBalancerHostInputClient(client)

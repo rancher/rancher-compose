@@ -31,6 +31,7 @@ var (
 
 type Context struct {
 	project.Context
+	Builder    Builder
 	Client     dockerclient.Client
 	Tls        bool
 	TlsVerify  bool

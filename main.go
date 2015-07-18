@@ -7,12 +7,12 @@ import (
 	"github.com/codegangsta/cli"
 	cliApp "github.com/docker/libcompose/app"
 	"github.com/docker/libcompose/command"
-	"github.com/rancherio/rancher-compose/app"
+	rancherApp "github.com/rancherio/rancher-compose/app"
 	"github.com/rancherio/rancher-compose/version"
 )
 
 func main() {
-	factory := &app.ProjectFactory{}
+	factory := &rancherApp.ProjectFactory{}
 
 	app := cli.NewApp()
 	app.Name = "rancher-compose"
@@ -57,6 +57,7 @@ func main() {
 		command.StopCommand(factory),
 		command.ScaleCommand(factory),
 		command.RmCommand(factory),
+		rancherApp.UpgradeCommand(factory),
 	}
 
 	app.Run(os.Args)

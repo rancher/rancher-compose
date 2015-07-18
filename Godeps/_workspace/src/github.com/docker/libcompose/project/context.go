@@ -13,6 +13,7 @@ import (
 type Context struct {
 	Timeout             int
 	Log                 bool
+	Signal              string
 	ComposeFile         string
 	ComposeBytes        []byte
 	ProjectName         string
@@ -58,21 +59,28 @@ func (c *Context) readComposeFile() error {
 }
 
 func (c *Context) determineProject() error {
-	if c.ProjectName == "" {
-		f, err := filepath.Abs(c.ComposeFile)
-		if err != nil {
-			logrus.Errorf("Failed to get absolute directory for: %s", c.ComposeFile)
-			return err
-		}
+	if c.ProjectName != "" {
+		return nil
+	}
 
-		parent := path.Base(path.Dir(f))
-		if parent != "" {
-			c.ProjectName = parent
-		} else if wd, err := os.Getwd(); err != nil {
-			return err
-		} else {
-			c.ProjectName = path.Base(wd)
-		}
+	if envProject := os.Getenv("COMPOSE_PROJECT_NAME"); envProject != "" {
+		c.ProjectName = envProject
+		return nil
+	}
+
+	f, err := filepath.Abs(c.ComposeFile)
+	if err != nil {
+		logrus.Errorf("Failed to get absolute directory for: %s", c.ComposeFile)
+		return err
+	}
+
+	parent := path.Base(path.Dir(f))
+	if parent != "" {
+		c.ProjectName = parent
+	} else if wd, err := os.Getwd(); err != nil {
+		return err
+	} else {
+		c.ProjectName = path.Base(wd)
 	}
 
 	return nil

@@ -248,31 +248,31 @@
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/app",
-			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
+			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/command",
-			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
+			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/docker",
-			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
+			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/logger",
-			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
+			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/lookup",
-			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
+			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/project",
-			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
+			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/utils",
-			"Rev": "6e82064b2237979853d7f57d5929a846400dd9aa"
+			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
 		},
 		{
 			"ImportPath": "github.com/docker/libcontainer/user",
@@ -301,17 +301,17 @@
 		},
 		{
 			"ImportPath": "github.com/rancherio/go-rancher/client",
-			"Comment": "v0.1.0-50-g04e94fc",
-			"Rev": "04e94fce4e22935b38abf2a0e89270425c37770c"
+			"Comment": "v0.1.0-53-gd8c0106",
+			"Rev": "d8c010622f37834bffd041af32ce0afffab6eee5"
 		},
 		{
 			"ImportPath": "github.com/rancherio/go-rancher/hostaccess",
-			"Comment": "v0.1.0-50-g04e94fc",
-			"Rev": "04e94fce4e22935b38abf2a0e89270425c37770c"
+			"Comment": "v0.1.0-53-gd8c0106",
+			"Rev": "d8c010622f37834bffd041af32ce0afffab6eee5"
 		},
 		{
 			"ImportPath": "github.com/samalba/dockerclient",
-			"Rev": "dcde6ef8dbe3204aa62038527b948ac9af90ff68"
+			"Rev": "bbdc3018c34ccf69254111bb32b4e33bb45b6d70"
 		},
 		{
 			"ImportPath": "github.com/vaughan0/go-ini",

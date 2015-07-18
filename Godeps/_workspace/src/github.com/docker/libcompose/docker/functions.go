@@ -2,7 +2,7 @@ package docker
 
 import "github.com/samalba/dockerclient"
 
-func GetContainerByFilter(client dockerclient.Client, filter ...string) ([]dockerclient.Container, error) {
+func GetContainersByFilter(client dockerclient.Client, filter ...string) ([]dockerclient.Container, error) {
 	filterResult := ""
 
 	for _, value := range filter {

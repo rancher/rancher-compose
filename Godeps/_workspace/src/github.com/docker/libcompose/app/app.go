@@ -36,6 +36,13 @@ func ProjectDown(p *project.Project, c *cli.Context) {
 	}
 }
 
+func ProjectBuild(p *project.Project, c *cli.Context) {
+	err := p.Build(c.Args()...)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
 func ProjectCreate(p *project.Project, c *cli.Context) {
 	err := p.Create(c.Args()...)
 	if err != nil {
@@ -51,6 +58,13 @@ func ProjectUp(p *project.Project, c *cli.Context) {
 
 	if !c.Bool("d") {
 		wait()
+	}
+}
+
+func ProjectStart(p *project.Project, c *cli.Context) {
+	err := p.Start(c.Args()...)
+	if err != nil {
+		logrus.Fatal(err)
 	}
 }
 
@@ -81,6 +95,13 @@ func ProjectDelete(p *project.Project, c *cli.Context) {
 		logrus.Fatal("Will not remove all services with out --force")
 	}
 	err := p.Delete(c.Args()...)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
+func ProjectKill(p *project.Project, c *cli.Context) {
+	err := p.Kill(c.Args()...)
 	if err != nil {
 		logrus.Fatal(err)
 	}

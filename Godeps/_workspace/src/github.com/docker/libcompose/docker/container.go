@@ -22,27 +22,29 @@ type Container struct {
 
 	name    string
 	service *Service
+	client  dockerclient.Client
 }
 
-func NewContainer(name string, service *Service) *Container {
+func NewContainer(client dockerclient.Client, name string, service *Service) *Container {
 	return &Container{
+		client:  client,
 		name:    name,
 		service: service,
 	}
 }
 
 func (c *Container) findExisting() (*dockerclient.Container, error) {
-	return GetContainerByName(c.service.context.Client, c.name)
+	return GetContainerByName(c.client, c.name)
 }
 
-func (c *Container) Create() (*dockerclient.Container, error) {
+func (c *Container) Create(imageName string) (*dockerclient.Container, error) {
 	container, err := c.findExisting()
 	if err != nil {
 		return nil, err
 	}
 
 	if container == nil {
-		container, err = c.createContainer()
+		container, err = c.createContainer(imageName)
 		if err != nil {
 			return nil, err
 		}
@@ -52,16 +54,15 @@ func (c *Container) Create() (*dockerclient.Container, error) {
 }
 
 func (c *Container) Down() error {
-	container, err := c.findExisting()
-	if err != nil {
-		return err
-	}
+	return c.withContainer(func(container *dockerclient.Container) error {
+		return c.client.StopContainer(container.Id, c.service.context.Timeout)
+	})
+}
 
-	if container != nil {
-		return c.service.context.Client.StopContainer(container.Id, c.service.context.Timeout)
-	}
-
-	return nil
+func (c *Container) Kill() error {
+	return c.withContainer(func(container *dockerclient.Container) error {
+		return c.client.KillContainer(container.Id, c.service.context.Signal)
+	})
 }
 
 func (c *Container) Delete() error {
@@ -70,22 +71,22 @@ func (c *Container) Delete() error {
 		return err
 	}
 
-	info, err := c.service.context.Client.InspectContainer(container.Id)
+	info, err := c.client.InspectContainer(container.Id)
 	if err != nil {
 		return err
 	}
 
 	if info.State.Running {
-		err := c.service.context.Client.StopContainer(container.Id, c.service.context.Timeout)
+		err := c.client.StopContainer(container.Id, c.service.context.Timeout)
 		if err != nil {
 			return err
 		}
 	}
 
-	return c.service.context.Client.RemoveContainer(container.Id, true, false)
+	return c.client.RemoveContainer(container.Id, true, false)
 }
 
-func (c *Container) Up() error {
+func (c *Container) Up(imageName string) error {
 	var err error
 
 	defer func() {
@@ -94,12 +95,12 @@ func (c *Container) Up() error {
 		}
 	}()
 
-	container, err := c.Create()
+	container, err := c.Create(imageName)
 	if err != nil {
 		return err
 	}
 
-	info, err := c.service.context.Client.InspectContainer(container.Id)
+	info, err := c.client.InspectContainer(container.Id)
 	if err != nil {
 		return err
 	}
@@ -110,18 +111,20 @@ func (c *Container) Up() error {
 		if err != nil {
 			return err
 		}
-		err := c.service.context.Client.StartContainer(container.Id, info.HostConfig)
+		err := c.client.StartContainer(container.Id, info.HostConfig)
 		return err
 	}
 
 	return nil
 }
 
-func (c *Container) createContainer() (*dockerclient.Container, error) {
+func (c *Container) createContainer(imageName string) (*dockerclient.Container, error) {
 	config, err := ConvertToApi(c.service.serviceConfig)
 	if err != nil {
 		return nil, err
 	}
+
+	config.Image = imageName
 
 	if config.Labels == nil {
 		config.Labels = map[string]string{}
@@ -138,7 +141,7 @@ func (c *Container) createContainer() (*dockerclient.Container, error) {
 
 	logrus.Debugf("Creating container %s %#v", c.name, config)
 
-	_, err = c.service.context.Client.CreateContainer(config, c.name)
+	_, err = c.client.CreateContainer(config, c.name)
 	if err != nil && err.Error() == "Not found" {
 		err = c.pull(config.Image)
 	}
@@ -251,7 +254,7 @@ func (c *Container) Restart() error {
 		return err
 	}
 
-	return c.service.context.Client.RestartContainer(container.Id, c.service.context.Timeout)
+	return c.client.RestartContainer(container.Id, c.service.context.Timeout)
 }
 
 func (c *Container) Log() error {
@@ -260,14 +263,14 @@ func (c *Container) Log() error {
 		return err
 	}
 
-	info, err := c.service.context.Client.InspectContainer(container.Id)
+	info, err := c.client.InspectContainer(container.Id)
 	if info == nil || err != nil {
 		return err
 	}
 
 	l := c.service.context.LoggerFactory.Create(c.name)
 
-	output, err := c.service.context.Client.ContainerLogs(container.Id, &dockerclient.LogOptions{
+	output, err := c.client.ContainerLogs(container.Id, &dockerclient.LogOptions{
 		Follow: true,
 		Stdout: true,
 		Stderr: true,
@@ -312,7 +315,7 @@ func (c *Container) pull(image string) error {
 		authConfig = registry.ResolveAuthConfig(c.service.context.ConfigFile, repoInfo.Index)
 	}
 
-	err = c.service.context.Client.PullImage(image, &dockerclient.AuthConfig{
+	err = c.client.PullImage(image, &dockerclient.AuthConfig{
 		Username: authConfig.Username,
 		Password: authConfig.Password,
 		Email:    authConfig.Email,
@@ -323,4 +326,17 @@ func (c *Container) pull(image string) error {
 	}
 
 	return err
+}
+
+func (c *Container) withContainer(action func(*dockerclient.Container) error) error {
+	container, err := c.findExisting()
+	if err != nil {
+		return err
+	}
+
+	if container != nil {
+		return action(container)
+	}
+
+	return nil
 }

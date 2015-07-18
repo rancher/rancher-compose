@@ -20,9 +20,9 @@ var (
 		"http:",
 		"https:",
 	}
-	ignore = map[string]bool{
-		"links":        true,
-		"volumes_from": true,
+	noMerge = []string{
+		"links",
+		"volumes_from",
 	}
 )
 
@@ -204,11 +204,11 @@ func parse(configLookup ConfigLookup, inFile string, serviceData rawService, dat
 
 	logrus.Debugf("Merging %#v, %#v", baseService, serviceData)
 
-	for k, v := range serviceData {
-		if ignore[k] {
-			continue
-		}
+	for _, k := range noMerge {
+		delete(baseService, k)
+	}
 
+	for k, v := range serviceData {
 		existing, ok := baseService[k]
 		if ok {
 			baseService[k] = merge(existing, v)

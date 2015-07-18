@@ -14,6 +14,7 @@ type serviceWrapper struct {
 	err     error
 	project *Project
 	noWait  bool
+	ignored map[string]bool
 }
 
 func newServiceWrapper(name string, p *Project) (*serviceWrapper, error) {
@@ -21,9 +22,14 @@ func newServiceWrapper(name string, p *Project) (*serviceWrapper, error) {
 		name:    name,
 		state:   UNKNOWN,
 		project: p,
+		ignored: map[string]bool{},
 	}
 
 	return wrapper, wrapper.Reset()
+}
+
+func (s *serviceWrapper) IgnoreDep(name string) {
+	s.ignored[name] = true
 }
 
 func (s *serviceWrapper) Reset() error {
@@ -46,81 +52,10 @@ func (s *serviceWrapper) Reset() error {
 }
 
 func (s *serviceWrapper) Ignore() {
+	defer s.done.Done()
+
 	s.state = EXECUTED
 	s.project.Notify(SERVICE_UP_IGNORED, s.service.Name(), nil)
-	s.done.Done()
-}
-
-func (s *serviceWrapper) Stop(wrappers map[string]*serviceWrapper) {
-	defer s.done.Done()
-
-	if s.state == EXECUTED {
-		return
-	}
-
-	s.state = EXECUTED
-
-	s.project.Notify(SERVICE_DOWN_START, s.service.Name(), nil)
-
-	s.err = s.service.Down()
-	if s.err != nil {
-		log.Errorf("Failed to stop %s : %v", s.name, s.err)
-	} else {
-		s.project.Notify(SERVICE_DOWN, s.service.Name(), nil)
-	}
-}
-
-func (s *serviceWrapper) Log(wrappers map[string]*serviceWrapper) {
-	defer s.done.Done()
-
-	if s.state == EXECUTED {
-		return
-	}
-
-	s.state = EXECUTED
-
-	s.err = s.service.Log()
-	if s.err != nil {
-		log.Errorf("Failed to log %s : %v", s.name, s.err)
-	}
-}
-
-func (s *serviceWrapper) Delete(wrappers map[string]*serviceWrapper) {
-	defer s.done.Done()
-
-	if s.state == EXECUTED {
-		return
-	}
-
-	s.state = EXECUTED
-
-	s.project.Notify(SERVICE_DELETE_START, s.service.Name(), nil)
-
-	s.err = s.service.Delete()
-	if s.err != nil {
-		log.Errorf("Failed to delete %s : %v", s.name, s.err)
-	} else {
-		s.project.Notify(SERVICE_DELETE, s.service.Name(), nil)
-	}
-}
-
-func (s *serviceWrapper) Pull(wrappers map[string]*serviceWrapper) {
-	defer s.done.Done()
-
-	if s.state == EXECUTED {
-		return
-	}
-
-	s.state = EXECUTED
-
-	s.project.Notify(SERVICE_PULL_START, s.service.Name(), nil)
-
-	s.err = s.service.Pull()
-	if s.err != nil {
-		log.Errorf("Failed to pull %s : %v", s.service.Config().Image, s.err)
-	} else {
-		s.project.Notify(SERVICE_PULL, s.service.Name(), nil)
-	}
 }
 
 func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
@@ -129,6 +64,10 @@ func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
 	}
 
 	for _, dep := range s.service.DependentServices() {
+		if s.ignored[dep.Target] {
+			continue
+		}
+
 		if wrapper, ok := wrappers[dep.Target]; ok {
 			if wrapper.Wait() == ErrRestart {
 				s.project.Notify(PROJECT_RELOAD, wrapper.service.Name(), nil)
@@ -143,75 +82,31 @@ func (s *serviceWrapper) waitForDeps(wrappers map[string]*serviceWrapper) bool {
 	return true
 }
 
-func (s *serviceWrapper) Restart(wrappers map[string]*serviceWrapper) {
+func (s *serviceWrapper) Do(wrappers map[string]*serviceWrapper, start, done Event, action func(service Service) error) {
 	defer s.done.Done()
 
 	if s.state == EXECUTED {
 		return
 	}
 
-	if !s.waitForDeps(wrappers) {
+	if wrappers != nil && !s.waitForDeps(wrappers) {
 		return
 	}
 
 	s.state = EXECUTED
 
-	s.project.Notify(SERVICE_RESTART_START, s.service.Name(), nil)
-
-	s.err = s.service.Restart()
-	if s.err != nil {
-		log.Errorf("Failed to start %s : %v", s.name, s.err)
-	} else {
-		s.project.Notify(SERVICE_RESTART, s.service.Name(), nil)
-	}
-}
-
-func (s *serviceWrapper) Start(wrappers map[string]*serviceWrapper) {
-	defer s.done.Done()
-
-	if s.state == EXECUTED {
-		return
+	if start != "" {
+		s.project.Notify(start, s.service.Name(), nil)
 	}
 
-	if !s.waitForDeps(wrappers) {
-		return
-	}
-
-	s.state = EXECUTED
-
-	s.project.Notify(SERVICE_UP_START, s.service.Name(), nil)
-
-	s.err = s.service.Up()
+	s.err = action(s.service)
 	if s.err == ErrRestart {
-		s.project.Notify(SERVICE_UP, s.service.Name(), nil)
+		s.project.Notify(done, s.service.Name(), nil)
 		s.project.Notify(PROJECT_RELOAD_TRIGGER, s.service.Name(), nil)
 	} else if s.err != nil {
-		log.Errorf("Failed to start %s : %v", s.name, s.err)
-	} else {
-		s.project.Notify(SERVICE_UP, s.service.Name(), nil)
-	}
-}
-
-func (s *serviceWrapper) Create(wrappers map[string]*serviceWrapper) {
-	defer s.done.Done()
-
-	if s.state == EXECUTED {
-		return
-	}
-
-	if !s.waitForDeps(wrappers) {
-		return
-	}
-
-	s.state = EXECUTED
-
-	s.project.Notify(SERVICE_CREATE_START, s.service.Name(), nil)
-
-	s.err = s.service.Create()
-	if s.err != nil {
-		log.Errorf("Failed to create %s : %v", s.name, s.err)
-	} else {
-		s.project.Notify(SERVICE_CREATE, s.service.Name(), nil)
+		log.Errorf("Failed %s %s : %v", start, s.name, s.err)
+	} else if done != "" {
+		s.project.Notify(done, s.service.Name(), nil)
 	}
 }
 

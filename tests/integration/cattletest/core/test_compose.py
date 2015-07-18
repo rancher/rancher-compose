@@ -325,6 +325,29 @@ def test_extends(client, compose):
                                                    'key2': 'value2'}
 
 
+def test_extends_1556(client, compose):
+    project_name = create_project(compose,
+                                  file='assets/extends/docker-compose.yml')
+    project = find_one(client.list_environment, name=project_name)
+    assert project.name == project_name
+
+    db = _get_service(project.services(), 'db')
+
+    web = find_one(db.consumedservices)
+    assert web.name == 'web'
+
+
+def test_extends_1556_2(client, compose):
+    project_name = create_project(compose,
+                                  file='assets/extends_2/docker-compose.yml')
+    project = find_one(client.list_environment, name=project_name)
+    assert project.name == project_name
+
+    db = _get_service(project.services(), 'db')
+
+    assert len(db.consumedservices()) == 0
+
+
 def test_restart_policies(client, compose):
     template = '''
     web:
@@ -842,6 +865,85 @@ def test_service_link_with_space(client, compose):
 
     assert len(maps) == 1
     assert maps[0].name == 'alias'
+
+
+def test_circle(client, compose):
+    template = '''
+    foo:
+        image: nginx
+        links:
+        - web
+    web:
+        image: nginx
+        links:
+        - foo
+    '''
+
+    project_name = random_str()
+    compose.check_call(template, '-p', project_name, '-f',
+                       '-', 'up', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    foo = _get_service(project.services(), 'foo')
+    web = _get_service(project.services(), 'web')
+
+    s = find_one(foo.consumedservices)
+    assert s.name == 'web'
+
+    s = find_one(web.consumedservices)
+    assert s.name == 'foo'
+
+
+def test_one_circle(client, compose):
+    template = '''
+    foo:
+        image: nginx
+        links:
+        - foo
+    '''
+
+    project_name = random_str()
+    compose.check_call(template, '-p', project_name, '-f',
+                       '-', 'up', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    foo = _get_service(project.services(), 'foo')
+
+    s = find_one(foo.consumedservices)
+    assert s.name == 'foo'
+
+
+def test_circle_madness(client, compose):
+    template = '''
+    foo:
+        image: nginx
+        links:
+        - foo
+        - foo2
+        - foo3
+    foo2:
+        image: nginx
+        links:
+        - foo
+        - foo2
+        - foo3
+    foo3:
+        image: nginx
+        links:
+        - foo
+        - foo2
+        - foo3
+    '''
+
+    project_name = random_str()
+    compose.check_call(template, '-p', project_name, '-f',
+                       '-', 'up', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    foo = _get_service(project.services(), 'foo')
+    foo2 = _get_service(project.services(), 'foo2')
+    foo3 = _get_service(project.services(), 'foo3')
+
+    assert len(foo.consumedservices()) == 3
+    assert len(foo2.consumedservices()) == 3
+    assert len(foo3.consumedservices()) == 3
 
 
 def test_healthchecks(client, compose):

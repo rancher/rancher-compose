@@ -56,6 +56,10 @@ func NewService(name string, config *project.ServiceConfig, context *Context) *R
 	}
 }
 
+func (r *RancherService) RancherService() (*rancherClient.Service, error) {
+	return r.findExisting(r.name)
+}
+
 func (r *RancherService) Create() error {
 	service, err := r.findExisting(r.name)
 
@@ -66,7 +70,19 @@ func (r *RancherService) Create() error {
 	return err
 }
 
+func (r *RancherService) Start() error {
+	return r.up(false)
+}
+
 func (r *RancherService) Up() error {
+	return r.up(true)
+}
+
+func (r *RancherService) Build() error {
+	return nil
+}
+
+func (r *RancherService) up(create bool) error {
 	var err error
 
 	defer func() {
@@ -78,6 +94,10 @@ func (r *RancherService) Up() error {
 	service, err := r.findExisting(r.name)
 	if err != nil {
 		return err
+	}
+
+	if service == nil && !create {
+		return nil
 	}
 
 	if service == nil {
@@ -96,7 +116,7 @@ func (r *RancherService) Up() error {
 
 	if service.Actions["activate"] != "" {
 		service, err = r.context.Client.Service.ActionActivate(service)
-		err = r.wait(service)
+		err = r.Wait(service)
 	}
 
 	return err
@@ -118,7 +138,7 @@ func (r *RancherService) Down() error {
 	}
 
 	service, err = r.context.Client.Service.ActionDeactivate(service)
-	return r.wait(service)
+	return r.Wait(service)
 }
 
 func (r *RancherService) Delete() error {
@@ -141,7 +161,7 @@ func (r *RancherService) Delete() error {
 		return err
 	}
 
-	return r.wait(service)
+	return r.Wait(service)
 }
 
 func (r *RancherService) findExisting(name string) (*rancherClient.Service, error) {
@@ -317,7 +337,7 @@ func (r *RancherService) createService() (*rancherClient.Service, error) {
 		return nil, err
 	}
 
-	err = r.wait(service)
+	err = r.Wait(service)
 	return service, err
 }
 
@@ -522,7 +542,7 @@ func (r *RancherService) createLaunchConfig(serviceConfig *project.ServiceConfig
 	return result, err
 }
 
-func (r *RancherService) wait(service *rancherClient.Service) error {
+func (r *RancherService) Wait(service *rancherClient.Service) error {
 	for {
 		if service.Transitioning != "yes" {
 			return nil
@@ -569,7 +589,7 @@ func (r *RancherService) Scale(count int) error {
 		return err
 	}
 
-	return r.wait(service)
+	return r.Wait(service)
 }
 
 func (r *RancherService) Containers() ([]project.Container, error) {
@@ -707,8 +727,16 @@ func (r *RancherService) DependentServices() []project.ServiceRelationship {
 	return result
 }
 
+func (r *RancherService) Client() *rancherClient.RancherClient {
+	return r.context.Client
+}
+
+func (r *RancherService) Kill() error {
+	return project.ErrUnsupported
+}
+
 func (r *RancherService) Pull() error {
-	return nil
+	return project.ErrUnsupported
 }
 
 func TrimSplit(str, sep string, count int) []string {

@@ -1,0 +1,11 @@
+web:
+  extends:
+    file: common.yml
+    service: web
+
+db:
+  extends:
+    file: common.yml
+    service: db
+  links:
+    - web:web

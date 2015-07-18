@@ -33,6 +33,8 @@ type DnsService struct {
 
 	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
 
+	Upgrade ServiceUpgrade `json:"upgrade,omitempty" yaml:"upgrade,omitempty"`
+
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
 
@@ -56,6 +58,8 @@ type DnsServiceOperations interface {
 
 	ActionAddservicelink(*DnsService, *AddRemoveServiceLinkInput) (*Service, error)
 
+	ActionCancelupgrade(*DnsService) (*Service, error)
+
 	ActionCreate(*DnsService) (*Service, error)
 
 	ActionDeactivate(*DnsService) (*Service, error)
@@ -67,6 +71,8 @@ type DnsServiceOperations interface {
 	ActionSetservicelinks(*DnsService, *SetServiceLinksInput) (*Service, error)
 
 	ActionUpdate(*DnsService) (*Service, error)
+
+	ActionUpgrade(*DnsService, *ServiceUpgrade) (*Service, error)
 }
 
 func newDnsServiceClient(rancherClient *RancherClient) *DnsServiceClient {
@@ -121,6 +127,15 @@ func (c *DnsServiceClient) ActionAddservicelink(resource *DnsService, input *Add
 	return resp, err
 }
 
+func (c *DnsServiceClient) ActionCancelupgrade(resource *DnsService) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(DNS_SERVICE_TYPE, "cancelupgrade", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
 func (c *DnsServiceClient) ActionCreate(resource *DnsService) (*Service, error) {
 
 	resp := &Service{}
@@ -171,6 +186,15 @@ func (c *DnsServiceClient) ActionUpdate(resource *DnsService) (*Service, error) 
 	resp := &Service{}
 
 	err := c.rancherClient.doAction(DNS_SERVICE_TYPE, "update", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *DnsServiceClient) ActionUpgrade(resource *DnsService, input *ServiceUpgrade) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(DNS_SERVICE_TYPE, "upgrade", &resource.Resource, input, resp)
 
 	return resp, err
 }

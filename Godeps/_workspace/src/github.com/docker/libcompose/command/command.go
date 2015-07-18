@@ -14,6 +14,14 @@ func CreateCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+func BuildCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "build",
+		Usage:  "Build or rebuild services.",
+		Action: app.WithProject(factory, app.ProjectBuild),
+	}
+}
+
 func UpCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "up",
@@ -32,7 +40,13 @@ func StartCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "start",
 		Usage:  "Start services",
-		Action: app.WithProject(factory, app.ProjectUp),
+		Action: app.WithProject(factory, app.ProjectStart),
+		Flags: []cli.Flag{
+			cli.BoolTFlag{
+				Name:  "d",
+				Usage: "Do not block and log",
+			},
+		},
 	}
 }
 
@@ -95,6 +109,13 @@ func ScaleCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "scale",
 		Usage:  "Scale services",
 		Action: app.WithProject(factory, app.ProjectScale),
+		Flags: []cli.Flag{
+			cli.IntFlag{
+				Name:  "timeout,t",
+				Usage: "Specify a shutdown timeout in seconds.",
+				Value: 10,
+			},
+		},
 	}
 }
 
@@ -107,6 +128,21 @@ func RmCommand(factory app.ProjectFactory) cli.Command {
 			cli.BoolFlag{
 				Name:  "force,f",
 				Usage: "Allow deletion of all services",
+			},
+		},
+	}
+}
+
+func KillCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "kill",
+		Usage:  "Force stop service containers",
+		Action: app.WithProject(factory, app.ProjectKill),
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "signal,s",
+				Usage: "SIGNAL to send to the container",
+				Value: "SIGKILL",
 			},
 		},
 	}
@@ -138,7 +174,9 @@ func Populate(context *project.Context, c *cli.Context) {
 		context.Log = true
 	} else if c.Command.Name == "up" {
 		context.Log = !c.Bool("d")
-	} else if c.Command.Name == "stop" || c.Command.Name == "restart" {
+	} else if c.Command.Name == "stop" || c.Command.Name == "restart" || c.Command.Name == "scale" {
 		context.Timeout = c.Int("timeout")
+	} else if c.Command.Name == "kill" {
+		context.Signal = c.String("signal")
 	}
 }

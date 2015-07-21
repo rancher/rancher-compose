@@ -212,6 +212,53 @@ def test_circular_sidekick(client, compose):
     assert len(secondary) == 1
 
 
+def test_delete(client, compose):
+    template = '''
+    web:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.state == 'inactive'
+
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'up', '-d')
+
+    service = client.wait_success(service)
+
+    assert service.state == 'active'
+
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'rm', '--force')
+
+    service = client.wait_success(service)
+
+    assert service.state == 'removed'
+
+
+def test_delete_while_stopped(client, compose):
+    template = '''
+    web:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.state == 'inactive'
+
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'rm', 'web')
+
+    service = client.wait_success(service)
+
+    assert service.state == 'removed'
+
+
 def test_network_bridge(client, compose):
     template = '''
     web:

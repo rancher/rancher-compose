@@ -152,7 +152,7 @@ func (r *RancherService) Delete() error {
 		return err
 	}
 
-	if service.State == "inactive" {
+	if service.Removed != "" || service.State == "removing" || service.State == "removed" {
 		return nil
 	}
 

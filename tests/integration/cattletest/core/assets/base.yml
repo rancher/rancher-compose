@@ -9,8 +9,6 @@ local:
     ports:
     - 80
     image: local
-    links:
-    - foo
 
 other-base:
     environment:

@@ -3,6 +3,7 @@ package docker
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -35,6 +36,59 @@ func NewContainer(client dockerclient.Client, name string, service *Service) *Co
 
 func (c *Container) findExisting() (*dockerclient.Container, error) {
 	return GetContainerByName(c.client, c.name)
+}
+
+func (c *Container) findInfo() (*dockerclient.ContainerInfo, error) {
+	container, err := c.findExisting()
+	if err != nil {
+		return nil, err
+	}
+
+	return c.client.InspectContainer(container.Id)
+}
+
+func (c *Container) Info() (project.Info, error) {
+	container, err := c.findExisting()
+	if err != nil {
+		return nil, err
+	}
+
+	result := project.Info{}
+
+	result = append(result, project.InfoPart{"Name", name(container.Names)})
+	result = append(result, project.InfoPart{"Command", container.Command})
+	result = append(result, project.InfoPart{"State", container.Status})
+	result = append(result, project.InfoPart{"Ports", portString(container.Ports)})
+
+	return result, nil
+}
+
+func portString(ports []dockerclient.Port) string {
+	result := []string{}
+
+	for _, port := range ports {
+		if port.PublicPort > 0 {
+			result = append(result, fmt.Sprintf("%s:%d->%d/%s", port.IP, port.PublicPort, port.PrivatePort, port.Type))
+		} else {
+			result = append(result, fmt.Sprintf("%d/%s", port.PrivatePort, port.Type))
+		}
+	}
+
+	return strings.Join(result, ", ")
+}
+
+func name(names []string) string {
+	max := math.MaxInt32
+	var current string
+
+	for _, v := range names {
+		if len(v) < max {
+			max = len(v)
+			current = v
+		}
+	}
+
+	return current[1:]
 }
 
 func (c *Container) Create(imageName string) (*dockerclient.Container, error) {
@@ -118,6 +172,20 @@ func (c *Container) Up(imageName string) error {
 	return nil
 }
 
+func (c *Container) OutOfSync() (bool, error) {
+	container, err := c.findExisting()
+	if err != nil || container == nil {
+		return false, err
+	}
+
+	info, err := c.client.InspectContainer(container.Id)
+	if err != nil {
+		return false, err
+	}
+
+	return info.Config.Labels[HASH.Str()] != project.GetServiceHash(c.service), nil
+}
+
 func (c *Container) createContainer(imageName string) (*dockerclient.Container, error) {
 	config, err := ConvertToApi(c.service.serviceConfig)
 	if err != nil {
@@ -133,6 +201,7 @@ func (c *Container) createContainer(imageName string) (*dockerclient.Container, 
 	config.Labels[NAME.Str()] = c.name
 	config.Labels[SERVICE.Str()] = c.service.name
 	config.Labels[PROJECT.Str()] = c.service.context.Project.Name
+	config.Labels[HASH.Str()] = project.GetServiceHash(c.service)
 
 	err = c.populateAdditionalHostConfig(&config.HostConfig)
 	if err != nil {
@@ -188,6 +257,9 @@ func (c *Container) populateAdditionalHostConfig(hostConfig *dockerclient.HostCo
 	hostConfig.Links = []string{}
 	for k, v := range links {
 		hostConfig.Links = append(hostConfig.Links, strings.Join([]string{v, k}, ":"))
+	}
+	for _, v := range c.service.Config().ExternalLinks {
+		hostConfig.Links = append(hostConfig.Links, v)
 	}
 
 	return nil
@@ -339,4 +411,22 @@ func (c *Container) withContainer(action func(*dockerclient.Container) error) er
 	}
 
 	return nil
+}
+
+func (c *Container) Port(port string) (string, error) {
+	info, err := c.findInfo()
+	if err != nil {
+		return "", err
+	}
+
+	if bindings, ok := info.NetworkSettings.Ports[port]; ok {
+		result := []string{}
+		for _, binding := range bindings {
+			result = append(result, binding.HostIp+":"+binding.HostPort)
+		}
+
+		return strings.Join(result, "\n"), nil
+	} else {
+		return "", nil
+	}
 }

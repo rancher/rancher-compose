@@ -32,6 +32,7 @@ type RancherConfig struct {
 	Scale              int                                `yaml:"scale,omitempty"`
 	LoadBalancerConfig *rancherClient.LoadBalancerConfig  `yaml:"load_balancer_config,omitempty"`
 	ExternalIps        []string                           `yaml:"external_ips,omitempty"`
+	Hostname           string                             `yaml:"hostname,omitempty"`
 	HealthCheck        *rancherClient.InstanceHealthCheck `yaml:"health_check,omitempty"`
 }
 

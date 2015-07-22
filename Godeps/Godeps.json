@@ -248,31 +248,31 @@
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/app",
-			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
+			"Rev": "bac47aa5346eb03ade9c9dcf6a162c79392847b4"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/command",
-			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
+			"Rev": "bac47aa5346eb03ade9c9dcf6a162c79392847b4"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/docker",
-			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
+			"Rev": "bac47aa5346eb03ade9c9dcf6a162c79392847b4"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/logger",
-			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
+			"Rev": "bac47aa5346eb03ade9c9dcf6a162c79392847b4"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/lookup",
-			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
+			"Rev": "bac47aa5346eb03ade9c9dcf6a162c79392847b4"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/project",
-			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
+			"Rev": "bac47aa5346eb03ade9c9dcf6a162c79392847b4"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/utils",
-			"Rev": "92060343a99cdc129ebccce0a5a2a7331063f8a5"
+			"Rev": "bac47aa5346eb03ade9c9dcf6a162c79392847b4"
 		},
 		{
 			"ImportPath": "github.com/docker/libcontainer/user",
@@ -301,13 +301,13 @@
 		},
 		{
 			"ImportPath": "github.com/rancherio/go-rancher/client",
-			"Comment": "v0.1.0-53-gd8c0106",
-			"Rev": "d8c010622f37834bffd041af32ce0afffab6eee5"
+			"Comment": "v0.1.0-55-g008a0c9",
+			"Rev": "008a0c970eedeb89bd666a3209fd9c9379205e71"
 		},
 		{
 			"ImportPath": "github.com/rancherio/go-rancher/hostaccess",
-			"Comment": "v0.1.0-53-gd8c0106",
-			"Rev": "d8c010622f37834bffd041af32ce0afffab6eee5"
+			"Comment": "v0.1.0-55-g008a0c9",
+			"Rev": "008a0c970eedeb89bd666a3209fd9c9379205e71"
 		},
 		{
 			"ImportPath": "github.com/samalba/dockerclient",

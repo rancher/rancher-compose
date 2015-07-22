@@ -192,6 +192,7 @@ func (r *RancherService) createExternalService() (*rancherClient.Service, error)
 	_, err := r.context.Client.ExternalService.Create(&rancherClient.ExternalService{
 		Name:                r.name,
 		ExternalIpAddresses: config.ExternalIps,
+		Hostname:            config.Hostname,
 		EnvironmentId:       r.context.Environment.Id,
 	})
 
@@ -238,15 +239,21 @@ func (r *RancherService) createLbService() (*rancherClient.Service, error) {
 		lbConfig = config.LoadBalancerConfig
 	}
 
-	_, err := r.context.Client.LoadBalancerService.Create(&rancherClient.LoadBalancerService{
+	launchConfig, err := r.createLaunchConfig(r.serviceConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	launchConfig.ImageUuid = ""
+	// Write back to the ports passed in because the Docker parsing logic changes then
+	launchConfig.Ports = r.serviceConfig.Ports
+
+	_, err = r.context.Client.LoadBalancerService.Create(&rancherClient.LoadBalancerService{
 		Name:               r.name,
 		LoadBalancerConfig: lbConfig,
-		LaunchConfig: rancherClient.LaunchConfig{
-			Ports:  r.serviceConfig.Ports,
-			Labels: utils.ConvertToInterfaceMap(r.serviceConfig.Labels.MapParts()),
-		},
-		Scale:         int64(r.getConfiguredScale()),
-		EnvironmentId: r.context.Environment.Id,
+		LaunchConfig:       launchConfig,
+		Scale:              int64(r.getConfiguredScale()),
+		EnvironmentId:      r.context.Environment.Id,
 	})
 
 	if err != nil {
@@ -319,7 +326,7 @@ func (r *RancherService) createService() (*rancherClient.Service, error) {
 	var service *rancherClient.Service
 	var err error
 
-	if len(rancherConfig.ExternalIps) > 0 {
+	if len(rancherConfig.ExternalIps) > 0 || rancherConfig.Hostname != "" {
 		service, err = r.createExternalService()
 	} else if r.serviceConfig.Image == LB_IMAGE {
 		service, err = r.createLbService()
@@ -385,15 +392,7 @@ func (r *RancherService) getLbLinkPorts(name string) ([]string, error) {
 	labelName := "io.rancher.loadbalancer.target." + name
 	v := r.serviceConfig.Labels.MapParts()[labelName]
 	if v == "" {
-		if len(r.serviceConfig.Ports) != 1 {
-			return nil, fmt.Errorf("Failed to find target ports for %s, add label %s", name, labelName)
-		}
-		parts := TrimSplit(TrimSplit(r.serviceConfig.Ports[0], "/", 2)[0], ":", 2)
-		if len(parts) == 2 {
-			return []string{parts[1]}, nil
-		} else {
-			return []string{parts[0]}, nil
-		}
+		return []string{}, nil
 	}
 
 	return TrimSplit(v, ",", -1), nil
@@ -733,6 +732,10 @@ func (r *RancherService) Client() *rancherClient.RancherClient {
 
 func (r *RancherService) Kill() error {
 	return project.ErrUnsupported
+}
+
+func (r *RancherService) Info() (project.InfoSet, error) {
+	return project.InfoSet{}, nil
 }
 
 func (r *RancherService) Pull() error {

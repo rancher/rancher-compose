@@ -1,14 +1,19 @@
 package project
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/logger"
 )
+
+var projectRegexp = regexp.MustCompile("[^a-zA-Z0-9_.-]")
 
 type Context struct {
 	Timeout             int
@@ -59,31 +64,53 @@ func (c *Context) readComposeFile() error {
 }
 
 func (c *Context) determineProject() error {
+	name, err := c.lookupProjectName()
+	if err != nil {
+		return err
+	}
+
+	c.ProjectName = projectRegexp.ReplaceAllString(strings.ToLower(name), "-")
+
+	if c.ProjectName == "" {
+		return fmt.Errorf("Falied to determine project name")
+	}
+
+	if strings.ContainsAny(c.ProjectName[0:1], "_.-") {
+		c.ProjectName = "x" + c.ProjectName
+	}
+
+	return nil
+}
+
+func (c *Context) lookupProjectName() (string, error) {
 	if c.ProjectName != "" {
-		return nil
+		return c.ProjectName, nil
 	}
 
 	if envProject := os.Getenv("COMPOSE_PROJECT_NAME"); envProject != "" {
-		c.ProjectName = envProject
-		return nil
+		return envProject, nil
 	}
 
 	f, err := filepath.Abs(c.ComposeFile)
 	if err != nil {
 		logrus.Errorf("Failed to get absolute directory for: %s", c.ComposeFile)
-		return err
+		return "", err
 	}
+
+	f = toUnixPath(f)
 
 	parent := path.Base(path.Dir(f))
-	if parent != "" {
-		c.ProjectName = parent
+	if parent != "" && parent != "." {
+		return parent, nil
 	} else if wd, err := os.Getwd(); err != nil {
-		return err
+		return "", err
 	} else {
-		c.ProjectName = path.Base(wd)
+		return path.Base(toUnixPath(wd)), nil
 	}
+}
 
-	return nil
+func toUnixPath(p string) string {
+	return strings.Replace(p, "\\", "/", -1)
 }
 
 func (c *Context) open() error {

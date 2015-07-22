@@ -1,7 +1,9 @@
 package app
 
 import (
+	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 
@@ -27,6 +29,54 @@ func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli
 		}
 		action(p, context)
 	}
+}
+
+func ProjectPs(p *project.Project, c *cli.Context) {
+	allInfo := project.InfoSet{}
+	for name, _ := range p.Configs {
+		service, err := p.CreateService(name)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
+		info, err := service.Info()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
+		allInfo = append(allInfo, info...)
+	}
+
+	os.Stdout.WriteString(allInfo.String())
+}
+
+func ProjectPort(p *project.Project, c *cli.Context) {
+	if len(c.Args()) != 2 {
+		logrus.Fatalf("Please pass arguments in the form: SERVICE PORT")
+	}
+
+	index := c.Int("index")
+	protocol := c.String("protocol")
+
+	service, err := p.CreateService(c.Args()[0])
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	containers, err := service.Containers()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	if index < 1 || index > len(containers) {
+		logrus.Fatalf("Invalid index %d", index)
+	}
+
+	output, err := containers[index-1].Port(fmt.Sprintf("%s/%s", c.Args()[1], protocol))
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	fmt.Println(output)
 }
 
 func ProjectDown(p *project.Project, c *cli.Context) {

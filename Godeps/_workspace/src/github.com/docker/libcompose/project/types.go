@@ -50,6 +50,13 @@ const (
 	PROJECT_BUILD_DONE     = Event("Project built")
 )
 
+type InfoPart struct {
+	Key, Value string
+}
+
+type InfoSet []Info
+type Info []InfoPart
+
 type ServiceConfig struct {
 	Build         string            `yaml:"build,omitempty"`
 	CapAdd        []string          `yaml:"cap_add,omitempty"`
@@ -117,6 +124,7 @@ type Project struct {
 }
 
 type Service interface {
+	Info() (InfoSet, error)
 	Name() string
 	Build() error
 	Create() error
@@ -137,6 +145,7 @@ type Service interface {
 type Container interface {
 	Id() (string, error)
 	Name() string
+	Port(port string) (string, error)
 }
 
 type ServiceFactory interface {

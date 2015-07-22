@@ -49,6 +49,8 @@ type Container struct {
 
 	Environment map[string]interface{} `json:"environment,omitempty" yaml:"environment,omitempty"`
 
+	Expose []string `json:"expose,omitempty" yaml:"expose,omitempty"`
+
 	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
 
 	ExtraHosts []string `json:"extraHosts,omitempty" yaml:"extra_hosts,omitempty"`

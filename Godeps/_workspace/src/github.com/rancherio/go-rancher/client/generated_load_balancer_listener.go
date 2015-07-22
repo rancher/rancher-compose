@@ -21,6 +21,8 @@ type LoadBalancerListener struct {
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
+	PrivatePort int64 `json:"privatePort,omitempty" yaml:"private_port,omitempty"`
+
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`

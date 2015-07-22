@@ -192,6 +192,7 @@ func (r *RancherService) createExternalService() (*rancherClient.Service, error)
 	_, err := r.context.Client.ExternalService.Create(&rancherClient.ExternalService{
 		Name:                r.name,
 		ExternalIpAddresses: config.ExternalIps,
+		Hostname:            config.Hostname,
 		EnvironmentId:       r.context.Environment.Id,
 	})
 
@@ -325,7 +326,7 @@ func (r *RancherService) createService() (*rancherClient.Service, error) {
 	var service *rancherClient.Service
 	var err error
 
-	if len(rancherConfig.ExternalIps) > 0 {
+	if len(rancherConfig.ExternalIps) > 0 || rancherConfig.Hostname != "" {
 		service, err = r.createExternalService()
 	} else if r.serviceConfig.Image == LB_IMAGE {
 		service, err = r.createLbService()

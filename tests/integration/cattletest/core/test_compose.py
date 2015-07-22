@@ -786,6 +786,18 @@ def test_sidekick_container_network(client, compose):
     assert service.secondaryLaunchConfigs[0].networkLaunchConfig == 'web'
 
 
+def test_external_service_hostname(client, compose):
+    project_name = create_project(compose, file='assets/hostname/test.yml')
+
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.name == 'web'
+    assert service.type == 'externalService'
+    assert 'launchConfig' not in service
+    assert service.hostname == 'example.com'
+
+
 def test_external_ip(client, compose):
     project_name = create_project(compose, file='assets/externalip/test.yml')
 

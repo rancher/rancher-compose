@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-URL=https://github.com/rancherio/cattle/releases/download/v0.65.0/cattle.jar
+URL=https://github.com/rancherio/cattle/releases/download/v0.66.0/cattle.jar
 
 cd $(dirname $0)/..
 

@@ -22,6 +22,34 @@ func BuildCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+func PsCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "ps",
+		Usage:  "List containers",
+		Action: app.WithProject(factory, app.ProjectPs),
+	}
+}
+
+func PortCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "port",
+		Usage:  "Print the public port for a port binding",
+		Action: app.WithProject(factory, app.ProjectPort),
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:  "protocol",
+				Usage: "tcp or udp ",
+				Value: "tcp",
+			},
+			cli.IntFlag{
+				Name:  "index",
+				Usage: "index of the container if there are multiple instances of a service",
+				Value: 1,
+			},
+		},
+	}
+}
+
 func UpCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "up",

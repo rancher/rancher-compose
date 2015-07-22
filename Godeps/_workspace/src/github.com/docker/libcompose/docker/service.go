@@ -120,6 +120,24 @@ func (s *Service) Up() error {
 	return s.up(imageName, true)
 }
 
+func (s *Service) Info() (project.InfoSet, error) {
+	result := project.InfoSet{}
+	containers, err := s.collectContainers()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range containers {
+		if info, err := c.Info(); err != nil {
+			return nil, err
+		} else {
+			result = append(result, info)
+		}
+	}
+
+	return result, nil
+}
+
 func (s *Service) Start() error {
 	return s.up("", false)
 }
@@ -132,8 +150,6 @@ func (s *Service) up(imageName string, create bool) error {
 
 	logrus.Debugf("Found %d existing containers for service %s", len(containers), s.name)
 
-	//TODO: Replace here if needed
-
 	if len(containers) == 0 && create {
 		c, err := s.createOne()
 		if err != nil {
@@ -143,6 +159,11 @@ func (s *Service) up(imageName string, create bool) error {
 	}
 
 	return s.eachContainer(func(c *Container) error {
+		if outOfSync, err := c.OutOfSync(); err != nil {
+			return err
+		} else if outOfSync {
+			logrus.Warnf("%s needs rebuilding", s.Name())
+		}
 		return c.Up(imageName)
 	})
 }

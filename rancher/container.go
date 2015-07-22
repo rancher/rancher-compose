@@ -18,3 +18,8 @@ func (c *Container) Id() (string, error) {
 func (c *Container) Name() string {
 	return c.name
 }
+
+func (c *Container) Port(port string) (string, error) {
+	//TODO: implement
+	return "", nil
+}

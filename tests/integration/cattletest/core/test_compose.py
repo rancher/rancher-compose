@@ -384,15 +384,9 @@ def test_extends_1556(client, compose):
     assert web.name == 'web'
 
 
-def test_extends_1556_2(client, compose):
-    project_name = create_project(compose,
-                                  file='assets/extends_2/docker-compose.yml')
-    project = find_one(client.list_environment, name=project_name)
-    assert project.name == project_name
-
-    db = _get_service(project.services(), 'db')
-
-    assert len(db.consumedservices()) == 0
+def test_extends_1556_2(compose):
+    with pytest.raises(AssertionError):
+        create_project(compose, file='assets/extends_2/docker-compose.yml')
 
 
 def test_restart_policies(client, compose):
@@ -430,7 +424,7 @@ def test_restart_policies_on_failure_default(client, compose):
     }
 
 
-def test_lb(client, compose):
+def test_lb_basic(client, compose):
     template = '''
     lb:
         image: rancher/load-balancer-service
@@ -457,13 +451,14 @@ def test_lb(client, compose):
 
     for map in maps:
         if map.consumedServiceId == web.id:
-            assert map.ports == ['80']
+            assert map.ports == []
         elif map.consumedServiceId == web2.id:
-            assert map.ports == ['80']
+            assert map.ports == []
         else:
             assert False
 
     assert lb.type == 'loadBalancerService'
+    assert lb.launchConfig.ports == ['80']
 
 
 def test_lb_default_port_http(client, compose):
@@ -488,7 +483,9 @@ def test_lb_default_port_http(client, compose):
 
     map = find_one(client.list_service_consume_map, serviceId=lb.id)
     assert map.consumedServiceId == web.id
-    assert map.ports == ['80']
+    assert map.ports == []
+
+    assert lb.launchConfig.ports == ['7900:80/tcp']
 
 
 def test_lb_default_port_with_mapped_tcp(client, compose):
@@ -514,7 +511,9 @@ def test_lb_default_port_with_mapped_tcp(client, compose):
 
     map = find_one(client.list_service_consume_map, serviceId=lb.id)
     assert map.consumedServiceId == web.id
-    assert map.ports == ['8080']
+    assert map.ports == []
+
+    assert lb.launchConfig.ports == ['80:8080/tcp']
 
 
 def test_lb_default_port_with_tcp(client, compose):
@@ -538,7 +537,9 @@ def test_lb_default_port_with_tcp(client, compose):
 
     map = find_one(client.list_service_consume_map, serviceId=lb.id)
     assert map.consumedServiceId == web.id
-    assert map.ports == ['80']
+    assert map.ports == []
+
+    lb.launchConfig.ports == ['80/tcp']
 
 
 def test_lb_path_space_target(client, compose):
@@ -548,7 +549,7 @@ def test_lb_path_space_target(client, compose):
         ports:
         - 80:8080
         labels:
-          io.rancher.loadbalancer.target.web: "6000:hostname/path,
+          io.rancher.loadbalancer.target.web: "hostname/path:6000,
            7000"
         links:
         - web
@@ -568,7 +569,7 @@ def test_lb_path_space_target(client, compose):
 
     for map in maps:
         if map.consumedServiceId == web.id:
-            assert map.ports == ['6000:hostname/path',
+            assert map.ports == ['hostname/path:6000',
                                  '7000']
         else:
             assert False
@@ -583,7 +584,7 @@ def test_lb_path_name(client, compose):
         ports:
         - 80:8080
         labels:
-          io.rancher.loadbalancer.target.web: 6000:hostname/path,7000:hostname
+          io.rancher.loadbalancer.target.web: hostname/path:6000,hostname:7000
           io.rancher.loadbalancer.target.web2: 9000
         links:
         - web
@@ -610,13 +611,14 @@ def test_lb_path_name(client, compose):
 
     for map in maps:
         if map.consumedServiceId == web.id:
-            assert map.ports == ['6000:hostname/path',
-                                 '7000:hostname']
+            assert map.ports == ['hostname/path:6000',
+                                 'hostname:7000']
         elif map.consumedServiceId == web2.id:
             assert map.ports == ['9000']
         elif map.consumedServiceId == web3.id:
-            assert map.ports == ['8080']
+            assert map.ports == []
 
+    assert lb.launchConfig.ports == ['80:8080']
     assert lb.type == 'loadBalancerService'
 
 
@@ -640,10 +642,11 @@ def test_lb_path_name_minimal(client, compose):
     web = _get_service(project.services(), 'web')
 
     map = find_one(client.list_service_consume_map, serviceId=lb.id)
-    assert map.ports == ['84']
+    assert map.ports == []
     assert map.consumedServiceId == web.id
 
     assert lb.type == 'loadBalancerService'
+    assert lb.launchConfig.ports == ['84']
 
 
 def test_lb_full_config(client, compose):

@@ -277,6 +277,7 @@ func (r *RancherService) createLbService() (*rancherClient.Service, error) {
 	launchConfig.ImageUuid = ""
 	// Write back to the ports passed in because the Docker parsing logic changes then
 	launchConfig.Ports = r.serviceConfig.Ports
+	launchConfig.Expose = r.serviceConfig.Expose
 
 	_, err = r.context.Client.LoadBalancerService.Create(&rancherClient.LoadBalancerService{
 		Name:               r.name,

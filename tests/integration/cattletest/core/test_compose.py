@@ -19,6 +19,13 @@ class Compose(object):
         self.compose_bin = compose_bin
         self.client = client
 
+    def check_retcode(self, input, check_retcode, *args):
+        p = self.call(*args)
+        p.communicate(input=input)
+        retcode = p.wait()
+        assert check_retcode == retcode
+        return p
+
     def check_call(self, input, *args):
         p = self.call(*args)
         p.communicate(input=input)
@@ -165,6 +172,7 @@ def test_args(client, compose):
         'dockerfile': 'something/other',
         'remote': 'github.com/ibuildthecloud/tiny-build',
     }
+    assert service.launchConfig.externalLinks == ['foo', 'bar']
 
 
 def test_git_build(client, compose):
@@ -378,7 +386,12 @@ def test_extends_1556(client, compose):
     project = find_one(client.list_environment, name=project_name)
     assert project.name == project_name
 
+    web = _get_service(project.services(), 'web')
     db = _get_service(project.services(), 'db')
+
+    # Notice the images are wrong
+    assert web.launchConfig.imageUuid == 'docker:ubuntu:14:04'
+    assert db.launchConfig.imageUuid == 'docker:ubuntu:14:04'
 
     web = find_one(db.consumedservices)
     assert web.name == 'web'
@@ -931,6 +944,33 @@ def test_service_map_syntax(client, compose):
 
     assert len(maps) == 1
     assert maps[0].name == 'alias'
+
+
+def test_cross_stack_link(client, compose):
+    template = '''
+    dest:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    dest = _get_service(project.services(), 'dest')
+
+    template = '''
+    src:
+        external_links:
+        - {}/dest
+        image: nginx
+    '''.format(project_name)
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    src = _get_service(project.services(), 'src')
+
+    services = src.consumedservices()
+    assert len(services) == 1
+
+    assert services[0].id == dest.id
 
 
 def test_upgrade_ignore_scale(client, compose):

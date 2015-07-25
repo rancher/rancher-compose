@@ -164,11 +164,41 @@ func (r *RancherService) Delete() error {
 	return r.Wait(service)
 }
 
+func (r *RancherService) resolveServiceAndEnvironmentId(name string) (string, string, error) {
+	parts := strings.SplitN(name, "/", 2)
+	if len(parts) == 1 {
+		return name, r.context.Environment.Id, nil
+	}
+
+	envs, err := r.context.Client.Environment.List(&rancherClient.ListOpts{
+		Filters: map[string]interface{}{
+			"name":         parts[0],
+			"removed_null": nil,
+		},
+	})
+
+	if err != nil {
+		return "", "", err
+	}
+
+	if len(envs.Data) == 0 {
+		return "", "", fmt.Errorf("Failed to find environment: %s", parts[0])
+	}
+
+	return parts[1], envs.Data[0].Id, nil
+}
+
 func (r *RancherService) findExisting(name string) (*rancherClient.Service, error) {
 	logrus.Debugf("Finding service %s", name)
+
+	name, environmentId, err := r.resolveServiceAndEnvironmentId(name)
+	if err != nil {
+		return nil, err
+	}
+
 	services, err := r.context.Client.Service.List(&rancherClient.ListOpts{
 		Filters: map[string]interface{}{
-			"environmentId": r.context.Environment.Id,
+			"environmentId": environmentId,
 			"name":          name,
 			"removed_null":  nil,
 		},
@@ -418,7 +448,7 @@ func (r *RancherService) getServiceLinks() ([]interface{}, error) {
 func (r *RancherService) getLinks() (map[Link]string, error) {
 	result := map[Link]string{}
 
-	for _, link := range r.serviceConfig.Links.Slice() {
+	for _, link := range append(r.serviceConfig.Links.Slice(), r.serviceConfig.ExternalLinks...) {
 		parts := strings.SplitN(link, ":", 2)
 		name := parts[0]
 		alias := name

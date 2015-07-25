@@ -891,6 +891,29 @@ def test_up_relink(client, compose):
     assert consumed[0].name == 'web2'
 
 
+def test_service_upgrade_from_nil(client, compose):
+    template = '''
+    foo:
+        image: nginx
+    web2:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+
+    upgrade = '''
+    foo:
+        image: nginx
+    web:
+        image: nginx
+    web2:
+        image: nginx
+    '''
+
+    compose.check_retcode(upgrade, 1, '-p', project_name, '-f',
+                          '-', 'upgrade', 'web', 'web2')
+
+
 def test_service_map_syntax(client, compose):
     template = '''
     foo:

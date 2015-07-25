@@ -52,6 +52,14 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 		return err
 	}
 
+	if source == nil {
+		return fmt.Errorf("Failed to find service %s", from)
+	}
+
+	if dest == nil {
+		return fmt.Errorf("Failed to find service %s", to)
+	}
+
 	upgradeOpts := &rancherClient.ServiceUpgrade{
 		UpdateLinks:    opts.UpdateLinks,
 		FinalScale:     int64(opts.FinalScale),

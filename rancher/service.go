@@ -581,9 +581,9 @@ func (r *RancherService) Scale(count int) error {
 		return fmt.Errorf("Failed to find %s to scale", r.name)
 	}
 
-	service.Scale = int64(count)
-
-	service, err = r.context.Client.Service.Update(service, service)
+	service, err = r.context.Client.Service.Update(service, map[string]interface{}{
+		"scale": count,
+	})
 	if err != nil {
 		return err
 	}

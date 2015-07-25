@@ -933,6 +933,29 @@ def test_service_map_syntax(client, compose):
     assert maps[0].name == 'alias'
 
 
+def test_upgrade_ignore_scale(client, compose):
+    project_name = create_project(compose, file='assets/upgrade-ignore-scale/'
+                                                'docker-compose-source.yml')
+    compose.check_call(None, '--verbose', '-f', 'assets/upgrade-ignore-scale/'
+                       'docker-compose-source.yml',
+                       '-p', project_name, 'up', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    compose.check_call(None, '-p', project_name, '-f',
+                       'assets/upgrade-ignore-scale/docker-compose.yml',
+                       'upgrade', '--scale=2', 'from', 'to')
+
+    f = _get_service(project.services(), 'from')
+    to = _get_service(project.services(), 'to')
+
+    assert to.scale == 0
+
+    f = client.wait_success(f)
+    to = client.wait_success(to)
+
+    assert f.scale == 0
+    assert to.scale == 2
+
+
 def test_service_link_with_space(client, compose):
     template = '''
     foo:

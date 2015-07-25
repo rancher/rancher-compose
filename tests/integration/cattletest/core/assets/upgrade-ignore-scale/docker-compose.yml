@@ -1,0 +1,4 @@
+from:
+  image: nginx
+to:
+  image: nginx

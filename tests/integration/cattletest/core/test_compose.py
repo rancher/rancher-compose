@@ -438,6 +438,32 @@ def test_restart_policies_on_failure_default(client, compose):
     }
 
 
+def test_lb_private(client, compose):
+    template = '''
+    lb:
+        expose:
+        - 111:222
+        - 222:333/tcp
+        image: rancher/load-balancer-service
+        ports:
+        - 80
+        links:
+        - web
+        - web2
+    web:
+        image: nginx
+    web2:
+        image: nginx'''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 3
+    lb = _get_service(project.services(), 'lb')
+
+    assert lb.launchConfig.expose == ['111:222', '222:333/tcp']
+
+
 def test_lb_basic(client, compose):
     template = '''
     lb:

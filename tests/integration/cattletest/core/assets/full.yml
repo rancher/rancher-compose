@@ -58,3 +58,6 @@ web:
     - "label:foo"
     - "label:bar"
     volume_driver: foo
+    external_links:
+    - foo
+    - bar

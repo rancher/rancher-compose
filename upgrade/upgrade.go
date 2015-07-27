@@ -46,6 +46,10 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 		return err
 	}
 
+	if err := rToService.Up(); err != nil {
+		return err
+	}
+
 	source, err := rFromService.RancherService()
 	if err != nil {
 		return err

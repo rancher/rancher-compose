@@ -1009,7 +1009,8 @@ def test_upgrade_ignore_scale(client, compose):
     project = find_one(client.list_environment, name=project_name)
     compose.check_call(None, '-p', project_name, '-f',
                        'assets/upgrade-ignore-scale/docker-compose.yml',
-                       'upgrade', '--scale=2', 'from', 'to')
+                       'upgrade', '--interval', '1000',
+                       '--scale=2', 'from', 'to')
 
     f = _get_service(project.services(), 'from')
     to = _get_service(project.services(), 'to')
@@ -1021,6 +1022,7 @@ def test_upgrade_ignore_scale(client, compose):
 
     assert f.scale == 0
     assert to.scale == 2
+    assert to.state == 'active'
 
 
 def test_service_link_with_space(client, compose):

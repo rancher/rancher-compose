@@ -38,12 +38,16 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 		return fmt.Errorf("%s is not a Rancher service", to)
 	}
 
-	if err := rToService.Create(); err != nil {
+	if service, err := rToService.RancherService(); err != nil {
 		return err
-	}
+	} else if service == nil {
+		if err := rToService.Create(); err != nil {
+			return err
+		}
 
-	if err := rToService.Scale(0); err != nil {
-		return err
+		if err := rToService.Scale(0); err != nil {
+			return err
+		}
 	}
 
 	if err := rToService.Up(); err != nil {

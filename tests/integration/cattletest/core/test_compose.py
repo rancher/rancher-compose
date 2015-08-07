@@ -1147,3 +1147,20 @@ def _get_service(services, name):
 
     assert service is not None
     return service
+
+
+def test_stack_case(client, compose):
+    template = '''
+    web:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+    find_one(client.list_environment, name=project_name)
+
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'up', '-d')
+
+    compose.check_call(template, '--verbose', '-f', '-', '-p',
+                       project_name.upper(), 'up', '-d')
+    find_one(client.list_environment, name=project_name)

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
@@ -102,7 +103,7 @@ func (c *Context) loadEnv() error {
 	}
 
 	for _, env := range envs.Data {
-		if c.ProjectName == env.Name {
+		if strings.EqualFold(c.ProjectName, env.Name) {
 			logrus.Debugf("Found environment: %s(%s)", env.Name, env.Id)
 			c.Environment = &env
 			return nil

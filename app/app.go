@@ -56,7 +56,7 @@ func UpgradeCommand(factory app.ProjectFactory) cli.Command {
 			},
 			cli.BoolFlag{
 				Name:  "clean, c",
-				Usage: "Remove the original service definition once upgraded",
+				Usage: "Remove the original service definition once upgraded, implies --wait",
 			},
 		},
 	}

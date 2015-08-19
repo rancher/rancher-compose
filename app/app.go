@@ -54,6 +54,10 @@ func UpgradeCommand(factory app.ProjectFactory) cli.Command {
 				Name:  "wait,w",
 				Usage: "Wait for upgrade to complete",
 			},
+			cli.BoolFlag{
+				Name: "clean, c",
+				Usage: "Remove the original service definition once upgraded",
+			},
 		},
 	}
 }
@@ -70,6 +74,7 @@ func Upgrade(p *project.Project, c *cli.Context) {
 		FinalScale:     c.Int("scale"),
 		UpdateLinks:    c.Bool("update-links"),
 		Wait:           c.Bool("wait"),
+		Clean:		c.Bool("clean"),
 	})
 
 	if err != nil {

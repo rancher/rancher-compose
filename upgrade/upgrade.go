@@ -15,6 +15,7 @@ type UpgradeOpts struct {
 	FinalScale     int
 	UpdateLinks    bool
 	Wait           bool
+	Clean	       bool
 }
 
 func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
@@ -93,6 +94,10 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 
 	if opts.Wait {
 		return rFromService.Wait(service)
+	}
+
+	if opts.Clean {
+		return rFromService.Delete(service)
 	}
 
 	return nil

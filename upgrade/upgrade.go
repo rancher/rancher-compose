@@ -93,11 +93,17 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 	}
 
 	if opts.Wait {
-		return rFromService.Wait(service)
+		err := rFromService.Wait(service)
+		if err != nil {
+			return err
+		}
 	}
 
 	if opts.Clean {
-		return rFromService.Delete(service)
+		err := rFromService.Delete()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

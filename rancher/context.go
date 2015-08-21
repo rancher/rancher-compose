@@ -104,13 +104,13 @@ func (c *Context) loadEnv() error {
 
 	for _, env := range envs.Data {
 		if strings.EqualFold(c.ProjectName, env.Name) {
-			logrus.Debugf("Found environment: %s(%s)", env.Name, env.Id)
+			logrus.Debugf("Found stack: %s(%s)", env.Name, env.Id)
 			c.Environment = &env
 			return nil
 		}
 	}
 
-	logrus.Infof("Creating environment %s", c.ProjectName)
+	logrus.Infof("Creating stack %s", c.ProjectName)
 	env, err := c.Client.Environment.Create(&rancherClient.Environment{
 		Name: c.ProjectName,
 	})

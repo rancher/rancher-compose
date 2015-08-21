@@ -182,7 +182,7 @@ func (r *RancherService) resolveServiceAndEnvironmentId(name string) (string, st
 	}
 
 	if len(envs.Data) == 0 {
-		return "", "", fmt.Errorf("Failed to find environment: %s", parts[0])
+		return "", "", fmt.Errorf("Failed to find stack: %s", parts[0])
 	}
 
 	return parts[1], envs.Data[0].Id, nil

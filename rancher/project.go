@@ -13,7 +13,7 @@ func NewProject(context *Context) (*project.Project, error) {
 	context.EnvironmentLookup = &lookup.OsEnvLookup{}
 	context.LoggerFactory = logger.NewColorLoggerFactory()
 	context.ServiceFactory = &RancherServiceFactory{
-		context: context,
+		Context: context,
 	}
 
 	p := project.NewProject(&context.Context)

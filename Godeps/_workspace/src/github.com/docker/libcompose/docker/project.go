@@ -26,6 +26,14 @@ func NewProject(context *Context) (*project.Project, error) {
 		context.Builder = NewDaemonBuilder(context)
 	}
 
+	if context.ClientFactory == nil {
+		factory, err := NewDefaultClientFactory(ClientOpts{})
+		if err != nil {
+			return nil, err
+		}
+		context.ClientFactory = factory
+	}
+
 	p := project.NewProject(&context.Context)
 
 	err := p.Parse()

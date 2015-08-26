@@ -7,8 +7,8 @@ import (
 	"github.com/codegangsta/cli"
 	cliApp "github.com/docker/libcompose/app"
 	"github.com/docker/libcompose/command"
-	rancherApp "github.com/rancherio/rancher-compose/app"
-	"github.com/rancherio/rancher-compose/version"
+	rancherApp "github.com/rancher/rancher-compose/app"
+	"github.com/rancher/rancher-compose/version"
 )
 
 func main() {

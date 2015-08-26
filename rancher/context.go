@@ -12,7 +12,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/project"
-	rancherClient "github.com/rancherio/go-rancher/client"
+	rancherClient "github.com/rancher/go-rancher/client"
 )
 
 type Context struct {

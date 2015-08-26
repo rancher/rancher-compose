@@ -1,0 +1,48 @@
+#!/bin/bash
+set -e
+
+URL=https://github.com/rancher/cattle/releases/download/v0.46.0/cattle.jar
+
+cd $(dirname $0)/..
+
+mkdir -p build
+
+cd build
+
+for i in success error; do
+    rm -f run-${i}
+    cat > run-${i}.sh << EOF
+#!/bin/bash
+touch run-${i}
+EOF
+    chmod +x run-${i}.sh
+done
+
+if [ ! -e cattle.jar ]; then
+    curl -L -O https://github.com/rancher/cattle/releases/download/v0.46.0/cattle.jar
+fi
+
+java -jar cattle.jar --notify $(pwd)/run-success.sh --notify-error $(pwd)/run-error.sh &
+
+while sleep .5; do
+    if [ -f run-success ]; then
+        break
+    elif [ -f run-error ]; then
+        exit 1
+    fi
+done
+
+if ! docker version 2>/dev/null; then
+    wrapdocker >docker.log 2>&1
+fi
+
+docker run --rm --privileged -e CATTLE_AGENT_IP=127.0.0.1 -v /var/run/docker.sock:/var/run/docker.sock rancher/agent http://localhost:8080 || true
+
+for ((i=0; i < 120; i++)); do
+    if curl -s http://localhost:8080/v1/projects/1a5/hosts | grep -q 1h1; then
+        break
+    fi
+    sleep 1
+done
+
+curl -s http://localhost:8080/v1/projects/1a5/hosts | grep -q 1h1

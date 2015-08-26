@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+if [ ! $(command -v java) ]; then
+    apt-get update
+    apt-get install -y default-jre
+fi

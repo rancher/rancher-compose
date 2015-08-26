@@ -6,8 +6,8 @@ import (
 	"github.com/docker/libcompose/app"
 	"github.com/docker/libcompose/command"
 	"github.com/docker/libcompose/project"
-	"github.com/rancherio/rancher-compose/rancher"
-	"github.com/rancherio/rancher-compose/upgrade"
+	"github.com/rancher/rancher-compose/rancher"
+	"github.com/rancher/rancher-compose/upgrade"
 )
 
 type ProjectFactory struct {

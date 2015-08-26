@@ -197,6 +197,7 @@ func CommonFlags() []cli.Flag {
 func Populate(context *project.Context, c *cli.Context) {
 	context.ComposeFile = c.GlobalString("file")
 	context.ProjectName = c.GlobalString("project-name")
+	context.AnswersFile = c.GlobalString("answer-file")
 
 	if c.Command.Name == "logs" {
 		context.Log = true

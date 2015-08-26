@@ -101,6 +101,15 @@ type ServiceConfig struct {
 	ExternalLinks []string          `yaml:"external_links,omitempty"`
 	LogOpt        map[string]string `yaml:"log_opt,omitempty"`
 	ExtraHosts    []string          `yaml:"extra_hosts,omitempty"`
+	UserData      map[string]interface{} `yaml:"user_data"`
+}
+
+type UserFieldDefinition struct {
+    Name          string
+    Default       string
+    Type          string
+    Description   string
+    Value         string
 }
 
 type EnvironmentLookup interface {

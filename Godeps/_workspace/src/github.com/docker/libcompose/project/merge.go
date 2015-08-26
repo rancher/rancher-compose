@@ -44,8 +44,11 @@ func Merge(p *Project, bytes []byte) (map[string]*ServiceConfig, error) {
 			logrus.Errorf("Failed to parse service %s: %v", name, err)
 			return nil, err
 		}
-
 		datas[name] = data
+	}
+	err = ProcessTemplate(datas, p.context.Answers)
+	if err != nil {
+		logrus.Fatalf("Unable to process template %s : %v", p.Name, err)
 	}
 
 	err = utils.Convert(datas, &configs)

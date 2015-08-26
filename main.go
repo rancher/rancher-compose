@@ -47,6 +47,10 @@ func main() {
 			Name:  "rancher-file,r",
 			Usage: "Specify an alternate Rancher compose file (default: rancher-compose.yml)",
 		},
+		cli.StringFlag{
+			Name:  "answer-file,a",
+			Usage: "[Optional] Specify YML answer file",
+		},
 	)
 	app.Commands = []cli.Command{
 		command.CreateCommand(factory),

@@ -15,9 +15,13 @@ type Environment struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
+	DockerCompose string `json:"dockerCompose,omitempty" yaml:"docker_compose,omitempty"`
+
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+
+	RancherCompose string `json:"rancherCompose,omitempty" yaml:"rancher_compose,omitempty"`
 
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 

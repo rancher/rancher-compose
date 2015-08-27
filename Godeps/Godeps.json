@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/rancherio/rancher-compose",
+	"ImportPath": "github.com/rancher/rancher-compose",
 	"GoVersion": "go1.4.1",
 	"Deps": [
 		{
@@ -299,14 +299,14 @@
 			"Rev": "b40c7901845dcec5950ecb37cb9de178fc2c0604"
 		},
 		{
-			"ImportPath": "github.com/rancherio/go-rancher/client",
-			"Comment": "v0.1.0-55-g008a0c9",
-			"Rev": "008a0c970eedeb89bd666a3209fd9c9379205e71"
+			"ImportPath": "github.com/rancher/go-rancher/client",
+			"Comment": "v0.1.0-60-g6efa398",
+			"Rev": "6efa3988db5d2df1e91eb4e1c032f785ac717544"
 		},
 		{
-			"ImportPath": "github.com/rancherio/go-rancher/hostaccess",
-			"Comment": "v0.1.0-55-g008a0c9",
-			"Rev": "008a0c970eedeb89bd666a3209fd9c9379205e71"
+			"ImportPath": "github.com/rancher/go-rancher/hostaccess",
+			"Comment": "v0.1.0-60-g6efa398",
+			"Rev": "6efa3988db5d2df1e91eb4e1c032f785ac717544"
 		},
 		{
 			"ImportPath": "github.com/samalba/dockerclient",

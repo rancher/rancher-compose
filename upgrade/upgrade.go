@@ -5,8 +5,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/project"
-	rancherClient "github.com/rancherio/go-rancher/client"
-	"github.com/rancherio/rancher-compose/rancher"
+	rancherClient "github.com/rancher/go-rancher/client"
+	"github.com/rancher/rancher-compose/rancher"
 )
 
 type UpgradeOpts struct {

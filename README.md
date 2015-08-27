@@ -1,10 +1,10 @@
 # Rancher Compose
 
-Docker compose compatible client that deploys to [Rancher](https://github.com/rancherio/rancher).
+Docker compose compatible client that deploys to [Rancher](https://github.com/rancher/rancher).
 
 ## Binaries
 
-Binaries are available for Linux, OS X, and Windows. Refer to the latest [release](https://github.com/rancherio/rancher-compose/releases).
+Binaries are available for Linux, OS X, and Windows. Refer to the latest [release](https://github.com/rancher/rancher-compose/releases).
 
 ## Building
 Run `./scripts/build` to create `./bin/rancher-compose`

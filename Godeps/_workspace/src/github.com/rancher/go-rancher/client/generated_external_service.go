@@ -19,6 +19,8 @@ type ExternalService struct {
 
 	ExternalIpAddresses []string `json:"externalIpAddresses,omitempty" yaml:"external_ip_addresses,omitempty"`
 
+	HealthCheck *InstanceHealthCheck `json:"healthCheck,omitempty" yaml:"health_check,omitempty"`
+
 	Hostname string `json:"hostname,omitempty" yaml:"hostname,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`

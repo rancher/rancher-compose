@@ -3,7 +3,6 @@ package client
 type RancherClient struct {
 	RancherBaseClient
 
-	Subscribe                                SubscribeOperations
 	Publish                                  PublishOperations
 	LogConfig                                LogConfigOperations
 	RestartPolicy                            RestartPolicyOperations
@@ -91,6 +90,7 @@ type RancherClient struct {
 	StoragePool                              StoragePoolOperations
 	Task                                     TaskOperations
 	TaskInstance                             TaskInstanceOperations
+	UserPreference                           UserPreferenceOperations
 	Volume                                   VolumeOperations
 	TypeDocumentation                        TypeDocumentationOperations
 	FieldDocumentation                       FieldDocumentationOperations
@@ -105,6 +105,8 @@ type RancherClient struct {
 	ResourceDefinition                       ResourceDefinitionOperations
 	StateTransition                          StateTransitionOperations
 	Githubconfig                             GithubconfigOperations
+	Identity                                 IdentityOperations
+	Ldapconfig                               LdapconfigOperations
 	StatsAccess                              StatsAccessOperations
 	Amazonec2Config                          Amazonec2ConfigOperations
 	AzureConfig                              AzureConfigOperations
@@ -130,7 +132,6 @@ func constructClient() *RancherClient {
 		},
 	}
 
-	client.Subscribe = newSubscribeClient(client)
 	client.Publish = newPublishClient(client)
 	client.LogConfig = newLogConfigClient(client)
 	client.RestartPolicy = newRestartPolicyClient(client)
@@ -218,6 +219,7 @@ func constructClient() *RancherClient {
 	client.StoragePool = newStoragePoolClient(client)
 	client.Task = newTaskClient(client)
 	client.TaskInstance = newTaskInstanceClient(client)
+	client.UserPreference = newUserPreferenceClient(client)
 	client.Volume = newVolumeClient(client)
 	client.TypeDocumentation = newTypeDocumentationClient(client)
 	client.FieldDocumentation = newFieldDocumentationClient(client)
@@ -232,6 +234,8 @@ func constructClient() *RancherClient {
 	client.ResourceDefinition = newResourceDefinitionClient(client)
 	client.StateTransition = newStateTransitionClient(client)
 	client.Githubconfig = newGithubconfigClient(client)
+	client.Identity = newIdentityClient(client)
+	client.Ldapconfig = newLdapconfigClient(client)
 	client.StatsAccess = newStatsAccessClient(client)
 	client.Amazonec2Config = newAmazonec2ConfigClient(client)
 	client.AzureConfig = newAzureConfigClient(client)

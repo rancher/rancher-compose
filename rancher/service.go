@@ -510,7 +510,7 @@ func (r *RancherService) setupBuild(result *rancherClient.LaunchConfig, serviceC
 		}
 
 		if needBuild {
-			image, url, err := Upload(r.context.Project, r.name)
+			image, url, err := Upload(r.context, r.name)
 			if err != nil {
 				return err
 			}

@@ -19,6 +19,7 @@ func (p *ProjectFactory) Create(c *cli.Context) (*project.Project, error) {
 		Url:                c.GlobalString("url"),
 		AccessKey:          c.GlobalString("access-key"),
 		SecretKey:          c.GlobalString("secret-key"),
+		Uploader:           &rancher.S3Uploader{},
 	}
 	command.Populate(&context.Context, c)
 

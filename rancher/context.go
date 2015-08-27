@@ -27,6 +27,7 @@ type Context struct {
 	Environment        *rancherClient.Environment
 	isOpen             bool
 	SidekickInfo       *SidekickInfo
+	Uploader           Uploader
 }
 
 type RancherConfig struct {

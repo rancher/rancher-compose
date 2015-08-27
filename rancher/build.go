@@ -3,6 +3,7 @@ package rancher
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -17,13 +18,12 @@ type Uploader interface {
 	Name() string
 }
 
-func getUploader() Uploader {
-	// This should do some factory magic
-	return &S3Uploader{}
-}
-
-func Upload(p *project.Project, name string) (string, string, error) {
-	uploader := getUploader()
+func Upload(c *Context, name string) (string, string, error) {
+	uploader := c.Uploader
+	if uploader == nil {
+		return "", "", errors.New("Build not supported")
+	}
+	p := c.Project
 	logrus.Infof("Uploading build for %s using provider %s", name, uploader.Name())
 
 	content, hash, err := createBuildArchive(p, name)

@@ -12,8 +12,8 @@ import (
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 	"github.com/gorilla/websocket"
-	rancherClient "github.com/rancherio/go-rancher/client"
-	"github.com/rancherio/go-rancher/hostaccess"
+	rancherClient "github.com/rancher/go-rancher/client"
+	"github.com/rancher/go-rancher/hostaccess"
 )
 
 const (

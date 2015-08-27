@@ -42,6 +42,8 @@ type Service struct {
 	Upgrade ServiceUpgrade `json:"upgrade,omitempty" yaml:"upgrade,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+
+	Vip string `json:"vip,omitempty" yaml:"vip,omitempty"`
 }
 
 type ServiceCollection struct {

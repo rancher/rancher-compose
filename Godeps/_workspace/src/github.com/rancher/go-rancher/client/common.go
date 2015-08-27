@@ -336,7 +336,7 @@ func (rancherClient *RancherBaseClient) doCreate(schemaType string, createObj in
 	collectionUrl, ok = schema.Links[COLLECTION]
 	if !ok {
 		// return errors.New("Failed to find collection URL for [" + schemaType + "]")
-		// This is a hack to address https://github.com/rancherio/cattle/issues/254
+		// This is a hack to address https://github.com/rancher/cattle/issues/254
 		re := regexp.MustCompile("schemas.*")
 		collectionUrl = re.ReplaceAllString(schema.Links[SELF], schema.PluralName)
 	}

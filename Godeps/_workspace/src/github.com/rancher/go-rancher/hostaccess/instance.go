@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gorilla/websocket"
-	"github.com/rancherio/go-rancher/client"
+	"github.com/rancher/go-rancher/client"
 )
 
 type RancherWebsocketClient client.RancherClient

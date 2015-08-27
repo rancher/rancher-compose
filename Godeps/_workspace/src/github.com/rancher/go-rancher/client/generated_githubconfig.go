@@ -9,9 +9,7 @@ type Githubconfig struct {
 
 	AccessMode string `json:"accessMode,omitempty" yaml:"access_mode,omitempty"`
 
-	AllowedOrganizations []string `json:"allowedOrganizations,omitempty" yaml:"allowed_organizations,omitempty"`
-
-	AllowedUsers []string `json:"allowedUsers,omitempty" yaml:"allowed_users,omitempty"`
+	AllowedIdentities []interface{} `json:"allowedIdentities,omitempty" yaml:"allowed_identities,omitempty"`
 
 	ClientId string `json:"clientId,omitempty" yaml:"client_id,omitempty"`
 
@@ -20,6 +18,8 @@ type Githubconfig struct {
 	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`
 
 	Hostname string `json:"hostname,omitempty" yaml:"hostname,omitempty"`
+
+	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
 	Scheme string `json:"scheme,omitempty" yaml:"scheme,omitempty"`
 }

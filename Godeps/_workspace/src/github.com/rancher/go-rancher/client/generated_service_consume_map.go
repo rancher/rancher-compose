@@ -59,6 +59,8 @@ type ServiceConsumeMapOperations interface {
 	ActionCreate(*ServiceConsumeMap) (*ServiceConsumeMap, error)
 
 	ActionRemove(*ServiceConsumeMap) (*ServiceConsumeMap, error)
+
+	ActionUpdate(*ServiceConsumeMap) (*ServiceConsumeMap, error)
 }
 
 func newServiceConsumeMapClient(rancherClient *RancherClient) *ServiceConsumeMapClient {
@@ -109,6 +111,15 @@ func (c *ServiceConsumeMapClient) ActionRemove(resource *ServiceConsumeMap) (*Se
 	resp := &ServiceConsumeMap{}
 
 	err := c.rancherClient.doAction(SERVICE_CONSUME_MAP_TYPE, "remove", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *ServiceConsumeMapClient) ActionUpdate(resource *ServiceConsumeMap) (*ServiceConsumeMap, error) {
+
+	resp := &ServiceConsumeMap{}
+
+	err := c.rancherClient.doAction(SERVICE_CONSUME_MAP_TYPE, "update", &resource.Resource, nil, resp)
 
 	return resp, err
 }

@@ -9,9 +9,13 @@ type LoadBalancer struct {
 
 	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
 
+	CertificateIds []string `json:"certificateIds,omitempty" yaml:"certificate_ids,omitempty"`
+
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
+
+	DefaultCertificateId string `json:"defaultCertificateId,omitempty" yaml:"default_certificate_id,omitempty"`
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 

@@ -61,6 +61,8 @@ type LoadBalancerTargetOperations interface {
 	ActionCreate(*LoadBalancerTarget) (*LoadBalancerTarget, error)
 
 	ActionRemove(*LoadBalancerTarget) (*LoadBalancerTarget, error)
+
+	ActionUpdate(*LoadBalancerTarget) (*LoadBalancerTarget, error)
 }
 
 func newLoadBalancerTargetClient(rancherClient *RancherClient) *LoadBalancerTargetClient {
@@ -111,6 +113,15 @@ func (c *LoadBalancerTargetClient) ActionRemove(resource *LoadBalancerTarget) (*
 	resp := &LoadBalancerTarget{}
 
 	err := c.rancherClient.doAction(LOAD_BALANCER_TARGET_TYPE, "remove", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *LoadBalancerTargetClient) ActionUpdate(resource *LoadBalancerTarget) (*LoadBalancerTarget, error) {
+
+	resp := &LoadBalancerTarget{}
+
+	err := c.rancherClient.doAction(LOAD_BALANCER_TARGET_TYPE, "update", &resource.Resource, nil, resp)
 
 	return resp, err
 }

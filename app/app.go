@@ -3,8 +3,8 @@ package app
 import (
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
-	"github.com/docker/libcompose/app"
-	"github.com/docker/libcompose/command"
+	"github.com/docker/libcompose/cli/app"
+	"github.com/docker/libcompose/cli/command"
 	"github.com/docker/libcompose/project"
 	"github.com/rancherio/rancher-compose/rancher"
 	"github.com/rancherio/rancher-compose/upgrade"

@@ -13,6 +13,14 @@ type Service struct {
 	imageName     string
 }
 
+func NewService(name string, serviceConfig *project.ServiceConfig, context *Context) *Service {
+	return &Service{
+		name:          name,
+		serviceConfig: serviceConfig,
+		context:       context,
+	}
+}
+
 func (s *Service) Name() string {
 	return s.name
 }
@@ -31,15 +39,38 @@ func (s *Service) Create() error {
 }
 
 func (s *Service) collectContainers() ([]*Container, error) {
-	containers, err := GetContainersByFilter(s.context.Client, SERVICE.Eq(s.name), PROJECT.Eq(s.context.Project.Name))
+	client := s.context.ClientFactory.Create(s)
+	containers, err := GetContainersByFilter(client, SERVICE.Eq(s.name), PROJECT.Eq(s.context.Project.Name))
 	if err != nil {
 		return nil, err
 	}
 
 	result := []*Container{}
 
+	if len(containers) == 0 {
+		return result, nil
+	}
+
+	imageName, err := s.build()
+	if err != nil {
+		return nil, err
+	}
+
 	for _, container := range containers {
-		result = append(result, NewContainer(s.context.Client, container.Labels[NAME.Str()], s))
+		name := container.Labels[NAME.Str()]
+		c := NewContainer(client, name, s)
+		if outOfSync, err := c.OutOfSync(imageName); err != nil {
+			return nil, err
+		} else if outOfSync && s.context.Rebuild && s.Config().Labels.MapParts()[REBUILD.Str()] != "false" {
+			logrus.Infof("Rebuilding %s", name)
+			if _, err := c.Rebuild(imageName); err != nil {
+				return nil, err
+			}
+		} else if outOfSync {
+			logrus.Warnf("%s needs rebuilding", name)
+		}
+
+		result = append(result, c)
 	}
 
 	return result, nil
@@ -83,13 +114,15 @@ func (s *Service) constructContainers(create bool, count int) ([]*Container, err
 		return nil, err
 	}
 
-	namer := NewNamer(s.context.Client, s.context.Project.Name, s.name)
+	client := s.context.ClientFactory.Create(s)
+
+	namer := NewNamer(client, s.context.Project.Name, s.name)
 	defer namer.Close()
 
 	for i := len(result); i < count; i++ {
 		containerName := namer.Next()
 
-		c := NewContainer(s.context.Client, containerName, s)
+		c := NewContainer(client, containerName, s)
 
 		if create {
 			imageName, err := s.build()
@@ -105,7 +138,7 @@ func (s *Service) constructContainers(create bool, count int) ([]*Container, err
 			}
 		}
 
-		result = append(result, NewContainer(s.context.Client, containerName, s))
+		result = append(result, NewContainer(client, containerName, s))
 	}
 
 	return result, nil
@@ -159,11 +192,6 @@ func (s *Service) up(imageName string, create bool) error {
 	}
 
 	return s.eachContainer(func(c *Container) error {
-		if outOfSync, err := c.OutOfSync(); err != nil {
-			return err
-		} else if outOfSync {
-			logrus.Warnf("%s needs rebuilding", s.Name())
-		}
 		return c.Up(imageName)
 	})
 }

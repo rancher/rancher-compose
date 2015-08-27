@@ -3,7 +3,7 @@ package rancher
 import (
 	"github.com/Sirupsen/logrus"
 
-	"github.com/docker/libcompose/logger"
+	"github.com/docker/libcompose/cli/logger"
 	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
 )

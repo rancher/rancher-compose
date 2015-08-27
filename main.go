@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
-	cliApp "github.com/docker/libcompose/app"
-	"github.com/docker/libcompose/command"
+	cliApp "github.com/docker/libcompose/cli/app"
+	"github.com/docker/libcompose/cli/command"
 	rancherApp "github.com/rancherio/rancher-compose/app"
 	"github.com/rancherio/rancher-compose/version"
 )

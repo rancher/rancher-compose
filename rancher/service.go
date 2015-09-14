@@ -687,7 +687,7 @@ func (r *RancherService) Restart() error {
 
 func (r *RancherService) Log() error {
 	service, err := r.findExisting(r.name)
-	if err != nil {
+	if err != nil || service == nil {
 		return err
 	}
 

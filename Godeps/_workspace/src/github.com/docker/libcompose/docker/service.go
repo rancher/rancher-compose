@@ -13,14 +13,6 @@ type Service struct {
 	imageName     string
 }
 
-func NewService(name string, serviceConfig *project.ServiceConfig, context *Context) *Service {
-	return &Service{
-		name:          name,
-		serviceConfig: serviceConfig,
-		context:       context,
-	}
-}
-
 func (s *Service) Name() string {
 	return s.name
 }
@@ -47,30 +39,8 @@ func (s *Service) collectContainers() ([]*Container, error) {
 
 	result := []*Container{}
 
-	if len(containers) == 0 {
-		return result, nil
-	}
-
-	imageName, err := s.build()
-	if err != nil {
-		return nil, err
-	}
-
 	for _, container := range containers {
-		name := container.Labels[NAME.Str()]
-		c := NewContainer(client, name, s)
-		if outOfSync, err := c.OutOfSync(imageName); err != nil {
-			return nil, err
-		} else if outOfSync && s.context.Rebuild && s.Config().Labels.MapParts()[REBUILD.Str()] != "false" {
-			logrus.Infof("Rebuilding %s", name)
-			if _, err := c.Rebuild(imageName); err != nil {
-				return nil, err
-			}
-		} else if outOfSync {
-			logrus.Warnf("%s needs rebuilding", name)
-		}
-
-		result = append(result, c)
+		result = append(result, NewContainer(client, container.Labels[NAME.Str()], s))
 	}
 
 	return result, nil
@@ -116,7 +86,17 @@ func (s *Service) constructContainers(create bool, count int) ([]*Container, err
 
 	client := s.context.ClientFactory.Create(s)
 
-	namer := NewNamer(client, s.context.Project.Name, s.name)
+	var namer Namer
+
+	if s.serviceConfig.ContainerName != "" {
+		if count > 1 {
+			logrus.Warnf(`The "%s" service is using the custom container name "%s". Docker requires each container to have a unique name. Remove the custom name to scale the service.`, s.name, s.serviceConfig.ContainerName)
+		}
+		namer = NewSingleNamer(s.serviceConfig.ContainerName)
+	} else {
+		namer = NewNamer(client, s.context.Project.Name, s.name)
+	}
+
 	defer namer.Close()
 
 	for i := len(result); i < count; i++ {
@@ -133,12 +113,11 @@ func (s *Service) constructContainers(create bool, count int) ([]*Container, err
 			dockerContainer, err := c.Create(imageName)
 			if err != nil {
 				return nil, err
-			} else {
-				logrus.Debugf("Created container %s: %v", dockerContainer.Id, dockerContainer.Names)
 			}
+			logrus.Debugf("Created container %s: %v", dockerContainer.Id, dockerContainer.Names)
 		}
 
-		result = append(result, NewContainer(client, containerName, s))
+		result = append(result, c)
 	}
 
 	return result, nil
@@ -192,6 +171,11 @@ func (s *Service) up(imageName string, create bool) error {
 	}
 
 	return s.eachContainer(func(c *Container) error {
+		if outOfSync, err := c.OutOfSync(); err != nil {
+			return err
+		} else if outOfSync {
+			logrus.Warnf("%s needs rebuilding", s.Name())
+		}
 		return c.Up(imageName)
 	})
 }

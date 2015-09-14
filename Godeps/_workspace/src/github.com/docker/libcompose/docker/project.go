@@ -27,11 +27,11 @@ func NewProject(context *Context) (*project.Project, error) {
 	}
 
 	if context.ClientFactory == nil {
-		factory, err := NewDefaultClientFactory(ClientOpts{})
-		if err != nil {
+		if factory, err := NewDefaultClientFactory(ClientOpts{}); err != nil {
 			return nil, err
+		} else {
+			context.ClientFactory = factory
 		}
-		context.ClientFactory = factory
 	}
 
 	p := project.NewProject(&context.Context)

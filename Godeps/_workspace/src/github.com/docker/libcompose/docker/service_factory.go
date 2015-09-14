@@ -7,5 +7,9 @@ type ServiceFactory struct {
 }
 
 func (s *ServiceFactory) Create(project *project.Project, name string, serviceConfig *project.ServiceConfig) (project.Service, error) {
-	return NewService(name, serviceConfig, s.context), nil
+	return &Service{
+		name:          name,
+		serviceConfig: serviceConfig,
+		context:       s.context,
+	}, nil
 }

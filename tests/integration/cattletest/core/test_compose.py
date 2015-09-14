@@ -1054,6 +1054,39 @@ def test_cross_stack_link(client, compose):
     assert services[0].id == dest.id
 
 
+def test_up_deletes_links(client, compose):
+    template = '''
+    dest:
+        image: busybox
+        command: cat
+        stdin_open: true
+        tty: true
+    src:
+        image: busybox
+        command: cat
+        stdin_open: true
+        tty: true
+        links:
+        - dest
+    '''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    src = _get_service(project.services(), 'src')
+
+    services = src.consumedservices()
+    assert len(services) == 1
+
+    template = '''
+    src:
+        image: nginx
+    '''
+
+    compose.check_call(template, '-f', '-', '-p', project_name, 'up', '-d')
+    services = src.consumedservices()
+    assert len(services) == 0
+
+
 def test_upgrade_ignore_scale(client, compose):
     project_name = create_project(compose, file='assets/upgrade-ignore-scale/'
                                                 'docker-compose-source.yml')

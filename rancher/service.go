@@ -395,7 +395,7 @@ func (r *RancherService) setupLinks(service *rancherClient.Service) error {
 		links, err = r.getServiceLinks()
 	}
 
-	if err == nil && len(links) > 0 {
+	if err == nil {
 		_, err = r.context.Client.Service.ActionSetservicelinks(service, &rancherClient.SetServiceLinksInput{
 			ServiceLinks: links,
 		})

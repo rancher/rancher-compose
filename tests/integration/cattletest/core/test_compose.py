@@ -69,21 +69,21 @@ class Compose(object):
         self.compose_bin = compose_bin
         self.client = client
 
-    def check_retcode(self, input, check_retcode, *args):
-        p = self.call(*args)
-        p.communicate(input=input)
+    def check_retcode(self, input, check_retcode, *args, **kw):
+        p = self.call(*args, **kw)
+        output = p.communicate(input=input)
         retcode = p.wait()
         assert check_retcode == retcode
-        return p
+        return output
 
     def check_call(self, input, *args):
         p = self.call(*args)
-        p.communicate(input=input)
+        output = p.communicate(input=input)
         retcode = p.wait()
         assert 0 == retcode
-        return p
+        return output
 
-    def call(self, *args):
+    def call(self, *args, **kw):
         env = {
             'RANCHER_CLIENT_DEBUG': 'true',
             'RANCHER_ACCESS_KEY': self.client._access_key,
@@ -92,8 +92,17 @@ class Compose(object):
         }
         cmd = [self.compose_bin]
         cmd.extend(args)
-        return Popen(cmd, env=env, stdin=subprocess.PIPE, stdout=sys.stdout,
-                     stderr=sys.stderr, cwd=_base())
+
+        kw_args = {
+            'env': env,
+            'stdin': subprocess.PIPE,
+            'stdout': sys.stdout,
+            'stderr': sys.stderr,
+            'cwd': _base(),
+        }
+
+        kw_args.update(kw)
+        return Popen(cmd, **kw_args)
 
 
 @pytest.fixture(scope='session')
@@ -1006,6 +1015,52 @@ def test_service_upgrade_from_nil(client, compose):
 
     compose.check_retcode(upgrade, 1, '-p', project_name, '-f',
                           '-', 'upgrade', 'web', 'web2')
+
+
+def test_service_upgrade_no_global_on_src(client, compose):
+    template = '''
+    web:
+        image: nginx
+        labels:
+            io.rancher.scheduler.global: true
+    '''
+
+    project_name = create_project(compose, input=template)
+
+    upgrade = '''
+    web2:
+        image: nginx
+    '''
+
+    out, err = compose.check_retcode(upgrade, 1, '-p', project_name, '-f',
+                                     '-', 'upgrade', 'web', 'web2',
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE)
+
+    assert out.find('Upgrade is not supported for global services')
+
+
+def test_service_upgrade_no_global_on_dest(client, compose):
+    template = '''
+    web:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+
+    upgrade = '''
+    web2:
+        image: nginx
+        labels:
+            io.rancher.scheduler.global: true
+    '''
+
+    out, err = compose.check_retcode(upgrade, 1, '-p', project_name, '-f',
+                                     '-', 'upgrade', 'web', 'web2',
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE)
+
+    assert out.find('Upgrade is not supported for global services')
 
 
 def test_service_map_syntax(client, compose):

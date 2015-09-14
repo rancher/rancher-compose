@@ -1,0 +1,8 @@
+web:
+  scale: 2
+lb:
+  scale: 1
+  default_cert: cert1
+  certs: 
+    - cert1
+    - cert2

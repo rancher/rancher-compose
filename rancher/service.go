@@ -265,7 +265,8 @@ func (r *RancherService) createDnsService() (*rancherClient.Service, error) {
 func (r *RancherService) createLbService() (*rancherClient.Service, error) {
 	var lbConfig *rancherClient.LoadBalancerConfig
 
-	if config, ok := r.context.RancherConfig[r.name]; ok {
+	config, ok := r.context.RancherConfig[r.name]
+	if ok {
 		lbConfig = config.LoadBalancerConfig
 	}
 
@@ -279,15 +280,19 @@ func (r *RancherService) createLbService() (*rancherClient.Service, error) {
 	launchConfig.Ports = r.serviceConfig.Ports
 	launchConfig.Expose = r.serviceConfig.Expose
 
-	_, err = r.context.Client.LoadBalancerService.Create(&rancherClient.LoadBalancerService{
+	lbServiceOpts := &rancherClient.LoadBalancerService{
 		Name:               r.name,
 		LoadBalancerConfig: lbConfig,
 		LaunchConfig:       launchConfig,
 		Scale:              int64(r.getConfiguredScale()),
 		EnvironmentId:      r.context.Environment.Id,
-	})
+	}
 
-	if err != nil {
+	if err := populateCerts(r.context.Client, lbServiceOpts, &config); err != nil {
+		return nil, err
+	}
+
+	if _, err = r.context.Client.LoadBalancerService.Create(lbServiceOpts); err != nil {
 		return nil, err
 	}
 

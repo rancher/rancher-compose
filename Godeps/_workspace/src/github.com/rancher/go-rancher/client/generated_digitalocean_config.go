@@ -20,6 +20,8 @@ type DigitaloceanConfig struct {
 	Region string `json:"region,omitempty" yaml:"region,omitempty"`
 
 	Size string `json:"size,omitempty" yaml:"size,omitempty"`
+
+	SshUser string `json:"sshUser,omitempty" yaml:"ssh_user,omitempty"`
 }
 
 type DigitaloceanConfigCollection struct {

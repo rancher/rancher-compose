@@ -300,13 +300,13 @@
 		},
 		{
 			"ImportPath": "github.com/rancher/go-rancher/client",
-			"Comment": "v0.1.0-60-g6efa398",
-			"Rev": "6efa3988db5d2df1e91eb4e1c032f785ac717544"
+			"Comment": "v0.1.0-65-gf71711d",
+			"Rev": "f71711d7182db371a39e472df5125d7dfe62b02f"
 		},
 		{
 			"ImportPath": "github.com/rancher/go-rancher/hostaccess",
-			"Comment": "v0.1.0-60-g6efa398",
-			"Rev": "6efa3988db5d2df1e91eb4e1c032f785ac717544"
+			"Comment": "v0.1.0-65-gf71711d",
+			"Rev": "f71711d7182db371a39e472df5125d7dfe62b02f"
 		},
 		{
 			"ImportPath": "github.com/samalba/dockerclient",

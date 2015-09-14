@@ -18,6 +18,8 @@ type VirtualboxConfig struct {
 	ImportBoot2dockerVm string `json:"importBoot2dockerVm,omitempty" yaml:"import_boot2docker_vm,omitempty"`
 
 	Memory string `json:"memory,omitempty" yaml:"memory,omitempty"`
+
+	NoShare bool `json:"noShare,omitempty" yaml:"no_share,omitempty"`
 }
 
 type VirtualboxConfigCollection struct {

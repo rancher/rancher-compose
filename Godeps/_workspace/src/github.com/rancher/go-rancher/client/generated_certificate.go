@@ -9,6 +9,10 @@ type Certificate struct {
 
 	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
 
+	Algorithm string `json:"algorithm,omitempty" yaml:"algorithm,omitempty"`
+
+	CN string `json:"cN,omitempty" yaml:"cn,omitempty"`
+
 	Cert string `json:"cert,omitempty" yaml:"cert,omitempty"`
 
 	CertChain string `json:"certChain,omitempty" yaml:"cert_chain,omitempty"`
@@ -21,7 +25,15 @@ type Certificate struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
+	ExpiresAt string `json:"expiresAt,omitempty" yaml:"expires_at,omitempty"`
+
+	IssuedAt string `json:"issuedAt,omitempty" yaml:"issued_at,omitempty"`
+
+	Issuer string `json:"issuer,omitempty" yaml:"issuer,omitempty"`
+
 	Key string `json:"key,omitempty" yaml:"key,omitempty"`
+
+	KeySize int64 `json:"keySize,omitempty" yaml:"key_size,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
@@ -31,7 +43,11 @@ type Certificate struct {
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
 
+	SerialNumber string `json:"serialNumber,omitempty" yaml:"serial_number,omitempty"`
+
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
+
+	SubjectAlternativeNames []string `json:"subjectAlternativeNames,omitempty" yaml:"subject_alternative_names,omitempty"`
 
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 
@@ -40,6 +56,8 @@ type Certificate struct {
 	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+
+	Version string `json:"version,omitempty" yaml:"version,omitempty"`
 }
 
 type CertificateCollection struct {

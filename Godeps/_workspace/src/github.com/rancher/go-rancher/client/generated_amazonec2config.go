@@ -37,6 +37,8 @@ type Amazonec2Config struct {
 
 	SubnetId string `json:"subnetId,omitempty" yaml:"subnet_id,omitempty"`
 
+	UsePrivateAddress bool `json:"usePrivateAddress,omitempty" yaml:"use_private_address,omitempty"`
+
 	VpcId string `json:"vpcId,omitempty" yaml:"vpc_id,omitempty"`
 
 	Zone string `json:"zone,omitempty" yaml:"zone,omitempty"`

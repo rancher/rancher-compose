@@ -19,7 +19,7 @@ type ExoscaleConfig struct {
 
 	InstanceProfile string `json:"instanceProfile,omitempty" yaml:"instance_profile,omitempty"`
 
-	SecurityGroup string `json:"securityGroup,omitempty" yaml:"security_group,omitempty"`
+	SecurityGroup []string `json:"securityGroup,omitempty" yaml:"security_group,omitempty"`
 
 	Url string `json:"url,omitempty" yaml:"url,omitempty"`
 }

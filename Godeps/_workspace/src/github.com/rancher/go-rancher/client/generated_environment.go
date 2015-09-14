@@ -56,6 +56,8 @@ type EnvironmentOperations interface {
 
 	ActionCreate(*Environment) (*Environment, error)
 
+	ActionError(*Environment) (*Environment, error)
+
 	ActionExportconfig(*Environment, *ComposeConfigInput) (*ComposeConfig, error)
 
 	ActionRemove(*Environment) (*Environment, error)
@@ -102,6 +104,15 @@ func (c *EnvironmentClient) ActionCreate(resource *Environment) (*Environment, e
 	resp := &Environment{}
 
 	err := c.rancherClient.doAction(ENVIRONMENT_TYPE, "create", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *EnvironmentClient) ActionError(resource *Environment) (*Environment, error) {
+
+	resp := &Environment{}
+
+	err := c.rancherClient.doAction(ENVIRONMENT_TYPE, "error", &resource.Resource, nil, resp)
 
 	return resp, err
 }

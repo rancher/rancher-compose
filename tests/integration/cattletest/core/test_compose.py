@@ -901,6 +901,7 @@ def test_external_ip(client, compose):
     assert service.type == 'externalService'
     assert 'launchConfig' not in service
     assert service.externalIpAddresses == ['1.1.1.1', '2.2.2.2']
+    assert service.healthCheck.healthyThreshold == 2
 
 
 def test_dns_service(client, compose):

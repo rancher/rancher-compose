@@ -224,6 +224,7 @@ func (r *RancherService) createExternalService() (*rancherClient.Service, error)
 		ExternalIpAddresses: config.ExternalIps,
 		Hostname:            config.Hostname,
 		EnvironmentId:       r.context.Environment.Id,
+		HealthCheck:         r.getHealthCheck(),
 	})
 
 	if err != nil {

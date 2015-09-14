@@ -33,13 +33,13 @@ web:
     hostname: myhostname
     domainname: example.com
     mem_limit: 100
-    mem_swap_limit: 101
+    memswap_limit: 101
     privileged: true
     restart: always
     stdin_open: true
     tty: true
     cpu_shares: 42
-    cpu_set: 1,2
+    cpuset: 1,2
     log_driver: syslog
     log_opt:
       tag: foo

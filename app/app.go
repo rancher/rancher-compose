@@ -5,6 +5,8 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/cli/app"
 	"github.com/docker/libcompose/cli/command"
+	"github.com/docker/libcompose/cli/logger"
+	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
 	"github.com/rancher/rancher-compose/rancher"
 	"github.com/rancher/rancher-compose/upgrade"
@@ -15,6 +17,11 @@ type ProjectFactory struct {
 
 func (p *ProjectFactory) Create(c *cli.Context) (*project.Project, error) {
 	context := &rancher.Context{
+		Context: project.Context{
+			ConfigLookup:      &lookup.FileConfigLookup{},
+			EnvironmentLookup: &lookup.OsEnvLookup{},
+			LoggerFactory:     logger.NewColorLoggerFactory(),
+		},
 		RancherComposeFile: c.GlobalString("rancher-file"),
 		Url:                c.GlobalString("url"),
 		AccessKey:          c.GlobalString("access-key"),

@@ -1293,3 +1293,59 @@ def test_cert_removed(new_context, compose_bin, request):
 
     assert lb.defaultCertificateId == cert.id
     assert lb.certificateIds == [cert.id, cert3.id]
+
+
+def test_project_name(client, compose):
+    project_name = 'FooBar23-' + random_str()
+    stack = client.create_environment(name=project_name)
+    stack = client.wait_success(stack)
+    assert stack.state == 'active'
+
+    template = '''
+    web:
+        image: nginx
+    '''
+
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 0
+
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'create')
+    assert len(project.services()) == 1
+
+
+def test_project_name_case_insensitive(client, compose):
+    project_name = 'FooBar23-' + random_str()
+    stack = client.create_environment(name=project_name)
+    stack = client.wait_success(stack)
+    assert stack.state == 'active'
+
+    template = '''
+    web:
+        image: nginx
+    '''
+
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 0
+
+    project_name = project_name.replace('FooBar', 'fOoBaR')
+    assert project_name.startswith('fOoBaR')
+
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'create')
+    assert len(project.services()) == 1
+
+
+def test_project_name_with_dots(client, compose):
+    project_name = 'something-with-dashes-v0-2-6'
+    bad_project_name = 'something-with-dashes-v0.2.6'
+
+    ret = client.list_environment(name=project_name)
+    assert len(ret) == 0
+
+    compose.check_call(None, '--verbose', '-f',
+                       'assets/{}/docker-compose.yml'.format(bad_project_name),
+                       'create')
+
+    ret = client.list_environment(name=project_name)
+    assert len(ret) == 1

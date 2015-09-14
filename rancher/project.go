@@ -28,6 +28,8 @@ func NewProject(context *Context) (*project.Project, error) {
 		return nil, err
 	}
 
+	p.Name = context.ProjectName
+
 	context.SidekickInfo = NewSidekickInfo(p)
 
 	return p, err

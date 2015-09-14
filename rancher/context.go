@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -14,6 +15,8 @@ import (
 	"github.com/docker/libcompose/project"
 	rancherClient "github.com/rancher/go-rancher/client"
 )
+
+var projectRegexp = regexp.MustCompile("[^a-zA-Z0-9-]")
 
 type Context struct {
 	project.Context
@@ -63,10 +66,21 @@ func (c *Context) readRancherConfig() error {
 	}
 }
 
+func (c *Context) fixUpProjectName() {
+	c.ProjectName = projectRegexp.ReplaceAllString(strings.ToLower(c.ProjectName), "-")
+
+	// length can not be zero because libcompose would have failed before this
+	if strings.ContainsAny(c.ProjectName[0:1], "_.-") {
+		c.ProjectName = "x" + c.ProjectName
+	}
+}
+
 func (c *Context) open() error {
 	if c.isOpen {
 		return nil
 	}
+
+	c.fixUpProjectName()
 
 	if err := c.readRancherConfig(); err != nil {
 		return err
@@ -95,9 +109,29 @@ func (c *Context) open() error {
 }
 
 func (c *Context) loadEnv() error {
+	logrus.Debugf("Looking for stack %s", c.ProjectName)
+	// First try by name
 	envs, err := c.Client.Environment.List(&rancherClient.ListOpts{
 		Filters: map[string]interface{}{
 			"name":         c.ProjectName,
+			"removed_null": nil,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, env := range envs.Data {
+		if strings.EqualFold(c.ProjectName, env.Name) {
+			logrus.Debugf("Found stack: %s(%s)", env.Name, env.Id)
+			c.Environment = &env
+			return nil
+		}
+	}
+
+	// Now try not by name for case sensitive databases
+	envs, err = c.Client.Environment.List(&rancherClient.ListOpts{
+		Filters: map[string]interface{}{
 			"removed_null": nil,
 		},
 	})

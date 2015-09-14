@@ -73,6 +73,11 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 		return fmt.Errorf("Failed to find service %s", to)
 	}
 
+	if source.LaunchConfig.Labels["io.rancher.scheduler.global"] == "true" ||
+		dest.LaunchConfig.Labels["io.rancher.scheduler.global"] == "true" {
+		return fmt.Errorf("Upgrade is not supported for global services")
+	}
+
 	upgradeOpts := &rancherClient.ServiceUpgrade{
 		UpdateLinks:    opts.UpdateLinks,
 		FinalScale:     int64(opts.FinalScale),

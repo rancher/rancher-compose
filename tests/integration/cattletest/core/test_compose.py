@@ -444,9 +444,8 @@ def test_extends_1556(client, compose):
     web = _get_service(project.services(), 'web')
     db = _get_service(project.services(), 'db')
 
-    # Notice the images are wrong
-    assert web.launchConfig.imageUuid == 'docker:ubuntu:14:04'
-    assert db.launchConfig.imageUuid == 'docker:ubuntu:14:04'
+    assert web.launchConfig.imageUuid == 'docker:ubuntu:14.04'
+    assert db.launchConfig.imageUuid == 'docker:ubuntu:14.04'
 
     web = find_one(db.consumedservices)
     assert web.name == 'web'

@@ -9,6 +9,8 @@ type AzureConfig struct {
 
 	DockerPort string `json:"dockerPort,omitempty" yaml:"docker_port,omitempty"`
 
+	DockerSwarmMasterPort string `json:"dockerSwarmMasterPort,omitempty" yaml:"docker_swarm_master_port,omitempty"`
+
 	Image string `json:"image,omitempty" yaml:"image,omitempty"`
 
 	Location string `json:"location,omitempty" yaml:"location,omitempty"`

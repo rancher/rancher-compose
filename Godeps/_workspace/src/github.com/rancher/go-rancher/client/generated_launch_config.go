@@ -27,6 +27,8 @@ type LaunchConfig struct {
 
 	CpuShares int64 `json:"cpuShares,omitempty" yaml:"cpu_shares,omitempty"`
 
+	CreateIndex int64 `json:"createIndex,omitempty" yaml:"create_index,omitempty"`
+
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`

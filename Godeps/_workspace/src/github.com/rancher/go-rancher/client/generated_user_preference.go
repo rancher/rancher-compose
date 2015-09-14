@@ -7,33 +7,33 @@ const (
 type UserPreference struct {
 	Resource
 
-	AccountId string `json:"accountId,omitempty" yaml:"account_id,omitempty"`
+	AccountId string `json:"accountId,omitempty"`
 
-	Created string `json:"created,omitempty" yaml:"created,omitempty"`
+	Created string `json:"created,omitempty"`
 
-	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
+	Data map[string]interface{} `json:"data,omitempty"`
 
-	Description string `json:"description,omitempty" yaml:"description,omitempty"`
+	Description string `json:"description,omitempty"`
 
-	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
+	Kind string `json:"kind,omitempty"`
 
-	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+	Name string `json:"name,omitempty"`
 
-	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
+	RemoveTime string `json:"removeTime,omitempty"`
 
-	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
+	Removed string `json:"removed,omitempty"`
 
-	State string `json:"state,omitempty" yaml:"state,omitempty"`
+	State string `json:"state,omitempty"`
 
-	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
+	Transitioning string `json:"transitioning,omitempty"`
 
-	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`
+	TransitioningMessage string `json:"transitioningMessage,omitempty"`
 
-	TransitioningProgress int64 `json:"transitioningProgress,omitempty" yaml:"transitioning_progress,omitempty"`
+	TransitioningProgress int `json:"transitioningProgress,omitempty"`
 
-	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+	Uuid string `json:"uuid,omitempty"`
 
-	Value string `json:"value,omitempty" yaml:"value,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 type UserPreferenceCollection struct {

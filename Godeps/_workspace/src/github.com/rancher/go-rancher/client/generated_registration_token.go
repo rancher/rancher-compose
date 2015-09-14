@@ -68,8 +68,6 @@ type RegistrationTokenOperations interface {
 
 	ActionRemove(*RegistrationToken) (*Credential, error)
 
-	ActionRestore(*RegistrationToken) (*Credential, error)
-
 	ActionUpdate(*RegistrationToken) (*Credential, error)
 }
 
@@ -148,15 +146,6 @@ func (c *RegistrationTokenClient) ActionRemove(resource *RegistrationToken) (*Cr
 	resp := &Credential{}
 
 	err := c.rancherClient.doAction(REGISTRATION_TOKEN_TYPE, "remove", &resource.Resource, nil, resp)
-
-	return resp, err
-}
-
-func (c *RegistrationTokenClient) ActionRestore(resource *RegistrationToken) (*Credential, error) {
-
-	resp := &Credential{}
-
-	err := c.rancherClient.doAction(REGISTRATION_TOKEN_TYPE, "restore", &resource.Resource, nil, resp)
 
 	return resp, err
 }

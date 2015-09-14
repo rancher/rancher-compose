@@ -1437,3 +1437,57 @@ def test_project_name_with_dots(client, compose):
 
     ret = client.list_environment(name=project_name)
     assert len(ret) == 1
+
+
+def test_create_then_up_on_circle(client, compose):
+    template = '''
+      etcd-lb:
+        image: rancher/load-balancer-service
+        links:
+          - etcd0
+          - etcd1
+          - etcd2
+
+      etcd0:
+        stdin_open: true
+        image: busybox
+        command: cat
+        links:
+          - etcd1
+          - etcd2
+
+      etcd1:
+        stdin_open: true
+        image: busybox
+        command: cat
+        links:
+          - etcd0
+          - etcd2
+
+      etcd2:
+        stdin_open: true
+        image: busybox
+        command: cat
+        links:
+          - etcd0
+          - etcd1
+      '''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_environment, name=project_name)
+    etcd_lb = _get_service(project.services(), 'etcd-lb')
+    etcd0 = _get_service(project.services(), 'etcd0')
+    etcd1 = _get_service(project.services(), 'etcd1')
+    etcd2 = _get_service(project.services(), 'etcd2')
+
+    assert len(etcd_lb.consumedservices()) == 3
+    assert len(etcd0.consumedservices()) == 2
+    assert len(etcd1.consumedservices()) == 1
+    assert len(etcd2.consumedservices()) == 0
+
+    compose.check_call(template, '-f', '-', '-p', project_name, 'up', '-d')
+    assert len(etcd_lb.consumedservices()) == 3
+    assert len(etcd0.consumedservices()) == 2
+    assert len(etcd1.consumedservices()) == 2
+    assert len(etcd2.consumedservices()) == 2

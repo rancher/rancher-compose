@@ -13,6 +13,56 @@ import ConfigParser
 
 PROJECTS = []
 
+CERT = '''-----BEGIN CERTIFICATE-----
+MIIDJjCCAg4CCQDLCSjwGXM72TANBgkqhkiG9w0BAQUFADBVMQswCQYDVQQGEwJB
+VTETMBEGA1UECBMKU29tZS1TdGF0ZTEhMB8GA1UEChMYSW50ZXJuZXQgV2lkZ2l0
+cyBQdHkgTHRkMQ4wDAYDVQQDEwVhbGVuYTAeFw0xNTA3MjMwMzUzMDdaFw0xNjA3
+MjIwMzUzMDdaMFUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIEwpTb21lLVN0YXRlMSEw
+HwYDVQQKExhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQxDjAMBgNVBAMTBWFsZW5h
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxdVIDGlAySQmighbfNqb
+TtqetENPXjNNq1JasIjGGZdOsmFvNciroNBgCps/HPJphICQwtHpNeKv4+ZuL0Yg
+1FECgW7oo6DOET74swUywtq/2IOeik+i+7skmpu1o9uNC+Fo+twpgHnGAaGk8IFm
+fP5gDgthrWBWlEPTPY1tmPjI2Hepu2hJ28SzdXi1CpjfFYOiWL8cUlvFBdyNqzqT
+uo6M2QCgSX3E1kXLnipRT6jUh0HokhFK4htAQ3hTBmzcxRkgTVZ/D0hA5lAocMKX
+EVP1Tlw0y1ext2ppS1NR9Sg46GP4+ATgT1m3ae7rWjQGuBEB6DyDgyxdEAvmAEH4
+LQIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQA45V0bnGPhIIkb54Gzjt9jyPJxPVTW
+mwTCP+0jtfLxAor5tFuCERVs8+cLw1wASfu4vH/yHJ/N/CW92yYmtqoGLuTsywJt
+u1+amECJaLyq0pZ5EjHqLjeys9yW728IifDxbQDX0cj7bBjYYzzUXp0DB/dtWb/U
+KdBmT1zYeKWmSxkXDFFSpL/SGKoqx3YLTdcIbgNHwKNMfTgD+wTZ/fvk0CLxye4P
+n/1ZWdSeZPAgjkha5MTUw3o1hjo/0H0ekI4erZFrZnG2N3lDaqDPR8djR+x7Gv6E
+vloANkUoc1pvzvxKoz2HIHUKf+xFT50xppx6wsQZ01pNMSNF0qgc1vvH
+-----END CERTIFICATE-----
+'''
+
+KEY = '''-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEAxdVIDGlAySQmighbfNqbTtqetENPXjNNq1JasIjGGZdOsmFv
+NciroNBgCps/HPJphICQwtHpNeKv4+ZuL0Yg1FECgW7oo6DOET74swUywtq/2IOe
+ik+i+7skmpu1o9uNC+Fo+twpgHnGAaGk8IFmfP5gDgthrWBWlEPTPY1tmPjI2Hep
+u2hJ28SzdXi1CpjfFYOiWL8cUlvFBdyNqzqTuo6M2QCgSX3E1kXLnipRT6jUh0Ho
+khFK4htAQ3hTBmzcxRkgTVZ/D0hA5lAocMKXEVP1Tlw0y1ext2ppS1NR9Sg46GP4
++ATgT1m3ae7rWjQGuBEB6DyDgyxdEAvmAEH4LQIDAQABAoIBAEKeWL29L9DL+KJg
+wBYiM0xxeCHxzKdHFW+Msvdhh3wUpK6S+vUclxb3NHA96RnhU8EH3jeMokDADkTr
+Us1eiy2T/gkCBRscymeqUetO49IUAahyYg/nU1X7pg7eQmNkSnHmvQhE3UDjQNdJ
+zJYkrROIQWZZVNIib+VLlbXTi0WIYcoukS+Jy2lfABLZbYVFMOEOv5IfRvXTjcgc
+jiHUbamYM9ADR/mtupFTShyVV2UBoI8cuWSPJnWNHZ39TN61owNoVycxfagBlheO
+Jb07cY0DSSx9968RYRzX9YGMUCpnoleWG5Qg29ySaLDJWqpEkNXdeJlJ+0RzErFr
+TrnlXMECgYEA6OTUpfRHu8m1yhqF9HK0+aiOPVLBOkFc55Ja/dBaSApaYtcU5ZYe
+IlCgGRM1+3G3bzwrwunbAdGVKdd+SiXLY5+p08HW0sFSgebdkRtcTmbq1Gvns+Fx
+ZUX9QBxZq7jiQjHde68y1kpSqJfjeHktZ1voueZ0JUZwx9c7YDC/+V0CgYEA2XX1
+W9f7b4Om740opDwgSLIEgIpBqSrSoJQQNzcOAWbY2CTY5xUqM9WbitlgbJ9Bo0Zo
+jyHmsp3CLGz8onv7wlR67WJSqriedIBJLQD2DnmQpb3j61rNLruhcxTC5phtBheN
+0ZQrO0SmfCjevLefc3jmB0Uu9qfvkoZoJPXAfRECgYEAvxbK+CPYG9fkhiB/GtRn
+c5V+qAhXrUHmRceLS0iCWyvLf9/0MHCc5xD6W7isiVSD6wwW6AXTgcmCN2OuJo6e
+NG7T/IDGkAS5ewZ/c8lcUqQVOBgVdD2dOjhUFB9u3/yCAUhC73IQJ02yRszhgn8C
+5xS9fpL9Z3xFm2MZP9KgIa0CgYBksg1ygPmp8pF7fabjHgBpCR2yk9LBzdWIi+dS
+Wgj/NyuUMsPJhXBsXi5PRkczJS+Utoa2OKGF9i0yuyjk6Hp0yv+9KnlTGngtRDYe
+Q8Ksgzgqt1px4jL+v92L14JEmzJozsFZ2b2HDUv2VEqHopOQOdxyY2PSzYLPG7Pf
+4XhHsQKBgEfRPtokHpt+dJ6RhdUTEQAoT2jDVGhZLaYbtGh5Jtf2F5mhQR3UlvVi
+FH/0iMK8IRo8XhFw0lrmZvY0rC0ycFGewvdW5oSvZvStATObGRMHUYNdbMEAMu86
+dkOGpBSMzSXoZ2d0rKcetwRWZqUadDJnakNfZkjIY64sbd5Vo4ev
+-----END RSA PRIVATE KEY-----
+'''
+
 
 class Compose(object):
     def __init__(self, client, compose_bin):
@@ -89,6 +139,10 @@ def _clean_all(client):
 
 @pytest.fixture(scope='session')
 def compose(client, compose_bin, request):
+    return new_compose(client, compose_bin, request)
+
+
+def new_compose(client, compose_bin, request):
     request.addfinalizer(lambda: _clean_all(client))
     return Compose(client, compose_bin)
 
@@ -1164,3 +1218,78 @@ def test_stack_case(client, compose):
     compose.check_call(template, '--verbose', '-f', '-', '-p',
                        project_name.upper(), 'up', '-d')
     find_one(client.list_environment, name=project_name)
+
+
+def test_certs(new_context, compose_bin, request):
+    client = new_context.client
+    compose = new_compose(client, compose_bin, request)
+    cert = client.create_certificate(name='cert1',
+                                     cert=CERT,
+                                     certChain=CERT,
+                                     key=KEY)
+    cert2 = client.create_certificate(name='cert2',
+                                      cert=CERT,
+                                      certChain=CERT,
+                                      key=KEY)
+
+    cert = client.wait_success(cert)
+    cert2 = client.wait_success(cert2)
+
+    assert cert.state == 'active'
+    assert cert2.state == 'active'
+
+    project_name = create_project(compose,
+                                  file='assets/ssl/docker-compose.yml')
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 2
+
+    lb = _get_service(project.services(), 'lb')
+
+    assert lb.defaultCertificateId == cert.id
+    assert lb.certificateIds == [cert.id, cert2.id]
+
+
+def test_cert_not_found(new_context, compose_bin, request):
+    compose = new_compose(new_context.client, compose_bin, request)
+    compose.check_retcode(None, 1, '-p', random_str(), '-f',
+                          'assets/ssl/docker-compose.yml', 'create')
+
+
+def test_cert_removed(new_context, compose_bin, request):
+    client = new_context.client
+    compose = new_compose(client, compose_bin, request)
+    cert = client.create_certificate(name='cert1',
+                                     cert=CERT,
+                                     certChain=CERT,
+                                     key=KEY)
+    cert2 = client.create_certificate(name='cert2',
+                                      cert=CERT,
+                                      certChain=CERT,
+                                      key=KEY)
+    cert3 = client.create_certificate(name='cert2',
+                                      cert=CERT,
+                                      certChain=CERT,
+                                      key=KEY)
+
+    cert = client.wait_success(cert)
+    cert2 = client.wait_success(cert2)
+    cert3 = client.wait_success(cert3)
+
+    assert cert.state == 'active'
+    assert cert2.state == 'active'
+    assert cert3.state == 'active'
+
+    client.delete(cert2)
+    cert2 = client.wait_success(cert2)
+
+    assert cert2.state == 'removed'
+
+    project_name = create_project(compose,
+                                  file='assets/ssl/docker-compose.yml')
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 2
+
+    lb = _get_service(project.services(), 'lb')
+
+    assert lb.defaultCertificateId == cert.id
+    assert lb.certificateIds == [cert.id, cert3.id]

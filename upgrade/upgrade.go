@@ -99,8 +99,18 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 	}
 
 	if opts.CleanUp {
-		if err := rFromService.Delete(); err != nil {
+		// Reload source to check scale
+		source, err = rFromService.RancherService()
+		if err != nil {
 			return err
+		}
+
+		if source.Scale == 0 {
+			if err := rFromService.Delete(); err != nil {
+				return err
+			}
+		} else {
+			logrus.Warnf("Not deleting service %s, scale is not 0 but %d", source.Name, source.Scale)
 		}
 	}
 

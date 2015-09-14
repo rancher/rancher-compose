@@ -4,12 +4,19 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
-	cliApp "github.com/docker/libcompose/cli/app"
 	"github.com/docker/libcompose/cli/command"
 	rancherApp "github.com/rancher/rancher-compose/app"
 	"github.com/rancher/rancher-compose/version"
 )
+
+func beforeApp(c *cli.Context) error {
+	if c.GlobalBool("verbose") {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+	return nil
+}
 
 func main() {
 	factory := &rancherApp.ProjectFactory{}
@@ -20,7 +27,7 @@ func main() {
 	app.Version = version.VERSION
 	app.Author = "Rancher Labs, Inc."
 	app.Email = ""
-	app.Before = cliApp.BeforeApp
+	app.Before = beforeApp
 	app.Flags = append(command.CommonFlags(),
 		cli.StringFlag{
 			Name: "url",

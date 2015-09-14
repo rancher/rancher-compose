@@ -28,6 +28,20 @@ for i in build/bin/*; do
     fi
 
     cp $i ${DIR}/rancher-compose${EXT}
+
+    arch=$(echo $i | cut -f2 -d_)
+    mkdir -p $DIST/${VERSION}/binaries/$arch
+    mkdir -p $DIST/latest/binaries/$arch
+    cp $i $DIST/${VERSION}/binaries/$arch/rancher-compose${EXT}
+    if [ -z "${EXT}" ]; then
+        gzip -c $i > $DIST/${VERSION}/binaries/$arch/rancher-compose.gz
+        xz -c $i > $DIST/${VERSION}/binaries/$arch/rancher-compose.xz
+    fi
+
+    rm -rf $DIST/latest/binaries/$arch
+    mkdir -p $DIST/latest/binaries
+    cp -rf $DIST/${VERSION}/binaries/$arch $DIST/latest/binaries
+
     (
         cd $BASE
         NAME=$(basename $i | sed 's/_/-/g')

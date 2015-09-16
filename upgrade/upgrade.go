@@ -34,6 +34,19 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 		return fmt.Errorf("%s is not a Rancher service", from)
 	}
 
+	source, err := rFromService.RancherService()
+	if err != nil {
+		return err
+	}
+
+	if source == nil {
+		return fmt.Errorf("Failed to find service %s", from)
+	}
+
+	if source.LaunchConfig.Labels["io.rancher.scheduler.global"] == "true" {
+		return fmt.Errorf("Upgrade is not supported for global services")
+	}
+
 	rToService, ok := toService.(*rancher.RancherService)
 	if !ok {
 		return fmt.Errorf("%s is not a Rancher service", to)
@@ -55,26 +68,16 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 		return err
 	}
 
-	source, err := rFromService.RancherService()
-	if err != nil {
-		return err
-	}
-
 	dest, err := rToService.RancherService()
 	if err != nil {
 		return err
-	}
-
-	if source == nil {
-		return fmt.Errorf("Failed to find service %s", from)
 	}
 
 	if dest == nil {
 		return fmt.Errorf("Failed to find service %s", to)
 	}
 
-	if source.LaunchConfig.Labels["io.rancher.scheduler.global"] == "true" ||
-		dest.LaunchConfig.Labels["io.rancher.scheduler.global"] == "true" {
+	if dest.LaunchConfig.Labels["io.rancher.scheduler.global"] == "true" {
 		return fmt.Errorf("Upgrade is not supported for global services")
 	}
 

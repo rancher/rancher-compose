@@ -1026,6 +1026,9 @@ def test_service_upgrade_no_global_on_src(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+
+    assert len(project.services()) == 1
 
     upgrade = '''
     web2:
@@ -1038,6 +1041,7 @@ def test_service_upgrade_no_global_on_src(client, compose):
                                      stderr=subprocess.PIPE)
 
     assert out.find('Upgrade is not supported for global services')
+    assert len(project.services()) == 1
 
 
 def test_service_upgrade_no_global_on_dest(client, compose):
@@ -1140,6 +1144,17 @@ def test_up_deletes_links(client, compose):
     compose.check_call(template, '-f', '-', '-p', project_name, 'up', '-d')
     services = src.consumedservices()
     assert len(services) == 0
+
+
+def test_upgrade_no_source(client, compose):
+    project_name = random_str()
+    compose.check_retcode(None, 1, '-p', project_name, '-f',
+                          'assets/upgrade-ignore-scale/docker-compose.yml',
+                          'upgrade', '--interval', '1000',
+                          '--scale=2', 'from', 'to')
+
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 0
 
 
 def test_upgrade_ignore_scale(client, compose):

@@ -26,6 +26,8 @@ func (p *ProjectFactory) Create(c *cli.Context) (*project.Project, error) {
 		Url:                c.GlobalString("url"),
 		AccessKey:          c.GlobalString("access-key"),
 		SecretKey:          c.GlobalString("secret-key"),
+		PullCached:         c.Bool("cached"),
+		UpgradePull:        c.Bool("pull"),
 		Uploader:           &rancher.S3Uploader{},
 	}
 	command.Populate(&context.Context, c)
@@ -63,8 +65,26 @@ func UpgradeCommand(factory app.ProjectFactory) cli.Command {
 				Usage: "Wait for upgrade to complete",
 			},
 			cli.BoolFlag{
+				Name:  "pull, p",
+				Usage: "Before doing the upgrade do an image pull on all hosts that have the image already",
+			},
+			cli.BoolFlag{
 				Name:  "cleanup, c",
 				Usage: "Remove the original service definition once upgraded, implies --wait",
+			},
+		},
+	}
+}
+
+func PullCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "pull",
+		Usage:  "Pulls images for services",
+		Action: app.WithProject(factory, app.ProjectPull),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "cached, c",
+				Usage: "Only update hosts that have the image cached, don't pull new",
 			},
 		},
 	}

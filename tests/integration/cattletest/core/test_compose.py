@@ -1166,7 +1166,7 @@ def test_upgrade_ignore_scale(client, compose):
     project = find_one(client.list_environment, name=project_name)
     compose.check_call(None, '-p', project_name, '-f',
                        'assets/upgrade-ignore-scale/docker-compose.yml',
-                       'upgrade', '--interval', '1000',
+                       'upgrade', '--pull', '--interval', '1000',
                        '--scale=2', 'from', 'to')
 
     f = _get_service(project.services(), 'from')

@@ -64,6 +64,7 @@ func main() {
 		command.StopCommand(factory),
 		command.ScaleCommand(factory),
 		command.RmCommand(factory),
+		rancherApp.PullCommand(factory),
 		rancherApp.UpgradeCommand(factory),
 	}
 

@@ -1,6 +1,7 @@
 package rancher
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -16,10 +17,17 @@ import (
 	"github.com/rancher/go-rancher/hostaccess"
 )
 
+type serviceType int
+
 const (
 	LB_IMAGE       = "rancher/load-balancer-service"
 	DNS_IMAGE      = "rancher/dns-service"
 	EXTERNAL_IMAGE = "rancher/external-service"
+
+	rancherType         = serviceType(iota)
+	lbServiceType       = serviceType(iota)
+	dnsServiceType      = serviceType(iota)
+	externalServiceType = serviceType(iota)
 )
 
 type Link struct {
@@ -359,18 +367,20 @@ func (r *RancherService) getConfiguredScale() int {
 func (r *RancherService) createService() (*rancherClient.Service, error) {
 	logrus.Infof("Creating service %s", r.name)
 
-	rancherConfig, _ := r.context.RancherConfig[r.name]
 	var service *rancherClient.Service
 	var err error
 
-	if len(rancherConfig.ExternalIps) > 0 || rancherConfig.Hostname != "" {
+	switch r.serviceType() {
+	case externalServiceType:
 		service, err = r.createExternalService()
-	} else if r.serviceConfig.Image == LB_IMAGE {
+	case lbServiceType:
 		service, err = r.createLbService()
-	} else if r.serviceConfig.Image == DNS_IMAGE {
+	case dnsServiceType:
 		service, err = r.createDnsService()
-	} else {
+	case rancherType:
 		service, err = r.createNormalService()
+	default:
+		return nil, fmt.Errorf("Unknown service type for %s", r.name)
 	}
 
 	if err != nil {
@@ -383,6 +393,20 @@ func (r *RancherService) createService() (*rancherClient.Service, error) {
 
 	err = r.Wait(service)
 	return service, err
+}
+
+func (r *RancherService) serviceType() serviceType {
+	rancherConfig, _ := r.context.RancherConfig[r.name]
+
+	if len(rancherConfig.ExternalIps) > 0 || rancherConfig.Hostname != "" {
+		return externalServiceType
+	} else if r.serviceConfig.Image == LB_IMAGE {
+		return lbServiceType
+	} else if r.serviceConfig.Image == DNS_IMAGE {
+		return dnsServiceType
+	}
+
+	return rancherType
 }
 
 func (r *RancherService) setupLinks(service *rancherClient.Service) error {
@@ -576,6 +600,21 @@ func (r *RancherService) createLaunchConfig(serviceConfig *project.ServiceConfig
 
 	err = r.setupBuild(&result, serviceConfig)
 	return result, err
+}
+
+func (r *RancherService) WaitFor(resource *rancherClient.Resource, output interface{}, transitioning func() string) error {
+	for {
+		if transitioning() != "yes" {
+			return nil
+		}
+
+		time.Sleep(150 * time.Millisecond)
+
+		err := r.context.Client.Reload(resource, output)
+		if err != nil {
+			return err
+		}
+	}
 }
 
 func (r *RancherService) Wait(service *rancherClient.Service) error {
@@ -776,7 +815,41 @@ func (r *RancherService) Info() (project.InfoSet, error) {
 }
 
 func (r *RancherService) Pull() error {
-	return project.ErrUnsupported
+	config := r.Config()
+	if config.Image == "" || r.serviceType() != rancherType {
+		return nil
+	}
+
+	taskOpts := &rancherClient.PullTask{
+		Mode:   "all",
+		Labels: ToMapInterface(config.Labels.MapParts()),
+		Image:  config.Image,
+	}
+
+	if r.context.PullCached {
+		taskOpts.Mode = "cached"
+	}
+
+	task, err := r.context.Client.PullTask.Create(taskOpts)
+	if err != nil {
+		return err
+	}
+
+	lastMessage := ""
+	r.WaitFor(&task.Resource, task, func() string {
+		if task.TransitioningMessage != "" && task.TransitioningMessage != "In Progress" && task.TransitioningMessage != lastMessage {
+			logrus.Info(task.TransitioningMessage)
+			lastMessage = task.TransitioningMessage
+		}
+
+		return task.Transitioning
+	})
+
+	if task.Transitioning == "error" {
+		return errors.New(task.TransitioningMessage)
+	}
+
+	return nil
 }
 
 func TrimSplit(str, sep string, count int) []string {

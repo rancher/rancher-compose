@@ -32,6 +32,8 @@ type Context struct {
 	isOpen              bool
 	SidekickInfo        *SidekickInfo
 	Uploader            Uploader
+	PullCached          bool
+	UpgradePull         bool
 }
 
 type RancherConfig struct {

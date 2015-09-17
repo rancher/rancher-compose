@@ -51,6 +51,7 @@ type RancherClient struct {
 	AddRemoveLoadBalancerServiceLinkInput    AddRemoveLoadBalancerServiceLinkInputOperations
 	SetLoadBalancerServiceLinksInput         SetLoadBalancerServiceLinksInputOperations
 	LoadBalancerServiceLink                  LoadBalancerServiceLinkOperations
+	PullTask                                 PullTaskOperations
 	Account                                  AccountOperations
 	Agent                                    AgentOperations
 	Certificate                              CertificateOperations
@@ -183,6 +184,7 @@ func constructClient() *RancherClient {
 	client.AddRemoveLoadBalancerServiceLinkInput = newAddRemoveLoadBalancerServiceLinkInputClient(client)
 	client.SetLoadBalancerServiceLinksInput = newSetLoadBalancerServiceLinksInputClient(client)
 	client.LoadBalancerServiceLink = newLoadBalancerServiceLinkClient(client)
+	client.PullTask = newPullTaskClient(client)
 	client.Account = newAccountClient(client)
 	client.Agent = newAgentClient(client)
 	client.Certificate = newCertificateClient(client)

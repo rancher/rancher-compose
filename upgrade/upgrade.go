@@ -16,6 +16,7 @@ type UpgradeOpts struct {
 	UpdateLinks    bool
 	Wait           bool
 	CleanUp        bool
+	Pull           bool
 }
 
 func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
@@ -93,6 +94,12 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 	}
 
 	client := rFromService.Client()
+
+	if opts.Pull {
+		if err := rToService.Pull(); err != nil {
+			return err
+		}
+	}
 
 	logrus.Infof("Upgrading %s to %s, scale=%d", from, to, upgradeOpts.FinalScale)
 	service, err := client.Service.ActionUpgrade(source, upgradeOpts)

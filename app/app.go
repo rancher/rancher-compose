@@ -27,7 +27,6 @@ func (p *ProjectFactory) Create(c *cli.Context) (*project.Project, error) {
 		AccessKey:          c.GlobalString("access-key"),
 		SecretKey:          c.GlobalString("secret-key"),
 		PullCached:         c.Bool("cached"),
-		UpgradePull:        c.Bool("pull"),
 		Uploader:           &rancher.S3Uploader{},
 	}
 	command.Populate(&context.Context, c)
@@ -103,6 +102,7 @@ func Upgrade(p *project.Project, c *cli.Context) {
 		UpdateLinks:    c.Bool("update-links"),
 		Wait:           c.Bool("wait"),
 		CleanUp:        c.Bool("cleanup"),
+		Pull:           c.Bool("pull"),
 	})
 
 	if err != nil {

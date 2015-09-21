@@ -31,6 +31,8 @@ type PullTask struct {
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 
+	Status map[string]interface{} `json:"status,omitempty" yaml:"status,omitempty"`
+
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 
 	TransitioningMessage string `json:"transitioningMessage,omitempty" yaml:"transitioning_message,omitempty"`

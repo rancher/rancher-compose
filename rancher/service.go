@@ -835,10 +835,11 @@ func (r *RancherService) Pull() error {
 		return err
 	}
 
+	printed := map[string]string{}
 	lastMessage := ""
 	r.WaitFor(&task.Resource, task, func() string {
 		if task.TransitioningMessage != "" && task.TransitioningMessage != "In Progress" && task.TransitioningMessage != lastMessage {
-			logrus.Info(task.TransitioningMessage)
+			printStatus(task.Image, printed, task.Status)
 			lastMessage = task.TransitioningMessage
 		}
 
@@ -849,7 +850,41 @@ func (r *RancherService) Pull() error {
 		return errors.New(task.TransitioningMessage)
 	}
 
+	if !printStatus(task.Image, printed, task.Status) {
+		return errors.New("Pull failed on one of the hosts")
+	}
+
 	return nil
+}
+
+func printStatus(image string, printed map[string]string, current map[string]interface{}) bool {
+	good := true
+	for host, objStatus := range current {
+		status, ok := objStatus.(string)
+		if !ok {
+			continue
+		}
+
+		v := printed[host]
+		if status != "Done" {
+			fmt.Printf("Bad...., " + status + "\n")
+			good = false
+		}
+
+		if v == "" {
+			logrus.Infof("Pulling %s on %s", image, host)
+			v = "start"
+		} else if printed[host] == "start" && status == "Done" {
+			logrus.Infof("Finished pulling %s on %s", image, host)
+			v = "done"
+		} else if printed[host] == "start" && status != "Pulling" && status != v {
+			logrus.Infof("Pulling %s on %s: %s", image, host, status)
+			v = status
+		}
+		printed[host] = v
+	}
+
+	return good
 }
 
 func TrimSplit(str, sep string, count int) []string {

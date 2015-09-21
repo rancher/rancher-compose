@@ -854,6 +854,7 @@ func (r *RancherService) Pull() error {
 		return errors.New("Pull failed on one of the hosts")
 	}
 
+	logrus.Info("Finished pulling %s", task.Image)
 	return nil
 }
 
@@ -867,18 +868,17 @@ func printStatus(image string, printed map[string]string, current map[string]int
 
 		v := printed[host]
 		if status != "Done" {
-			fmt.Printf("Bad...., " + status + "\n")
 			good = false
 		}
 
 		if v == "" {
-			logrus.Infof("Pulling %s on %s", image, host)
+			logrus.Infof("Checking for %s on %s...", image, host)
 			v = "start"
 		} else if printed[host] == "start" && status == "Done" {
-			logrus.Infof("Finished pulling %s on %s", image, host)
+			logrus.Infof("Finished %s on %s", image, host)
 			v = "done"
 		} else if printed[host] == "start" && status != "Pulling" && status != v {
-			logrus.Infof("Pulling %s on %s: %s", image, host, status)
+			logrus.Infof("Checking for %s on %s: %s", image, host, status)
 			v = status
 		}
 		printed[host] = v

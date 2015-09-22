@@ -854,7 +854,7 @@ func (r *RancherService) Pull() error {
 		return errors.New("Pull failed on one of the hosts")
 	}
 
-	logrus.Info("Finished pulling %s", task.Image)
+	logrus.Infof("Finished pulling %s", task.Image)
 	return nil
 }
 

@@ -10,7 +10,7 @@ setup_root()
 {
     if [ -d /scratch ]; then
         SCRATCH_TEMP=$(mktemp -d /scratch/cattle.XXXXX)
-        rsync --exclude '*.pyc' -a tests $SCRATCH_TEMP
+        rsync --exclude '*.pyc' -a ./ $SCRATCH_TEMP
         pushd $SCRATCH_TEMP
     fi
 }

@@ -1280,6 +1280,17 @@ def test_circle_madness(client, compose):
     assert len(foo3.consumedservices()) == 3
 
 
+def test_metadata_on_service(client, compose):
+    project_name = create_project(compose, file='assets/metadata/test.yml')
+
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.name == 'web'
+    assert service.metadata.key1[0] == 'one'
+    assert service.metadata.key1[1] == 'two'
+
+
 def test_healthchecks(client, compose):
     project_name = create_project(compose, file='assets/health/test.yml')
 
@@ -1369,23 +1380,26 @@ def test_cert_removed(new_context, compose_bin, request):
                                       cert=CERT,
                                       certChain=CERT,
                                       key=KEY)
+
+    cert = client.wait_success(cert)
+    cert2 = client.wait_success(cert2)
+
+    assert cert.state == 'active'
+    assert cert2.state == 'active'
+
+    cert2 = client.wait_success(cert2.remove())
+
+    wait_for(
+        lambda: len(client.list_certificate()) == 1
+    )
+
     cert3 = client.create_certificate(name='cert2',
                                       cert=CERT,
                                       certChain=CERT,
                                       key=KEY)
 
-    cert = client.wait_success(cert)
-    cert2 = client.wait_success(cert2)
     cert3 = client.wait_success(cert3)
-
-    assert cert.state == 'active'
-    assert cert2.state == 'active'
     assert cert3.state == 'active'
-
-    client.delete(cert2)
-    cert2 = client.wait_success(cert2)
-
-    assert cert2.state == 'removed'
 
     project_name = create_project(compose,
                                   file='assets/ssl/docker-compose.yml')

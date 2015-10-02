@@ -1,0 +1,5 @@
+web:
+  metadata:
+    key1:
+      - one
+      - two

@@ -33,6 +33,8 @@ type SecondaryLaunchConfig struct {
 
 	Data map[string]interface{} `json:"data,omitempty" yaml:"data,omitempty"`
 
+	DataVolumeMounts map[string]interface{} `json:"dataVolumeMounts,omitempty" yaml:"data_volume_mounts,omitempty"`
+
 	DataVolumes []string `json:"dataVolumes,omitempty" yaml:"data_volumes,omitempty"`
 
 	DataVolumesFrom []string `json:"dataVolumesFrom,omitempty" yaml:"data_volumes_from,omitempty"`

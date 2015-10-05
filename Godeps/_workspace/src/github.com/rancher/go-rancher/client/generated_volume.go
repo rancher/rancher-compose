@@ -15,6 +15,10 @@ type Volume struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
+	Driver string `json:"driver,omitempty" yaml:"driver,omitempty"`
+
+	DriverOpts map[string]interface{} `json:"driverOpts,omitempty" yaml:"driver_opts,omitempty"`
+
 	ImageId string `json:"imageId,omitempty" yaml:"image_id,omitempty"`
 
 	InstanceId string `json:"instanceId,omitempty" yaml:"instance_id,omitempty"`
@@ -57,8 +61,6 @@ type VolumeOperations interface {
 	Update(existing *Volume, updates interface{}) (*Volume, error)
 	ById(id string) (*Volume, error)
 	Delete(container *Volume) error
-
-	ActionActivate(*Volume) (*Volume, error)
 
 	ActionAllocate(*Volume) (*Volume, error)
 
@@ -109,15 +111,6 @@ func (c *VolumeClient) ById(id string) (*Volume, error) {
 
 func (c *VolumeClient) Delete(container *Volume) error {
 	return c.rancherClient.doResourceDelete(VOLUME_TYPE, &container.Resource)
-}
-
-func (c *VolumeClient) ActionActivate(resource *Volume) (*Volume, error) {
-
-	resp := &Volume{}
-
-	err := c.rancherClient.doAction(VOLUME_TYPE, "activate", &resource.Resource, nil, resp)
-
-	return resp, err
 }
 
 func (c *VolumeClient) ActionAllocate(resource *Volume) (*Volume, error) {

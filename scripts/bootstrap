@@ -19,3 +19,7 @@ fi
 if [ ! $(command -v zip) ]; then
     apt-get install -y --no-install-recommends zip xz-utils
 fi
+
+if [ ! $(command -v rsync) ]; then
+    apt-get install -y --no-install-recommends rsync
+fi

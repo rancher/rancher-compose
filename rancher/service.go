@@ -338,11 +338,19 @@ func (r *RancherService) createNormalService() (*rancherClient.Service, error) {
 
 	return r.context.Client.Service.Create(&rancherClient.Service{
 		Name:                   r.name,
+		Metadata:               r.getMetadata(),
 		LaunchConfig:           launchConfig,
 		SecondaryLaunchConfigs: secondaryLaunchConfigs,
 		Scale:         int64(r.getConfiguredScale()),
 		EnvironmentId: r.context.Environment.Id,
 	})
+}
+
+func (r *RancherService) getMetadata() map[string]interface{} {
+	if config, ok := r.context.RancherConfig[r.name]; ok {
+		return config.Metadata
+	}
+	return nil
 }
 
 func (r *RancherService) getHealthCheck() *rancherClient.InstanceHealthCheck {

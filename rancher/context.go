@@ -43,6 +43,7 @@ type RancherConfig struct {
 	HealthCheck        *rancherClient.InstanceHealthCheck `yaml:"health_check,omitempty"`
 	DefaultCert        string                             `yaml:"default_cert,omitempty"`
 	Certs              []string                           `yaml:"certs,omitempty"`
+	Metadata           map[string]interface{}             `yaml:"metadata,omitempty"`
 }
 
 func (c *Context) readRancherConfig() error {

@@ -51,8 +51,28 @@ func newApiError(resp *http.Response, url string) *ApiError {
 	} else {
 		body = string(contents)
 	}
-	formattedMsg := fmt.Sprintf("Bad response from [%s], statusCode [%d]. Status [%s]. Body: [%s]",
-		url, resp.StatusCode, resp.Status, body)
+
+	data := map[string]interface{}{}
+	if json.Unmarshal(contents, &data) == nil {
+		delete(data, "id")
+		delete(data, "links")
+		delete(data, "actions")
+		delete(data, "type")
+		delete(data, "status")
+		buf := &bytes.Buffer{}
+		for k, v := range data {
+			if v == nil {
+				continue
+			}
+			if buf.Len() > 0 {
+				buf.WriteString(", ")
+			}
+			fmt.Fprintf(buf, "%s=%v", k, v)
+		}
+		body = buf.String()
+	}
+	formattedMsg := fmt.Sprintf("Bad response statusCode [%d]. Status [%s]. Body: [%s] from [%s]",
+		resp.StatusCode, resp.Status, body, url)
 	return &ApiError{
 		Url:        url,
 		Msg:        formattedMsg,

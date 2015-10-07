@@ -106,6 +106,10 @@ func (c *Context) open() error {
 		c.Client = client
 	}
 
+	if envSchema, ok := c.Client.Types["environment"]; !ok || !Contains(envSchema.CollectionMethods, "POST") {
+		return fmt.Errorf("Can not create a stack, check API key [%s] for [%s]", c.AccessKey, c.Url)
+	}
+
 	if err := c.loadEnv(); err != nil {
 		return err
 	}

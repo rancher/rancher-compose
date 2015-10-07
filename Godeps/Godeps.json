@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/rancher/rancher-compose",
-	"GoVersion": "go1.5",
+	"GoVersion": "go1.4.1",
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
@@ -292,13 +292,13 @@
 		},
 		{
 			"ImportPath": "github.com/rancher/go-rancher/client",
-			"Comment": "v0.1.0-71-g0b17bcf",
-			"Rev": "0b17bcf6c29e2cdafafaa33301c12589a10ff2eb"
+			"Comment": "v0.1.0-73-g82a81cd",
+			"Rev": "82a81cda9493975b4b79a1b5cb7667fa0d3fa9c9"
 		},
 		{
 			"ImportPath": "github.com/rancher/go-rancher/hostaccess",
-			"Comment": "v0.1.0-71-g0b17bcf",
-			"Rev": "0b17bcf6c29e2cdafafaa33301c12589a10ff2eb"
+			"Comment": "v0.1.0-73-g82a81cd",
+			"Rev": "82a81cda9493975b4b79a1b5cb7667fa0d3fa9c9"
 		},
 		{
 			"ImportPath": "github.com/samalba/dockerclient",

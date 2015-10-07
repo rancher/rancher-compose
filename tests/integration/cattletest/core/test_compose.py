@@ -1332,6 +1332,22 @@ def _get_service(services, name):
     return service
 
 
+def test_restart_no(client, compose):
+    template = '''
+    web:
+        image: nginx
+        restart: no
+    '''
+
+    project_name = create_project(compose, input=template)
+    find_one(client.list_environment, name=project_name)
+
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'up', '-d')
+    p = find_one(client.list_environment, name=project_name)
+    find_one(p.services)
+
+
 def test_stack_case(client, compose):
     template = '''
     web:

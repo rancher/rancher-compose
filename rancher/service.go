@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -822,16 +823,11 @@ func (r *RancherService) Info() (project.InfoSet, error) {
 	return project.InfoSet{}, nil
 }
 
-func (r *RancherService) Pull() error {
-	config := r.Config()
-	if config.Image == "" || r.serviceType() != rancherType {
-		return nil
-	}
-
+func (r *RancherService) pullImage(image string, labels map[string]string) error {
 	taskOpts := &rancherClient.PullTask{
 		Mode:   "all",
-		Labels: ToMapInterface(config.Labels.MapParts()),
-		Image:  config.Image,
+		Labels: ToMapInterface(labels),
+		Image:  image,
 	}
 
 	if r.context.PullCached {
@@ -864,6 +860,45 @@ func (r *RancherService) Pull() error {
 
 	logrus.Infof("Finished pulling %s", task.Image)
 	return nil
+}
+
+func (r *RancherService) Pull() (err error) {
+	config := r.Config()
+	if config.Image == "" || r.serviceType() != rancherType {
+		return
+	}
+
+	toPull := map[string]bool{config.Image: true}
+	labels := config.Labels.MapParts()
+
+	if secondaries, ok := r.context.SidekickInfo.primariesToSidekicks[r.name]; ok {
+		for _, secondaryName := range secondaries {
+			serviceConfig, ok := r.context.Project.Configs[secondaryName]
+			if !ok {
+				continue
+			}
+
+			labels = MapUnion(labels, serviceConfig.Labels.MapParts())
+			if serviceConfig.Image != "" {
+				toPull[serviceConfig.Image] = true
+			}
+		}
+	}
+
+	wg := sync.WaitGroup{}
+
+	for image := range toPull {
+		wg.Add(1)
+		go func(image string) {
+			if pErr := r.pullImage(image, labels); pErr != nil {
+				err = pErr
+			}
+			wg.Done()
+		}(image)
+	}
+
+	wg.Wait()
+	return
 }
 
 func printStatus(image string, printed map[string]string, current map[string]interface{}) bool {

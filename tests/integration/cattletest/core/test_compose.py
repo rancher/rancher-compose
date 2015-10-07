@@ -1523,3 +1523,23 @@ def test_create_then_up_on_circle(client, compose):
     assert len(etcd0.consumedservices()) == 2
     assert len(etcd1.consumedservices()) == 2
     assert len(etcd2.consumedservices()) == 2
+
+
+def test_pull_sidekick(client, compose):
+    template = '''
+foo:
+    labels:
+        io.rancher.sidekicks: foo2
+    image: nginx
+foo2:
+    image: tianon/true
+'''
+
+    project_name = random_str()
+    out, err = compose.check_retcode(template, 0, '-p', project_name, '-f',
+                                     '-', 'pull', stdout=subprocess.PIPE)
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 0
+
+    assert 'nginx' in out
+    assert 'tianon/true' in out

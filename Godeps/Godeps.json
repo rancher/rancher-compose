@@ -235,35 +235,43 @@
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/cli/app",
-			"Rev": "aad672800904307e96a2c21cad1420f3080e0f35"
+			"Comment": "rancher-compose-v0.4.1",
+			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/cli/command",
-			"Rev": "aad672800904307e96a2c21cad1420f3080e0f35"
+			"Comment": "rancher-compose-v0.4.1",
+			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/cli/logger",
-			"Rev": "aad672800904307e96a2c21cad1420f3080e0f35"
+			"Comment": "rancher-compose-v0.4.1",
+			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/docker",
-			"Rev": "aad672800904307e96a2c21cad1420f3080e0f35"
+			"Comment": "rancher-compose-v0.4.1",
+			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/logger",
-			"Rev": "aad672800904307e96a2c21cad1420f3080e0f35"
+			"Comment": "rancher-compose-v0.4.1",
+			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/lookup",
-			"Rev": "aad672800904307e96a2c21cad1420f3080e0f35"
+			"Comment": "rancher-compose-v0.4.1",
+			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/project",
-			"Rev": "aad672800904307e96a2c21cad1420f3080e0f35"
+			"Comment": "rancher-compose-v0.4.1",
+			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/utils",
-			"Rev": "aad672800904307e96a2c21cad1420f3080e0f35"
+			"Comment": "rancher-compose-v0.4.1",
+			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
 		},
 		{
 			"ImportPath": "github.com/docker/libtrust",

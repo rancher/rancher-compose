@@ -1280,6 +1280,21 @@ def test_circle_madness(client, compose):
     assert len(foo3.consumedservices()) == 3
 
 
+def test_variables(client, compose):
+    project_name = random_str()
+    compose.check_call(None, '--env-file', 'assets/env-file/env-file',
+                       '--verbose', '-f', 'assets/env-file/docker-compose.yml',
+                       '-p', project_name, 'create')
+
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.launchConfig.imageUuid == 'docker:B'
+    assert service.launchConfig.labels['var'] == 'B'
+    assert service.metadata.var == 'E'
+    assert service.metadata.var2 == ''
+
+
 def test_metadata_on_service(client, compose):
     project_name = create_project(compose, file='assets/metadata/test.yml')
 

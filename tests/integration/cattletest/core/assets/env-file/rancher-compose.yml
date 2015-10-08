@@ -1,0 +1,4 @@
+web:
+  metadata:
+    var: $D
+    var2: $B

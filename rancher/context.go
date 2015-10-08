@@ -13,6 +13,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/utils"
 	rancherClient "github.com/rancher/go-rancher/client"
 )
 
@@ -69,7 +70,18 @@ func (c *Context) readRancherConfig() error {
 		}
 	}
 
-	return yaml.Unmarshal(c.RancherComposeBytes, &c.RancherConfig)
+	return c.unmarshalBytes(c.RancherComposeBytes)
+}
+
+func (c *Context) unmarshalBytes(bytes []byte) error {
+	rawServiceMap := project.RawServiceMap{}
+	if err := yaml.Unmarshal(bytes, &rawServiceMap); err != nil {
+		return err
+	}
+	if err := project.Interpolate(c.EnvironmentLookup, &rawServiceMap); err != nil {
+		return err
+	}
+	return utils.Convert(rawServiceMap, &c.RancherConfig)
 }
 
 func (c *Context) fixUpProjectName() {

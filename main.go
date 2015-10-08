@@ -54,6 +54,10 @@ func main() {
 			Name:  "rancher-file,r",
 			Usage: "Specify an alternate Rancher compose file (default: rancher-compose.yml)",
 		},
+		cli.StringFlag{
+			Name:  "env-file,e",
+			Usage: "Specify a file from which to read environment variables",
+		},
 	)
 	app.Commands = []cli.Command{
 		command.CreateCommand(factory),

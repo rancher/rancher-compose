@@ -1,0 +1,4 @@
+web:
+  labels:
+    var: $A
+  image: ${A}

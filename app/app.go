@@ -8,6 +8,7 @@ import (
 	"github.com/docker/libcompose/cli/logger"
 	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
+	rLookup "github.com/rancher/rancher-compose/lookup"
 	"github.com/rancher/rancher-compose/rancher"
 	"github.com/rancher/rancher-compose/upgrade"
 )
@@ -16,10 +17,15 @@ type ProjectFactory struct {
 }
 
 func (p *ProjectFactory) Create(c *cli.Context) (*project.Project, error) {
+	envLookup, err := rLookup.NewFileEnvLookup(c.GlobalString("env-file"), &lookup.OsEnvLookup{})
+	if err != nil {
+		return nil, err
+	}
+
 	context := &rancher.Context{
 		Context: project.Context{
 			ConfigLookup:      &lookup.FileConfigLookup{},
-			EnvironmentLookup: &lookup.OsEnvLookup{},
+			EnvironmentLookup: envLookup,
 			LoggerFactory:     logger.NewColorLoggerFactory(),
 		},
 		RancherComposeFile: c.GlobalString("rancher-file"),

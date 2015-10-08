@@ -802,7 +802,7 @@ func (r *RancherService) DependentServices() []project.ServiceRelationship {
 	result := []project.ServiceRelationship{}
 
 	for _, rel := range project.DefaultDependentServices(r.context.Project, r) {
-		if rel.Type == project.REL_TYPE_LINK {
+		if rel.Type == project.RelTypeLink {
 			rel.Optional = true
 			result = append(result, rel)
 		}

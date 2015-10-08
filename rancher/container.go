@@ -11,7 +11,7 @@ func NewContainer(id, name string) *Container {
 	}
 }
 
-func (c *Container) Id() (string, error) {
+func (c *Container) ID() (string, error) {
 	return c.id, nil
 }
 

@@ -193,8 +193,7 @@ def test_args(client, compose):
     assert service.name == 'web'
     assert service.launchConfig.command == ['/bin/sh', '-c']
     assert service.launchConfig.imageUuid == 'docker:nginx'
-    assert set(service.launchConfig.ports) == {'80:81/tcp', '123/tcp',
-                                               '21/tcp'}
+    assert set(service.launchConfig.ports) == {'80:81/tcp', '123/tcp'}
     assert service.launchConfig.dataVolumes == ['/tmp/foo', '/tmp/x:/tmp/y']
     assert service.launchConfig.environment == {'foo': 'bar', 'a': 'b'}
     assert service.launchConfig.dns == ['8.8.8.8', '1.1.1.1']
@@ -896,7 +895,7 @@ def test_external_service_hostname(client, compose):
 
     assert service.name == 'web'
     assert service.type == 'externalService'
-    assert 'launchConfig' not in service
+    assert service.launchConfig is None
     assert service.hostname == 'example.com'
 
 
@@ -908,7 +907,7 @@ def test_external_ip(client, compose):
 
     assert service.name == 'web'
     assert service.type == 'externalService'
-    assert 'launchConfig' not in service
+    assert service.launchConfig is None
     assert service.externalIpAddresses == ['1.1.1.1', '2.2.2.2']
     assert service.healthCheck.healthyThreshold == 2
 
@@ -1574,3 +1573,22 @@ foo2:
 
     assert 'nginx' in out
     assert 'tianon/true' in out
+
+
+def test_expose_port_ignore(client, compose):
+    template = '''
+foo:
+    image: nginx
+    expose:
+    - 1234
+    links:
+    - foo
+'''
+
+    project_name = random_str()
+    compose.check_call(template, '-p', project_name, '-f',
+                       '-', 'create')
+    project = find_one(client.list_environment, name=project_name)
+    foo = _get_service(project.services(), 'foo')
+
+    assert 'ports' not in foo.launchConfig

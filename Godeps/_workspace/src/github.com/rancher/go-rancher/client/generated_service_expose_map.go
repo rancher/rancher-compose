@@ -21,6 +21,8 @@ type ServiceExposeMap struct {
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
+	Managed bool `json:"managed,omitempty" yaml:"managed,omitempty"`
+
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`

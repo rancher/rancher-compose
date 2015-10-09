@@ -41,6 +41,8 @@ type SecondaryLaunchConfig struct {
 
 	DataVolumesFromLaunchConfigs []string `json:"dataVolumesFromLaunchConfigs,omitempty" yaml:"data_volumes_from_launch_configs,omitempty"`
 
+	DeploymentUnitUuid string `json:"deploymentUnitUuid,omitempty" yaml:"deployment_unit_uuid,omitempty"`
+
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
 	Devices []string `json:"devices,omitempty" yaml:"devices,omitempty"`
@@ -142,6 +144,8 @@ type SecondaryLaunchConfig struct {
 	User string `json:"user,omitempty" yaml:"user,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+
+	Version string `json:"version,omitempty" yaml:"version,omitempty"`
 
 	VolumeDriver string `json:"volumeDriver,omitempty" yaml:"volume_driver,omitempty"`
 

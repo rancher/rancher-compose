@@ -15,6 +15,9 @@ import (
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 	rancherClient "github.com/rancher/go-rancher/client"
+	rVersion "github.com/rancher/rancher-compose/version"
+
+	"github.com/hashicorp/go-version"
 )
 
 var projectRegexp = regexp.MustCompile("[^a-zA-Z0-9-]")
@@ -122,12 +125,50 @@ func (c *Context) open() error {
 		return fmt.Errorf("Can not create a stack, check API key [%s] for [%s]", c.AccessKey, c.Url)
 	}
 
+	c.checkVersion()
+
 	if err := c.loadEnv(); err != nil {
 		return err
 	}
 
 	c.isOpen = true
 	return nil
+}
+
+func (c *Context) checkVersion() {
+	// We don't care about errors from this code
+	newVersion := c.getSetting("rancher.compose.version")
+	if len(newVersion) <= 1 && len(rVersion.VERSION) <= 1 {
+		return
+	}
+
+	current, err := version.NewVersion(strings.TrimLeft(rVersion.VERSION, "v"))
+	if err != nil {
+		return
+	}
+
+	// strip out beta/ from string
+	parts := strings.SplitN(newVersion, "v", 2)
+	if len(parts) == 2 {
+		newVersion = parts[1]
+	}
+
+	toCheck, err := version.NewVersion(newVersion)
+	if err != nil {
+		return
+	}
+
+	if toCheck.GreaterThan(current) {
+		logrus.Warnf("A newer version of rancher-compose is available: %s", newVersion)
+	}
+}
+
+func (c *Context) getSetting(key string) string {
+	s, err := c.Client.Setting.ById(key)
+	if err != nil || s == nil {
+		return ""
+	}
+	return s.Value
 }
 
 func (c *Context) loadEnv() error {

@@ -39,6 +39,8 @@ type Container struct {
 
 	DataVolumesFrom []string `json:"dataVolumesFrom,omitempty" yaml:"data_volumes_from,omitempty"`
 
+	DeploymentUnitUuid string `json:"deploymentUnitUuid,omitempty" yaml:"deployment_unit_uuid,omitempty"`
+
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
 	Devices []string `json:"devices,omitempty" yaml:"devices,omitempty"`
@@ -138,6 +140,8 @@ type Container struct {
 	User string `json:"user,omitempty" yaml:"user,omitempty"`
 
 	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+
+	Version string `json:"version,omitempty" yaml:"version,omitempty"`
 
 	VolumeDriver string `json:"volumeDriver,omitempty" yaml:"volume_driver,omitempty"`
 

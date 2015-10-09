@@ -218,7 +218,13 @@ def test_args(client, compose):
     assert service.launchConfig.cpuSet == '1,2'
     assert service.launchConfig.devices == ['/dev/sda:/dev/a:rwm',
                                             '/dev/sdb:/dev/c:ro']
-    assert service.launchConfig.labels == {'a': 'b', 'c': 'd'}
+    s = 'io.rancher.service.selector.'
+    assert service.launchConfig.labels == {'a': 'b',
+                                           s + 'link': 'bar in (a,b)',
+                                           s + 'container': 'foo',
+                                           'c': 'd'}
+    assert service.selectorLink == 'bar in (a,b)'
+    assert service.selectorContainer == 'foo'
     assert service.launchConfig.securityOpt == ['label:foo', 'label:bar']
     assert service.launchConfig.pidMode == 'host'
     assert service.launchConfig.logConfig == {
@@ -895,7 +901,6 @@ def test_external_service_hostname(client, compose):
 
     assert service.name == 'web'
     assert service.type == 'externalService'
-    assert service.launchConfig is None
     assert service.hostname == 'example.com'
 
 
@@ -907,7 +912,6 @@ def test_external_ip(client, compose):
 
     assert service.name == 'web'
     assert service.type == 'externalService'
-    assert service.launchConfig is None
     assert service.externalIpAddresses == ['1.1.1.1', '2.2.2.2']
     assert service.healthCheck.healthyThreshold == 2
 

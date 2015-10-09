@@ -25,6 +25,8 @@ type ExternalService struct {
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
+	LaunchConfig LaunchConfig `json:"launchConfig,omitempty" yaml:"launch_config,omitempty"`
+
 	Metadata map[string]interface{} `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
@@ -32,6 +34,10 @@ type ExternalService struct {
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
+
+	SelectorContainer string `json:"selectorContainer,omitempty" yaml:"selector_container,omitempty"`
+
+	SelectorLink string `json:"selectorLink,omitempty" yaml:"selector_link,omitempty"`
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 

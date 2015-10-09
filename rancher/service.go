@@ -245,8 +245,10 @@ func (r *RancherService) createExternalService() (*rancherClient.Service, error)
 
 func (r *RancherService) createDnsService() (*rancherClient.Service, error) {
 	_, err := r.context.Client.DnsService.Create(&rancherClient.DnsService{
-		Name:          r.name,
-		EnvironmentId: r.context.Environment.Id,
+		Name:              r.name,
+		EnvironmentId:     r.context.Environment.Id,
+		SelectorContainer: r.getSelectorContainer(),
+		SelectorLink:      r.getSelectorLink(),
 	})
 
 	if err != nil {
@@ -296,6 +298,8 @@ func (r *RancherService) createLbService() (*rancherClient.Service, error) {
 		LaunchConfig:       launchConfig,
 		Scale:              int64(r.getConfiguredScale()),
 		EnvironmentId:      r.context.Environment.Id,
+		SelectorContainer:  r.getSelectorContainer(),
+		SelectorLink:       r.getSelectorLink(),
 	}
 
 	if err := populateCerts(r.context.Client, lbServiceOpts, &config); err != nil {
@@ -342,8 +346,10 @@ func (r *RancherService) createNormalService() (*rancherClient.Service, error) {
 		Metadata:               r.getMetadata(),
 		LaunchConfig:           launchConfig,
 		SecondaryLaunchConfigs: secondaryLaunchConfigs,
-		Scale:         int64(r.getConfiguredScale()),
-		EnvironmentId: r.context.Environment.Id,
+		Scale:             int64(r.getConfiguredScale()),
+		EnvironmentId:     r.context.Environment.Id,
+		SelectorContainer: r.getSelectorContainer(),
+		SelectorLink:      r.getSelectorLink(),
 	})
 }
 
@@ -456,6 +462,14 @@ func (r *RancherService) getLbLinks() ([]interface{}, error) {
 	}
 
 	return result, nil
+}
+
+func (r *RancherService) getSelectorContainer() string {
+	return r.serviceConfig.Labels.MapParts()["io.rancher.service.selector.container"]
+}
+
+func (r *RancherService) getSelectorLink() string {
+	return r.serviceConfig.Labels.MapParts()["io.rancher.service.selector.link"]
 }
 
 func (r *RancherService) getLbLinkPorts(name string) ([]string, error) {

@@ -49,6 +49,8 @@ web:
     labels:
       a: b
       c: d
+      io.rancher.service.selector.container: foo
+      io.rancher.service.selector.link: bar in (a,b)
     expose:
     - 21
     extra_hosts:

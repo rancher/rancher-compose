@@ -1305,8 +1305,29 @@ def test_metadata_on_service(client, compose):
     service = find_one(project.services)
 
     assert service.name == 'web'
-    assert service.metadata.key1[0] == 'one'
-    assert service.metadata.key1[1] == 'two'
+    assert service.metadata.test1[0] == 'one'
+    assert service.metadata.test1[1] == 'two'
+
+    assert service.metadata.test2.name == "t2name"
+    assert service.metadata.test2.value == "t2value"
+
+    assert service.metadata.test3
+
+    assert service.metadata.test4[0].test5.name == "t5name"
+    assert service.metadata.test4[1].test6.name == "t6name"
+    assert service.metadata.test4[1].test6.value == "t6value"
+
+    assert service.metadata.test7.test7nest.test7nestofnest[0].test7dot1.name \
+        == "test7dot1name"
+    assert service.metadata.test7.test7nest.test7nestofnest[1].test7dot2.name \
+        == "test7dot2name"
+
+    assert service.metadata.test8[0].test8a[0].name == "test8a"
+    assert service.metadata.test8[0].test8a[0].value == "test8avalue"
+    assert service.metadata.test8[0].test8a[1].name == "test8ab"
+    assert service.metadata.test8[0].test8a[1].value == "test8abvalue"
+    assert service.metadata.test8[1].test8b[0].name == "test8ba"
+    assert service.metadata.test8[1].test8b[0].value == "test8bavalue"
 
 
 def test_healthchecks(client, compose):

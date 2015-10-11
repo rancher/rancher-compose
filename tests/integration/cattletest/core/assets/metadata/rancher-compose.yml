@@ -1,5 +1,33 @@
 web:
+  scale: 1
   metadata:
-    key1:
+    test1:
       - one
       - two
+    test2:
+      name: t2name
+      value: t2value
+    test3: true
+    test4:
+      - test5:
+         name: t5name
+      - test6:
+         name: t6name
+         value: t6value
+    test7:
+      test7nest:
+        test7nestofnest:
+          - test7dot1:
+              name: test7dot1name
+          - test7dot2:
+              name: test7dot2name
+    test8:
+      - test8a:
+          - name: test8a
+            value: test8avalue
+          - name: test8ab
+            value: test8abvalue
+      - test8b:
+          - name: test8ba
+            value: test8bavalue
+ 

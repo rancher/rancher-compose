@@ -355,7 +355,7 @@ func (r *RancherService) createNormalService() (*rancherClient.Service, error) {
 
 func (r *RancherService) getMetadata() map[string]interface{} {
 	if config, ok := r.context.RancherConfig[r.name]; ok {
-		return config.Metadata
+		return NestedMapsToMapInterface(config.Metadata)
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package project
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -106,10 +107,21 @@ func parseConfig(option, service string, data *interface{}, mapping func(string)
 	switch typedData := (*data).(type) {
 	case string:
 		var success bool
-		*data, success = parseLine(typedData, mapping)
+
+		interpolatedLine, success := parseLine(typedData, mapping)
 
 		if !success {
 			return fmt.Errorf("Invalid interpolation format for \"%s\" option in service \"%s\": \"%s\"", option, service, typedData)
+		}
+
+		// If possible, convert the value to an integer
+		// If the type should be a string and not an int, go-yaml will convert it back into a string
+		lineAsInteger, err := strconv.Atoi(interpolatedLine)
+
+		if err == nil {
+			*data = lineAsInteger
+		} else {
+			*data = interpolatedLine
 		}
 	case []interface{}:
 		for k, v := range typedData {
@@ -148,7 +160,12 @@ func Interpolate(environmentLookup EnvironmentLookup, config *RawServiceMap) err
 					return ""
 				}
 
-				return strings.Split(values[0], "=")[1]
+				// Use first result if many are given
+				value := values[0]
+
+				// Environment variables come in key=value format
+				// Return everything past first '='
+				return strings.SplitN(value, "=", 2)[1]
 			})
 
 			if err != nil {

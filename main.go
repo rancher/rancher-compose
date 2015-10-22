@@ -60,8 +60,8 @@ func main() {
 		},
 	)
 	app.Commands = []cli.Command{
-		command.CreateCommand(factory),
-		command.UpCommand(factory),
+		rancherApp.CreateCommand(factory),
+		rancherApp.UpCommand(factory),
 		command.StartCommand(factory),
 		command.LogsCommand(factory),
 		command.RestartCommand(factory),

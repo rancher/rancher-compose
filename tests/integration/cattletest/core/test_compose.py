@@ -1204,7 +1204,7 @@ def test_service_link_with_space(client, compose):
     assert maps[0].name == 'alias'
 
 
-def test_circle(client, compose):
+def test_circle_simple(client, compose):
     template = '''
     foo:
         image: nginx
@@ -1218,7 +1218,7 @@ def test_circle(client, compose):
 
     project_name = random_str()
     compose.check_call(template, '-p', project_name, '-f',
-                       '-', 'up', '-d')
+                       '-', 'create')
     project = find_one(client.list_environment, name=project_name)
     foo = _get_service(project.services(), 'foo')
     web = _get_service(project.services(), 'web')
@@ -1240,7 +1240,7 @@ def test_one_circle(client, compose):
 
     project_name = random_str()
     compose.check_call(template, '-p', project_name, '-f',
-                       '-', 'up', '-d')
+                       '-', 'create')
     project = find_one(client.list_environment, name=project_name)
     foo = _get_service(project.services(), 'foo')
 
@@ -1566,18 +1566,35 @@ def test_create_then_up_on_circle(client, compose):
     etcd2 = _get_service(project.services(), 'etcd2')
 
     assert len(etcd_lb.consumedservices()) == 3
-
-    found = set()
-    found.add(len(etcd0.consumedservices()))
-    found.add(len(etcd1.consumedservices()))
-    found.add(len(etcd2.consumedservices()))
-    assert found == set([0, 1, 2])
+    assert len(etcd0.consumedservices()) == 2
+    assert len(etcd1.consumedservices()) == 2
+    assert len(etcd2.consumedservices()) == 2
+    assert len(etcd_lb.consumedservices()) == 3
 
     compose.check_call(template, '-f', '-', '-p', project_name, 'up', '-d')
     assert len(etcd_lb.consumedservices()) == 3
     assert len(etcd0.consumedservices()) == 2
     assert len(etcd1.consumedservices()) == 2
     assert len(etcd2.consumedservices()) == 2
+
+
+def test_expose_port_ignore(client, compose):
+    template = '''
+foo:
+    image: nginx
+    expose:
+    - 1234
+    links:
+    - foo
+'''
+
+    project_name = random_str()
+    compose.check_call(template, '-p', project_name, '-f',
+                       '-', 'create')
+    project = find_one(client.list_environment, name=project_name)
+    foo = _get_service(project.services(), 'foo')
+
+    assert 'ports' not in foo.launchConfig
 
 
 def test_pull_sidekick(client, compose):
@@ -1598,22 +1615,3 @@ foo2:
 
     assert 'nginx' in out
     assert 'tianon/true' in out
-
-
-def test_expose_port_ignore(client, compose):
-    template = '''
-foo:
-    image: nginx
-    expose:
-    - 1234
-    links:
-    - foo
-'''
-
-    project_name = random_str()
-    compose.check_call(template, '-p', project_name, '-f',
-                       '-', 'create')
-    project = find_one(client.list_environment, name=project_name)
-    foo = _get_service(project.services(), 'foo')
-
-    assert 'ports' not in foo.launchConfig

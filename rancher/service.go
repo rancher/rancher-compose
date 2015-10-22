@@ -74,6 +74,8 @@ func (r *RancherService) Create() error {
 
 	if err == nil && service == nil {
 		service, err = r.createService()
+	} else if err == nil && service != nil {
+		err = r.setupLinks(service)
 	}
 
 	return err
@@ -519,7 +521,9 @@ func (r *RancherService) getLinks() (map[Link]string, error) {
 		}
 
 		if linkedService == nil {
-			logrus.Warnf("Failed to find service %s to link to", name)
+			if _, ok := r.context.Project.Configs[name]; !ok {
+				logrus.Warnf("Failed to find service %s to link to", name)
+			}
 		} else {
 			result[Link{
 				ServiceName: name,

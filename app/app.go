@@ -95,6 +95,49 @@ func PullCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+func CreateCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "create",
+		Usage:  "Create all services but do not start",
+		Action: app.WithProject(factory, ProjectCreate),
+	}
+}
+
+func UpCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "up",
+		Usage:  "Bring all services up",
+		Action: app.WithProject(factory, ProjectUp),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "d",
+				Usage: "Do not block and log",
+			},
+		},
+	}
+}
+
+func ProjectCreate(p *project.Project, c *cli.Context) {
+	if err := p.Create(c.Args()...); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// This is to fix circular links... What!? It works.
+	if err := p.Create(c.Args()...); err != nil {
+		logrus.Fatal(err)
+	}
+}
+
+func ProjectUp(p *project.Project, c *cli.Context) {
+	if err := p.Create(c.Args()...); err != nil {
+		logrus.Fatal(err)
+	}
+
+	if err := p.Up(c.Args()...); err != nil {
+		logrus.Fatal(err)
+	}
+}
+
 func Upgrade(p *project.Project, c *cli.Context) {
 	args := c.Args()
 	if len(args) != 2 {

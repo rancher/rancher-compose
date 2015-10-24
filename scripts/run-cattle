@@ -22,7 +22,7 @@ if [ ! -e cattle.jar ]; then
     curl -L -O $URL
 fi
 
-java -jar cattle.jar --notify $(pwd)/run-success.sh --notify-error $(pwd)/run-error.sh &
+java -Dcompose.executor.execute=true -Dcompose.executor.service.executable=$(pwd)/../bin/rancher-compose-executor -jar cattle.jar --notify $(pwd)/run-success.sh --notify-error $(pwd)/run-error.sh &
 
 while sleep .5; do
     if [ -f run-success ]; then

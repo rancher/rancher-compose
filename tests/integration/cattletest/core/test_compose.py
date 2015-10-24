@@ -939,7 +939,7 @@ def test_service_inplace_rollback(client, compose):
     s2 = find_one(project.services)
 
     assert s.launchConfig.labels['io.rancher.service.hash'] != \
-           s2.launchConfig.labels['io.rancher.service.hash']
+        s2.launchConfig.labels['io.rancher.service.hash']
     assert s2.launchConfig.imageUuid == 'docker:nginx:1.9.5'
     assert s2.state == 'upgraded'
 
@@ -971,7 +971,7 @@ def test_service_inplace_upgrade(client, compose):
     s2 = find_one(project.services)
 
     assert s.launchConfig.labels['io.rancher.service.hash'] != \
-           s2.launchConfig.labels['io.rancher.service.hash']
+        s2.launchConfig.labels['io.rancher.service.hash']
     assert s2.launchConfig.imageUuid == 'docker:nginx:1.9.5'
     assert s2.state == 'upgraded'
 
@@ -982,18 +982,20 @@ def test_service_inplace_upgrade(client, compose):
 
 
 def test_service_hash_with_rancher(client, compose):
-    project_name = create_project(compose, file='assets/hash-no-rancher/test.yml')
+    project_name = create_project(compose,
+                                  file='assets/hash-no-rancher/test.yml')
     project = find_one(client.list_environment, name=project_name)
     s = find_one(project.services)
 
-    project_name = create_project(compose, file='assets/hash-with-rancher/test.yml')
+    project_name = create_project(compose,
+                                  file='assets/hash-with-rancher/test.yml')
     project = find_one(client.list_environment, name=project_name)
     s2 = find_one(project.services)
 
     assert s.metadata['io.rancher.service.hash'] is not None
     assert s2.metadata['io.rancher.service.hash'] is not None
     assert s.metadata['io.rancher.service.hash'] != \
-           s2.metadata['io.rancher.service.hash']
+        s2.metadata['io.rancher.service.hash']
 
 
 def test_service_hash_no_change(client, compose):
@@ -1013,9 +1015,9 @@ def test_service_hash_no_change(client, compose):
     web2 = find_one(project.services)
 
     assert web.metadata['io.rancher.service.hash'] == \
-           web2.metadata['io.rancher.service.hash']
+        web2.metadata['io.rancher.service.hash']
     assert web.launchConfig.labels['io.rancher.service.hash'] == \
-           web2.launchConfig.labels['io.rancher.service.hash']
+        web2.launchConfig.labels['io.rancher.service.hash']
 
 
 def test_dns_service(client, compose):

@@ -1,11 +1,8 @@
 from common_fixtures import *  # NOQA
 
-import subprocess
-from subprocess import Popen
 from os import path
 import os
 
-import sys
 import pytest
 import cattle
 import ConfigParser
@@ -161,4 +158,3 @@ two:
 
 def _base():
     return path.dirname(__file__)
-

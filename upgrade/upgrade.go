@@ -83,14 +83,16 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 	}
 
 	upgradeOpts := &rancherClient.ServiceUpgrade{
-		UpdateLinks:    opts.UpdateLinks,
-		FinalScale:     int64(opts.FinalScale),
-		BatchSize:      int64(opts.BatchSize),
-		IntervalMillis: int64(opts.IntervalMillis),
-		ToServiceId:    dest.Id,
+		ToServiceStrategy: &rancherClient.ToServiceUpgradeStrategy{
+			UpdateLinks:    opts.UpdateLinks,
+			FinalScale:     int64(opts.FinalScale),
+			BatchSize:      int64(opts.BatchSize),
+			IntervalMillis: int64(opts.IntervalMillis),
+			ToServiceId:    dest.Id,
+		},
 	}
-	if upgradeOpts.FinalScale == -1 {
-		upgradeOpts.FinalScale = source.Scale
+	if upgradeOpts.ToServiceStrategy.FinalScale == -1 {
+		upgradeOpts.ToServiceStrategy.FinalScale = source.Scale
 	}
 
 	client := rFromService.Client()
@@ -101,7 +103,7 @@ func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 		}
 	}
 
-	logrus.Infof("Upgrading %s to %s, scale=%d", from, to, upgradeOpts.FinalScale)
+	logrus.Infof("Upgrading %s to %s, scale=%d", from, to, upgradeOpts.ToServiceStrategy.FinalScale)
 	service, err := client.Service.ActionUpgrade(source, upgradeOpts)
 	if err != nil {
 		return err

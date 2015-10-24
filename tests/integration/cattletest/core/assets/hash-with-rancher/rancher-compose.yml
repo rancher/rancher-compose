@@ -1,0 +1,6 @@
+web1:
+  metadata:
+    foo:
+      bar:
+      - 1
+      - elephant

@@ -156,5 +156,25 @@ two:
     assert env.previousExternalId is None
 
 
+def test_stack_create_circles(client):
+    name = 'project-' + random_str()
+    template = '''
+one:
+  image: nginx
+  links:
+  - two
+
+two:
+  image: nginx
+  links:
+  - one
+'''
+    env = client.create_environment(name=name, dockerCompose=template)
+    env = client.wait_success(env)
+
+    for s in env.services():
+        find_one(s.consumedservices)
+
+
 def _base():
     return path.dirname(__file__)

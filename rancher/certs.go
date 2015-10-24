@@ -6,7 +6,7 @@ import (
 	rancherClient "github.com/rancher/go-rancher/client"
 )
 
-func populateCerts(client *rancherClient.RancherClient, lbService *rancherClient.LoadBalancerService, rancherConfig *RancherConfig) error {
+func populateCerts(client *rancherClient.RancherClient, lbService *CompositeService, rancherConfig *RancherConfig) error {
 	if rancherConfig.DefaultCert != "" {
 		if certId, err := findCertByName(client, rancherConfig.DefaultCert); err != nil {
 			return err

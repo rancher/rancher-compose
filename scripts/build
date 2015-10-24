@@ -31,3 +31,7 @@ if [ -n "$BUILD_CROSS" ]; then
     mkdir -p build/bin
     gox -os="darwin linux windows" -arch="386 amd64 arm" -output="build/bin/rancher-compose_{{.OS}}-{{.Arch}}" -ldflags="-w -X github.com/rancher/rancher-compose/version.VERSION $VERSION"
 fi
+
+if [ ! -e bin/rancher-compose-executor ]; then
+    ln -s rancher-compose bin/rancher-compose-executor
+fi

@@ -1,0 +1,2 @@
+web1:
+  image: nginx

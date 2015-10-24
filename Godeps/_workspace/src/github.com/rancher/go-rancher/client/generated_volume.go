@@ -19,6 +19,8 @@ type Volume struct {
 
 	DriverOpts map[string]interface{} `json:"driverOpts,omitempty" yaml:"driver_opts,omitempty"`
 
+	ExternalId string `json:"externalId,omitempty" yaml:"external_id,omitempty"`
+
 	ImageId string `json:"imageId,omitempty" yaml:"image_id,omitempty"`
 
 	InstanceId string `json:"instanceId,omitempty" yaml:"instance_id,omitempty"`

@@ -17,6 +17,9 @@ type RancherClient struct {
 	InstanceHealthCheck                      InstanceHealthCheckOperations
 	ServiceLink                              ServiceLinkOperations
 	ServiceUpgrade                           ServiceUpgradeOperations
+	ServiceUpgradeStrategy                   ServiceUpgradeStrategyOperations
+	InServiceUpgradeStrategy                 InServiceUpgradeStrategyOperations
+	ToServiceUpgradeStrategy                 ToServiceUpgradeStrategyOperations
 	AddLoadBalancerInput                     AddLoadBalancerInputOperations
 	AddRemoveClusterHostInput                AddRemoveClusterHostInputOperations
 	AddRemoveLoadBalancerHostInput           AddRemoveLoadBalancerHostInputOperations
@@ -52,6 +55,9 @@ type RancherClient struct {
 	SetLoadBalancerServiceLinksInput         SetLoadBalancerServiceLinksInputOperations
 	LoadBalancerServiceLink                  LoadBalancerServiceLinkOperations
 	PullTask                                 PullTaskOperations
+	ExternalVolumeEvent                      ExternalVolumeEventOperations
+	ExternalStoragePoolEvent                 ExternalStoragePoolEventOperations
+	EnvironmentUpgrade                       EnvironmentUpgradeOperations
 	Account                                  AccountOperations
 	Agent                                    AgentOperations
 	Certificate                              CertificateOperations
@@ -62,6 +68,7 @@ type RancherClient struct {
 	Databasechangelog                        DatabasechangelogOperations
 	Databasechangeloglock                    DatabasechangeloglockOperations
 	Environment                              EnvironmentOperations
+	ExternalEvent                            ExternalEventOperations
 	ExternalHandler                          ExternalHandlerOperations
 	ExternalHandlerExternalHandlerProcessMap ExternalHandlerExternalHandlerProcessMapOperations
 	ExternalHandlerProcess                   ExternalHandlerProcessOperations
@@ -150,6 +157,9 @@ func constructClient() *RancherClient {
 	client.InstanceHealthCheck = newInstanceHealthCheckClient(client)
 	client.ServiceLink = newServiceLinkClient(client)
 	client.ServiceUpgrade = newServiceUpgradeClient(client)
+	client.ServiceUpgradeStrategy = newServiceUpgradeStrategyClient(client)
+	client.InServiceUpgradeStrategy = newInServiceUpgradeStrategyClient(client)
+	client.ToServiceUpgradeStrategy = newToServiceUpgradeStrategyClient(client)
 	client.AddLoadBalancerInput = newAddLoadBalancerInputClient(client)
 	client.AddRemoveClusterHostInput = newAddRemoveClusterHostInputClient(client)
 	client.AddRemoveLoadBalancerHostInput = newAddRemoveLoadBalancerHostInputClient(client)
@@ -185,6 +195,9 @@ func constructClient() *RancherClient {
 	client.SetLoadBalancerServiceLinksInput = newSetLoadBalancerServiceLinksInputClient(client)
 	client.LoadBalancerServiceLink = newLoadBalancerServiceLinkClient(client)
 	client.PullTask = newPullTaskClient(client)
+	client.ExternalVolumeEvent = newExternalVolumeEventClient(client)
+	client.ExternalStoragePoolEvent = newExternalStoragePoolEventClient(client)
+	client.EnvironmentUpgrade = newEnvironmentUpgradeClient(client)
 	client.Account = newAccountClient(client)
 	client.Agent = newAgentClient(client)
 	client.Certificate = newCertificateClient(client)
@@ -195,6 +208,7 @@ func constructClient() *RancherClient {
 	client.Databasechangelog = newDatabasechangelogClient(client)
 	client.Databasechangeloglock = newDatabasechangeloglockClient(client)
 	client.Environment = newEnvironmentClient(client)
+	client.ExternalEvent = newExternalEventClient(client)
 	client.ExternalHandler = newExternalHandlerClient(client)
 	client.ExternalHandlerExternalHandlerProcessMap = newExternalHandlerExternalHandlerProcessMapClient(client)
 	client.ExternalHandlerProcess = newExternalHandlerProcessClient(client)

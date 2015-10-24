@@ -3,11 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/cli/command"
 	rancherApp "github.com/rancher/rancher-compose/app"
+	"github.com/rancher/rancher-compose/executor"
 	"github.com/rancher/rancher-compose/version"
 )
 
@@ -19,6 +21,14 @@ func beforeApp(c *cli.Context) error {
 }
 
 func main() {
+	if path.Base(os.Args[0]) == "rancher-compose-executor" {
+		executor.Main()
+	} else {
+		cliMain()
+	}
+}
+
+func cliMain() {
 	factory := &rancherApp.ProjectFactory{}
 
 	app := cli.NewApp()

@@ -7,19 +7,9 @@ const (
 type ServiceUpgrade struct {
 	Resource
 
-	BatchSize int64 `json:"batchSize,omitempty" yaml:"batch_size,omitempty"`
+	InServiceStrategy *InServiceUpgradeStrategy `json:"inServiceStrategy,omitempty" yaml:"in_service_strategy,omitempty"`
 
-	FinalScale int64 `json:"finalScale,omitempty" yaml:"final_scale,omitempty"`
-
-	IntervalMillis int64 `json:"intervalMillis,omitempty" yaml:"interval_millis,omitempty"`
-
-	LaunchConfig *LaunchConfig `json:"launchConfig,omitempty" yaml:"launch_config,omitempty"`
-
-	SecondaryLaunchConfigs []interface{} `json:"secondaryLaunchConfigs,omitempty" yaml:"secondary_launch_configs,omitempty"`
-
-	ToServiceId string `json:"toServiceId,omitempty" yaml:"to_service_id,omitempty"`
-
-	UpdateLinks bool `json:"updateLinks,omitempty" yaml:"update_links,omitempty"`
+	ToServiceStrategy *ToServiceUpgradeStrategy `json:"toServiceStrategy,omitempty" yaml:"to_service_strategy,omitempty"`
 }
 
 type ServiceUpgradeCollection struct {

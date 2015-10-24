@@ -23,7 +23,7 @@ type LoadBalancerService struct {
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
-	LaunchConfig LaunchConfig `json:"launchConfig,omitempty" yaml:"launch_config,omitempty"`
+	LaunchConfig *LaunchConfig `json:"launchConfig,omitempty" yaml:"launch_config,omitempty"`
 
 	LoadBalancerConfig *LoadBalancerConfig `json:"loadBalancerConfig,omitempty" yaml:"load_balancer_config,omitempty"`
 
@@ -31,13 +31,15 @@ type LoadBalancerService struct {
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
+	PreviousLaunchConfig *LaunchConfig `json:"previousLaunchConfig,omitempty" yaml:"previous_launch_config,omitempty"`
+
+	PreviousSecondaryLaunchConfigs []interface{} `json:"previousSecondaryLaunchConfigs,omitempty" yaml:"previous_secondary_launch_configs,omitempty"`
+
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
 
 	Scale int64 `json:"scale,omitempty" yaml:"scale,omitempty"`
-
-	SelectorContainer string `json:"selectorContainer,omitempty" yaml:"selector_container,omitempty"`
 
 	SelectorLink string `json:"selectorLink,omitempty" yaml:"selector_link,omitempty"`
 
@@ -76,15 +78,21 @@ type LoadBalancerServiceOperations interface {
 
 	ActionAddservicelink(*LoadBalancerService, *AddRemoveLoadBalancerServiceLinkInput) (*Service, error)
 
+	ActionCancelrollback(*LoadBalancerService) (*Service, error)
+
 	ActionCancelupgrade(*LoadBalancerService) (*Service, error)
 
 	ActionCreate(*LoadBalancerService) (*Service, error)
 
 	ActionDeactivate(*LoadBalancerService) (*Service, error)
 
+	ActionFinishupgrade(*LoadBalancerService) (*Service, error)
+
 	ActionRemove(*LoadBalancerService) (*Service, error)
 
 	ActionRemoveservicelink(*LoadBalancerService, *AddRemoveLoadBalancerServiceLinkInput) (*Service, error)
+
+	ActionRollback(*LoadBalancerService) (*Service, error)
 
 	ActionSetservicelinks(*LoadBalancerService, *SetLoadBalancerServiceLinksInput) (*Service, error)
 
@@ -145,6 +153,15 @@ func (c *LoadBalancerServiceClient) ActionAddservicelink(resource *LoadBalancerS
 	return resp, err
 }
 
+func (c *LoadBalancerServiceClient) ActionCancelrollback(resource *LoadBalancerService) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(LOAD_BALANCER_SERVICE_TYPE, "cancelrollback", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
 func (c *LoadBalancerServiceClient) ActionCancelupgrade(resource *LoadBalancerService) (*Service, error) {
 
 	resp := &Service{}
@@ -172,6 +189,15 @@ func (c *LoadBalancerServiceClient) ActionDeactivate(resource *LoadBalancerServi
 	return resp, err
 }
 
+func (c *LoadBalancerServiceClient) ActionFinishupgrade(resource *LoadBalancerService) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(LOAD_BALANCER_SERVICE_TYPE, "finishupgrade", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
 func (c *LoadBalancerServiceClient) ActionRemove(resource *LoadBalancerService) (*Service, error) {
 
 	resp := &Service{}
@@ -186,6 +212,15 @@ func (c *LoadBalancerServiceClient) ActionRemoveservicelink(resource *LoadBalanc
 	resp := &Service{}
 
 	err := c.rancherClient.doAction(LOAD_BALANCER_SERVICE_TYPE, "removeservicelink", &resource.Resource, input, resp)
+
+	return resp, err
+}
+
+func (c *LoadBalancerServiceClient) ActionRollback(resource *LoadBalancerService) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(LOAD_BALANCER_SERVICE_TYPE, "rollback", &resource.Resource, nil, resp)
 
 	return resp, err
 }

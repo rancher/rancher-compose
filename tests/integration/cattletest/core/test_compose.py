@@ -219,6 +219,8 @@ def test_args(client, compose):
     assert service.launchConfig.devices == ['/dev/sda:/dev/a:rwm',
                                             '/dev/sdb:/dev/c:ro']
     s = 'io.rancher.service.selector.'
+    assert service.launchConfig.labels['io.rancher.service.hash'] is not None
+    del service.launchConfig.labels['io.rancher.service.hash']
     assert service.launchConfig.labels == {'a': 'b',
                                            s + 'link': 'bar in (a,b)',
                                            s + 'container': 'foo',
@@ -916,6 +918,106 @@ def test_external_ip(client, compose):
     assert service.healthCheck.healthyThreshold == 2
 
 
+def test_service_inplace_rollback(client, compose):
+    project_name = random_str()
+    template = '''
+    web:
+        image: nginx
+    '''
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'up', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    s = find_one(project.services)
+    assert s.state == 'active'
+
+    template = '''
+    web:
+        image: nginx:1.9.5
+    '''
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-u',
+                       '-d')
+    s2 = find_one(project.services)
+
+    assert s.launchConfig.labels['io.rancher.service.hash'] != \
+           s2.launchConfig.labels['io.rancher.service.hash']
+    assert s2.launchConfig.imageUuid == 'docker:nginx:1.9.5'
+    assert s2.state == 'upgraded'
+
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-r',
+                       '-d')
+    s2 = find_one(project.services)
+    assert s2.state == 'active'
+    assert s2.launchConfig.imageUuid == 'docker:nginx'
+
+
+def test_service_inplace_upgrade(client, compose):
+    project_name = random_str()
+    template = '''
+    web:
+        image: nginx
+    '''
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'up', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    s = find_one(project.services)
+    assert s.state == 'active'
+
+    template = '''
+    web:
+        image: nginx:1.9.5
+    '''
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-u',
+                       '-d')
+    s2 = find_one(project.services)
+
+    assert s.launchConfig.labels['io.rancher.service.hash'] != \
+           s2.launchConfig.labels['io.rancher.service.hash']
+    assert s2.launchConfig.imageUuid == 'docker:nginx:1.9.5'
+    assert s2.state == 'upgraded'
+
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-c',
+                       '-d')
+    s2 = find_one(project.services)
+    assert s2.state == 'active'
+
+
+def test_service_hash_with_rancher(client, compose):
+    project_name = create_project(compose, file='assets/hash-no-rancher/test.yml')
+    project = find_one(client.list_environment, name=project_name)
+    s = find_one(project.services)
+
+    project_name = create_project(compose, file='assets/hash-with-rancher/test.yml')
+    project = find_one(client.list_environment, name=project_name)
+    s2 = find_one(project.services)
+
+    assert s.metadata['io.rancher.service.hash'] is not None
+    assert s2.metadata['io.rancher.service.hash'] is not None
+    assert s.metadata['io.rancher.service.hash'] != \
+           s2.metadata['io.rancher.service.hash']
+
+
+def test_service_hash_no_change(client, compose):
+    template = '''
+    web1:
+        image: nginx
+    '''
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    web = find_one(project.services)
+
+    assert web.metadata['io.rancher.service.hash'] is not None
+    assert web.launchConfig.labels['io.rancher.service.hash'] is not None
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    web2 = find_one(project.services)
+
+    assert web.metadata['io.rancher.service.hash'] == \
+           web2.metadata['io.rancher.service.hash']
+    assert web.launchConfig.labels['io.rancher.service.hash'] == \
+           web2.launchConfig.labels['io.rancher.service.hash']
+
+
 def test_dns_service(client, compose):
     template = '''
     web1:
@@ -969,6 +1071,7 @@ def test_up_relink(client, compose):
     assert len(consumed) == 1
     assert consumed[0].name == 'web'
 
+    del lb.launchConfig.labels['io.rancher.service.hash']
     assert lb.launchConfig.labels == {
         'a': 'b',
         'c': 'd',
@@ -1389,6 +1492,7 @@ def test_stack_case(client, compose):
     find_one(client.list_environment, name=project_name)
 
 
+@pytest.mark.skipif('True')
 def test_certs(new_context, compose_bin, request):
     client = new_context.client
     compose = new_compose(client, compose_bin, request)

@@ -339,9 +339,16 @@ func (rancherClient *RancherBaseClient) doModify(method string, url string, crea
 	return nil
 }
 
+func (rancherClient *RancherBaseClient) Create(schemaType string, createObj interface{}, respObject interface{}) error {
+	return rancherClient.doCreate(schemaType, createObj, respObject)
+}
+
 func (rancherClient *RancherBaseClient) doCreate(schemaType string, createObj interface{}, respObject interface{}) error {
 	if createObj == nil {
 		createObj = map[string]string{}
+	}
+	if respObject == nil {
+		respObject = &map[string]interface{}{}
 	}
 	schema, ok := rancherClient.Types[schemaType]
 	if !ok {
@@ -364,6 +371,10 @@ func (rancherClient *RancherBaseClient) doCreate(schemaType string, createObj in
 	return rancherClient.doModify("POST", collectionUrl, createObj, respObject)
 }
 
+func (rancherClient *RancherBaseClient) Update(schemaType string, existing *Resource, updates interface{}, respObject interface{}) error {
+	return rancherClient.doUpdate(schemaType, existing, updates, respObject)
+}
+
 func (rancherClient *RancherBaseClient) doUpdate(schemaType string, existing *Resource, updates interface{}, respObject interface{}) error {
 	if existing == nil {
 		return errors.New("Existing object is nil")
@@ -376,6 +387,10 @@ func (rancherClient *RancherBaseClient) doUpdate(schemaType string, existing *Re
 
 	if updates == nil {
 		updates = map[string]string{}
+	}
+
+	if respObject == nil {
+		respObject = &map[string]interface{}{}
 	}
 
 	schema, ok := rancherClient.Types[schemaType]

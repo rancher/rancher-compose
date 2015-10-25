@@ -136,18 +136,20 @@ two:
 '''
 
     # TODO: externalId should not be in upgrade
-    env.upgrade(dockerCompose=template,
-                rancherCompose=rancher_compose,
-                externalId='foo2')
+    env = env.upgrade(dockerCompose=template,
+                      rancherCompose=rancher_compose,
+                      externalId='foo2')
 
     env = client.wait_success(env)
+    assert env.state == 'upgraded'
     for s in env.services():
         s = client.wait_success(s)
         if s.name == 'one':
             assert s.state == 'upgraded'
 
-    env.rollback()
+    env = env.rollback()
     env = client.wait_success(env)
+    assert env.state == 'active'
     for s in env.services():
         s = client.wait_success(s)
         assert s.state == 'active'

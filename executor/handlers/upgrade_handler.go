@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/utils"
@@ -128,11 +129,13 @@ func wait(apiClient *client.RancherClient, service *client.Service) error {
 		if service.Transitioning != "yes" {
 			break
 		}
+		time.Sleep(500 * time.Millisecond)
 	}
 
 	switch service.Transitioning {
 	case "yes":
-		return fmt.Errorf("Timeout waiting for %s to finish", service.Name)
+		logrus.Infof("Timeout waiting for %s to finish", service.Name)
+		return ErrTimeout
 	case "no":
 		return nil
 	default:

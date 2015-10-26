@@ -39,7 +39,7 @@ func NewFileEnvLookup(file string, parent project.EnvironmentLookup) (*FileEnvLo
 		}
 	}
 
-	logrus.Debugf("Environemnt Context from file %s: %v", file, variables)
+	logrus.Debugf("Environment Context from file %s: %v", file, variables)
 	return &FileEnvLookup{
 		parent:    parent,
 		variables: variables,

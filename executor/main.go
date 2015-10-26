@@ -18,10 +18,10 @@ func Main() {
 	logger.Info("Starting rancher-compose-executor")
 
 	eventHandlers := map[string]events.EventHandler{
-		"environment.create":        handlers.CreateEnvironment,
-		"environment.upgrade":       handlers.UpgradeEnvironment,
-		"environment.finishupgrade": handlers.FinishUpgradeEnvironment,
-		"environment.rollback":      handlers.RollbackEnvironment,
+		"environment.create":        handlers.WithLock(handlers.CreateEnvironment),
+		"environment.upgrade":       handlers.WithLock(handlers.UpgradeEnvironment),
+		"environment.finishupgrade": handlers.WithLock(handlers.FinishUpgradeEnvironment),
+		"environment.rollback":      handlers.WithLock(handlers.RollbackEnvironment),
 		"ping": func(event *events.Event, apiClient *client.RancherClient) error {
 			return nil
 		},

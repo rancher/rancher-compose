@@ -167,6 +167,9 @@ func (f *NormalFactory) upgrade(r *RancherService, existingService *rancherClien
 	}
 
 	if service {
+		// Scale must be changed through "scale" not "up", so always copy scale existing scale
+		config.Scale = existingService.Scale
+
 		logrus.Infof("Updating %s", r.Name())
 		schemaType := rancherClient.SERVICE_TYPE
 		switch FindServiceType(r) {

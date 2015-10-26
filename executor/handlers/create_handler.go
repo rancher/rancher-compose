@@ -51,6 +51,11 @@ func createEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cli
 		return err
 	}
 
+	// This is to make sure circular links work
+	if err := project.Create(); err != nil {
+		return err
+	}
+
 	uuid := context.Uuid()
 	if uuid == "" {
 		return emptyReply(event, apiClient)

@@ -77,8 +77,7 @@ two:
     env.upgrade(dockerCompose=template,
                 rancherCompose=rancher_compose,
                 externalId='foo2')
-
-    env = client.wait_success(env)
+    env = client.wait_success(env, timeout=120)
     for s in env.services():
         s = client.wait_success(s)
         if s.name == 'one':
@@ -136,24 +135,85 @@ two:
 '''
 
     # TODO: externalId should not be in upgrade
-    env.upgrade(dockerCompose=template,
-                rancherCompose=rancher_compose,
-                externalId='foo2')
-
-    env = client.wait_success(env)
+    env = env.upgrade(dockerCompose=template,
+                      rancherCompose=rancher_compose,
+                      externalId='foo2')
+    env = client.wait_success(env, timeout=120)
+    assert env.state == 'upgraded'
     for s in env.services():
         s = client.wait_success(s)
         if s.name == 'one':
             assert s.state == 'upgraded'
 
-    env.rollback()
-    env = client.wait_success(env)
+    env = env.rollback()
+    env = client.wait_success(env, timeout=120)
+    assert env.state == 'active'
     for s in env.services():
         s = client.wait_success(s)
         assert s.state == 'active'
 
     assert env.externalId == 'foo'
     assert env.previousExternalId is None
+
+
+def test_stack_change_scale_upgrade(client):
+    name = 'project-' + random_str()
+    template = '''
+one:
+  image: nginx
+'''
+    rancher_compose = '''
+one:
+  scale: 2
+'''
+    env = client.create_environment(name=name, dockerCompose=template,
+                                    rancherCompose=rancher_compose)
+    env = client.wait_success(env)
+    env = client.wait_success(env.activateservices())
+    assert env.state == 'active'
+    s = find_one(env.services)
+    assert s.launchConfig.imageUuid == 'docker:nginx'
+    assert s.scale == 2
+
+    template = '''
+one:
+  image: nginx:2
+'''
+    # Something else about the service needs to change too, like metadata
+    # scale is ignore in the diff
+    rancher_compose = '''
+one:
+  metadata:
+    foo: bar
+  scale: 4
+'''
+    env.upgrade(dockerCompose=template,
+                rancherCompose=rancher_compose)
+    env = client.wait_success(env, timeout=120)
+    assert env.state == 'upgraded'
+    s = find_one(env.services)
+    assert s.launchConfig.imageUuid == 'docker:nginx:2'
+    assert s.scale == 2
+
+
+def test_stack_create_circles(client):
+    name = 'project-' + random_str()
+    template = '''
+one:
+  image: nginx
+  links:
+  - two
+
+two:
+  image: nginx
+  links:
+  - one
+'''
+    env = client.create_environment(name=name, dockerCompose=template)
+    env = client.wait_success(env)
+
+    for s in env.services():
+        find_one(s.consumedservices)
 
 
 def _base():

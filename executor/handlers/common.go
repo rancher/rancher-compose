@@ -1,8 +1,17 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
+
+	"github.com/Sirupsen/logrus"
 	"github.com/rancher/go-machine-service/events"
+	"github.com/rancher/go-machine-service/locks"
 	"github.com/rancher/go-rancher/client"
+)
+
+var (
+	ErrTimeout = errors.New("Timeout waiting service")
 )
 
 func emptyReply(event *events.Event, apiClient *client.RancherClient) error {
@@ -34,4 +43,23 @@ func reply(event *events.Event, apiClient *client.RancherClient, data map[string
 	reply := newReply(event)
 	reply.Data = data
 	return publishReply(reply, apiClient)
+}
+
+func WithLock(f func(event *events.Event, apiClient *client.RancherClient) error) func(event *events.Event, apiClient *client.RancherClient) error {
+	return func(event *events.Event, apiClient *client.RancherClient) error {
+		lockKey := fmt.Sprintf("%s:%s", event.ResourceType, event.ResourceId)
+		lock := locks.Lock(lockKey)
+		if lock == nil {
+			logrus.Infof("Busying processing %s", lockKey)
+			return nil
+		}
+		defer lock.Unlock()
+
+		err := f(event, apiClient)
+		if err == ErrTimeout {
+			logrus.Infof("Timeout processing %s", lockKey)
+			return nil
+		}
+		return nil
+	}
 }

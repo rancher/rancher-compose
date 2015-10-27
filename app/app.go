@@ -187,6 +187,11 @@ func ProjectUp(p *project.Project, c *cli.Context) {
 	if err := p.Up(c.Args()...); err != nil {
 		logrus.Fatal(err)
 	}
+
+	if !c.Bool("d") {
+		// wait forever
+		<-make(chan interface{})
+	}
 }
 
 func Upgrade(p *project.Project, c *cli.Context) {

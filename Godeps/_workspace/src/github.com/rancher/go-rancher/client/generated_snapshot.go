@@ -88,6 +88,11 @@ func (c *SnapshotClient) List(opts *ListOpts) (*SnapshotCollection, error) {
 func (c *SnapshotClient) ById(id string) (*Snapshot, error) {
 	resp := &Snapshot{}
 	err := c.rancherClient.doById(SNAPSHOT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

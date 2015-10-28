@@ -56,6 +56,11 @@ func (c *HostAccessClient) List(opts *ListOpts) (*HostAccessCollection, error) {
 func (c *HostAccessClient) ById(id string) (*HostAccess, error) {
 	resp := &HostAccess{}
 	err := c.rancherClient.doById(HOST_ACCESS_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

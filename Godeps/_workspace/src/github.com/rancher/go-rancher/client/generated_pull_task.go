@@ -86,6 +86,11 @@ func (c *PullTaskClient) List(opts *ListOpts) (*PullTaskCollection, error) {
 func (c *PullTaskClient) ById(id string) (*PullTask, error) {
 	resp := &PullTask{}
 	err := c.rancherClient.doById(PULL_TASK_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

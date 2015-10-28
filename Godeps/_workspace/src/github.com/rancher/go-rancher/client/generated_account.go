@@ -94,6 +94,11 @@ func (c *AccountClient) List(opts *ListOpts) (*AccountCollection, error) {
 func (c *AccountClient) ById(id string) (*Account, error) {
 	resp := &Account{}
 	err := c.rancherClient.doById(ACCOUNT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

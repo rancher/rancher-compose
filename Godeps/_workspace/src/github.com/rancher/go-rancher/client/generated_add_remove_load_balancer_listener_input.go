@@ -54,6 +54,11 @@ func (c *AddRemoveLoadBalancerListenerInputClient) List(opts *ListOpts) (*AddRem
 func (c *AddRemoveLoadBalancerListenerInputClient) ById(id string) (*AddRemoveLoadBalancerListenerInput, error) {
 	resp := &AddRemoveLoadBalancerListenerInput{}
 	err := c.rancherClient.doById(ADD_REMOVE_LOAD_BALANCER_LISTENER_INPUT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

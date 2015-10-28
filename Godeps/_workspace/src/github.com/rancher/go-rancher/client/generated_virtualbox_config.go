@@ -66,6 +66,11 @@ func (c *VirtualboxConfigClient) List(opts *ListOpts) (*VirtualboxConfigCollecti
 func (c *VirtualboxConfigClient) ById(id string) (*VirtualboxConfig, error) {
 	resp := &VirtualboxConfig{}
 	err := c.rancherClient.doById(VIRTUALBOX_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

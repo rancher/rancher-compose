@@ -68,6 +68,11 @@ func (c *GithubconfigClient) List(opts *ListOpts) (*GithubconfigCollection, erro
 func (c *GithubconfigClient) ById(id string) (*Githubconfig, error) {
 	resp := &Githubconfig{}
 	err := c.rancherClient.doById(GITHUBCONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

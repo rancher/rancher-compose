@@ -112,6 +112,11 @@ func (c *LoadBalancerClient) List(opts *ListOpts) (*LoadBalancerCollection, erro
 func (c *LoadBalancerClient) ById(id string) (*LoadBalancer, error) {
 	resp := &LoadBalancer{}
 	err := c.rancherClient.doById(LOAD_BALANCER_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

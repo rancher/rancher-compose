@@ -92,6 +92,11 @@ func (c *NetworkClient) List(opts *ListOpts) (*NetworkCollection, error) {
 func (c *NetworkClient) ById(id string) (*Network, error) {
 	resp := &Network{}
 	err := c.rancherClient.doById(NETWORK_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

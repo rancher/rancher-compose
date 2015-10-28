@@ -86,6 +86,11 @@ func (c *RegisterClient) List(opts *ListOpts) (*RegisterCollection, error) {
 func (c *RegisterClient) ById(id string) (*Register, error) {
 	resp := &Register{}
 	err := c.rancherClient.doById(REGISTER_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

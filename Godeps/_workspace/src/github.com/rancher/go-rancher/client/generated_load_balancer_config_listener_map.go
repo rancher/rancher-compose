@@ -86,6 +86,11 @@ func (c *LoadBalancerConfigListenerMapClient) List(opts *ListOpts) (*LoadBalance
 func (c *LoadBalancerConfigListenerMapClient) ById(id string) (*LoadBalancerConfigListenerMap, error) {
 	resp := &LoadBalancerConfigListenerMap{}
 	err := c.rancherClient.doById(LOAD_BALANCER_CONFIG_LISTENER_MAP_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

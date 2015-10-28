@@ -54,6 +54,11 @@ func (c *AddRemoveClusterHostInputClient) List(opts *ListOpts) (*AddRemoveCluste
 func (c *AddRemoveClusterHostInputClient) ById(id string) (*AddRemoveClusterHostInput, error) {
 	resp := &AddRemoveClusterHostInput{}
 	err := c.rancherClient.doById(ADD_REMOVE_CLUSTER_HOST_INPUT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

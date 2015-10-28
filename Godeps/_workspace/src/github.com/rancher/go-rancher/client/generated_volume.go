@@ -108,6 +108,11 @@ func (c *VolumeClient) List(opts *ListOpts) (*VolumeCollection, error) {
 func (c *VolumeClient) ById(id string) (*Volume, error) {
 	resp := &Volume{}
 	err := c.rancherClient.doById(VOLUME_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

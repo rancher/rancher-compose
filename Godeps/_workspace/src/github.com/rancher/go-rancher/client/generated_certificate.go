@@ -108,6 +108,11 @@ func (c *CertificateClient) List(opts *ListOpts) (*CertificateCollection, error)
 func (c *CertificateClient) ById(id string) (*Certificate, error) {
 	resp := &Certificate{}
 	err := c.rancherClient.doById(CERTIFICATE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

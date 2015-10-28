@@ -104,6 +104,11 @@ func (c *PortClient) List(opts *ListOpts) (*PortCollection, error) {
 func (c *PortClient) ById(id string) (*Port, error) {
 	resp := &Port{}
 	err := c.rancherClient.doById(PORT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

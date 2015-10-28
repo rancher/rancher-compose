@@ -60,6 +60,11 @@ func (c *EnvironmentUpgradeClient) List(opts *ListOpts) (*EnvironmentUpgradeColl
 func (c *EnvironmentUpgradeClient) ById(id string) (*EnvironmentUpgrade, error) {
 	resp := &EnvironmentUpgrade{}
 	err := c.rancherClient.doById(ENVIRONMENT_UPGRADE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

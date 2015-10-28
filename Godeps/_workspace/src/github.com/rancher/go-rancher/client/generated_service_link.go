@@ -56,6 +56,11 @@ func (c *ServiceLinkClient) List(opts *ListOpts) (*ServiceLinkCollection, error)
 func (c *ServiceLinkClient) ById(id string) (*ServiceLink, error) {
 	resp := &ServiceLink{}
 	err := c.rancherClient.doById(SERVICE_LINK_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

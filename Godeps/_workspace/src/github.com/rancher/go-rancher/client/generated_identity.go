@@ -70,6 +70,11 @@ func (c *IdentityClient) List(opts *ListOpts) (*IdentityCollection, error) {
 func (c *IdentityClient) ById(id string) (*Identity, error) {
 	resp := &Identity{}
 	err := c.rancherClient.doById(IDENTITY_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

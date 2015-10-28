@@ -90,6 +90,11 @@ func (c *GlobalLoadBalancerClient) List(opts *ListOpts) (*GlobalLoadBalancerColl
 func (c *GlobalLoadBalancerClient) ById(id string) (*GlobalLoadBalancer, error) {
 	resp := &GlobalLoadBalancer{}
 	err := c.rancherClient.doById(GLOBAL_LOAD_BALANCER_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

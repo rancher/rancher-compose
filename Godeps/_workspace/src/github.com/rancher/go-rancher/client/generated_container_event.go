@@ -86,6 +86,11 @@ func (c *ContainerEventClient) List(opts *ListOpts) (*ContainerEventCollection, 
 func (c *ContainerEventClient) ById(id string) (*ContainerEvent, error) {
 	resp := &ContainerEvent{}
 	err := c.rancherClient.doById(CONTAINER_EVENT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

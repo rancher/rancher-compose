@@ -76,6 +76,11 @@ func (c *LoadBalancerHostMapClient) List(opts *ListOpts) (*LoadBalancerHostMapCo
 func (c *LoadBalancerHostMapClient) ById(id string) (*LoadBalancerHostMap, error) {
 	resp := &LoadBalancerHostMap{}
 	err := c.rancherClient.doById(LOAD_BALANCER_HOST_MAP_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

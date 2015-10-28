@@ -84,6 +84,11 @@ func (c *ExternalStoragePoolEventClient) List(opts *ListOpts) (*ExternalStorageP
 func (c *ExternalStoragePoolEventClient) ById(id string) (*ExternalStoragePoolEvent, error) {
 	resp := &ExternalStoragePoolEvent{}
 	err := c.rancherClient.doById(EXTERNAL_STORAGE_POOL_EVENT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

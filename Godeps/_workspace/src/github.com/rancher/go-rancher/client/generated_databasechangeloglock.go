@@ -58,6 +58,11 @@ func (c *DatabasechangeloglockClient) List(opts *ListOpts) (*Databasechangeloglo
 func (c *DatabasechangeloglockClient) ById(id string) (*Databasechangeloglock, error) {
 	resp := &Databasechangeloglock{}
 	err := c.rancherClient.doById(DATABASECHANGELOGLOCK_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

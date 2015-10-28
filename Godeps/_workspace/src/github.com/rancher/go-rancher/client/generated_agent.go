@@ -98,6 +98,11 @@ func (c *AgentClient) List(opts *ListOpts) (*AgentCollection, error) {
 func (c *AgentClient) ById(id string) (*Agent, error) {
 	resp := &Agent{}
 	err := c.rancherClient.doById(AGENT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

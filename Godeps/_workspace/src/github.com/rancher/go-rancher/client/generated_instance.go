@@ -108,6 +108,11 @@ func (c *InstanceClient) List(opts *ListOpts) (*InstanceCollection, error) {
 func (c *InstanceClient) ById(id string) (*Instance, error) {
 	resp := &Instance{}
 	err := c.rancherClient.doById(INSTANCE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

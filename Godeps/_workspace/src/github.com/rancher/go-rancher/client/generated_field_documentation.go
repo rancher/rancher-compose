@@ -54,6 +54,11 @@ func (c *FieldDocumentationClient) List(opts *ListOpts) (*FieldDocumentationColl
 func (c *FieldDocumentationClient) ById(id string) (*FieldDocumentation, error) {
 	resp := &FieldDocumentation{}
 	err := c.rancherClient.doById(FIELD_DOCUMENTATION_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

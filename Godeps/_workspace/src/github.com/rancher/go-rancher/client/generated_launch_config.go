@@ -228,6 +228,11 @@ func (c *LaunchConfigClient) List(opts *ListOpts) (*LaunchConfigCollection, erro
 func (c *LaunchConfigClient) ById(id string) (*LaunchConfig, error) {
 	resp := &LaunchConfig{}
 	err := c.rancherClient.doById(LAUNCH_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

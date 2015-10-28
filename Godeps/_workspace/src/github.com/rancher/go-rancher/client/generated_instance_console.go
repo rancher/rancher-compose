@@ -58,6 +58,11 @@ func (c *InstanceConsoleClient) List(opts *ListOpts) (*InstanceConsoleCollection
 func (c *InstanceConsoleClient) ById(id string) (*InstanceConsole, error) {
 	resp := &InstanceConsole{}
 	err := c.rancherClient.doById(INSTANCE_CONSOLE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

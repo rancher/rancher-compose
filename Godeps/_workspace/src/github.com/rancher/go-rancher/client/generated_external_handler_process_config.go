@@ -56,6 +56,11 @@ func (c *ExternalHandlerProcessConfigClient) List(opts *ListOpts) (*ExternalHand
 func (c *ExternalHandlerProcessConfigClient) ById(id string) (*ExternalHandlerProcessConfig, error) {
 	resp := &ExternalHandlerProcessConfig{}
 	err := c.rancherClient.doById(EXTERNAL_HANDLER_PROCESS_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

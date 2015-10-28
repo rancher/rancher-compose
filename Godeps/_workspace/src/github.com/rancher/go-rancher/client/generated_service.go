@@ -43,6 +43,8 @@ type Service struct {
 
 	SelectorLink string `json:"selectorLink,omitempty" yaml:"selector_link,omitempty"`
 
+	ServiceSchemas map[string]interface{} `json:"serviceSchemas,omitempty" yaml:"service_schemas,omitempty"`
+
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
@@ -128,6 +130,11 @@ func (c *ServiceClient) List(opts *ListOpts) (*ServiceCollection, error) {
 func (c *ServiceClient) ById(id string) (*Service, error) {
 	resp := &Service{}
 	err := c.rancherClient.doById(SERVICE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

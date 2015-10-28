@@ -58,6 +58,11 @@ func (c *HostApiProxyTokenClient) List(opts *ListOpts) (*HostApiProxyTokenCollec
 func (c *HostApiProxyTokenClient) ById(id string) (*HostApiProxyToken, error) {
 	resp := &HostApiProxyToken{}
 	err := c.rancherClient.doById(HOST_API_PROXY_TOKEN_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

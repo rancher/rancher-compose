@@ -94,6 +94,11 @@ func (c *ApiKeyClient) List(opts *ListOpts) (*ApiKeyCollection, error) {
 func (c *ApiKeyClient) ById(id string) (*ApiKey, error) {
 	resp := &ApiKey{}
 	err := c.rancherClient.doById(API_KEY_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

@@ -54,6 +54,11 @@ func (c *ResourceDefinitionClient) List(opts *ListOpts) (*ResourceDefinitionColl
 func (c *ResourceDefinitionClient) ById(id string) (*ResourceDefinition, error) {
 	resp := &ResourceDefinition{}
 	err := c.rancherClient.doById(RESOURCE_DEFINITION_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

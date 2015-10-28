@@ -56,6 +56,11 @@ func (c *ServiceUpgradeClient) List(opts *ListOpts) (*ServiceUpgradeCollection, 
 func (c *ServiceUpgradeClient) ById(id string) (*ServiceUpgrade, error) {
 	resp := &ServiceUpgrade{}
 	err := c.rancherClient.doById(SERVICE_UPGRADE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

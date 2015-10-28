@@ -94,6 +94,11 @@ func (c *CredentialClient) List(opts *ListOpts) (*CredentialCollection, error) {
 func (c *CredentialClient) ById(id string) (*Credential, error) {
 	resp := &Credential{}
 	err := c.rancherClient.doById(CREDENTIAL_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

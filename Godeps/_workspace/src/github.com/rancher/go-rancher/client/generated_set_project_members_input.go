@@ -54,6 +54,11 @@ func (c *SetProjectMembersInputClient) List(opts *ListOpts) (*SetProjectMembersI
 func (c *SetProjectMembersInputClient) ById(id string) (*SetProjectMembersInput, error) {
 	resp := &SetProjectMembersInput{}
 	err := c.rancherClient.doById(SET_PROJECT_MEMBERS_INPUT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

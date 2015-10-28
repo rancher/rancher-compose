@@ -62,6 +62,11 @@ func (c *ExtensionPointClient) List(opts *ListOpts) (*ExtensionPointCollection, 
 func (c *ExtensionPointClient) ById(id string) (*ExtensionPoint, error) {
 	resp := &ExtensionPoint{}
 	err := c.rancherClient.doById(EXTENSION_POINT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

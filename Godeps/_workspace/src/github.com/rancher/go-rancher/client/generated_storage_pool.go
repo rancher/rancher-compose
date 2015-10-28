@@ -94,6 +94,11 @@ func (c *StoragePoolClient) List(opts *ListOpts) (*StoragePoolCollection, error)
 func (c *StoragePoolClient) ById(id string) (*StoragePool, error) {
 	resp := &StoragePool{}
 	err := c.rancherClient.doById(STORAGE_POOL_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

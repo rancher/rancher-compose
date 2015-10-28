@@ -62,6 +62,11 @@ func (c *ActiveSettingClient) List(opts *ListOpts) (*ActiveSettingCollection, er
 func (c *ActiveSettingClient) ById(id string) (*ActiveSetting, error) {
 	resp := &ActiveSetting{}
 	err := c.rancherClient.doById(ACTIVE_SETTING_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

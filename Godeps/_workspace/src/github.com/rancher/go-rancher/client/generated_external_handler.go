@@ -98,6 +98,11 @@ func (c *ExternalHandlerClient) List(opts *ListOpts) (*ExternalHandlerCollection
 func (c *ExternalHandlerClient) ById(id string) (*ExternalHandler, error) {
 	resp := &ExternalHandler{}
 	err := c.rancherClient.doById(EXTERNAL_HANDLER_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

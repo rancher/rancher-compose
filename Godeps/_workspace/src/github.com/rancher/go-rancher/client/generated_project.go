@@ -94,6 +94,11 @@ func (c *ProjectClient) List(opts *ListOpts) (*ProjectCollection, error) {
 func (c *ProjectClient) ById(id string) (*Project, error) {
 	resp := &Project{}
 	err := c.rancherClient.doById(PROJECT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

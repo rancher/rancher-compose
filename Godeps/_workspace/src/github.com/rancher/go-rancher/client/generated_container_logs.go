@@ -56,6 +56,11 @@ func (c *ContainerLogsClient) List(opts *ListOpts) (*ContainerLogsCollection, er
 func (c *ContainerLogsClient) ById(id string) (*ContainerLogs, error) {
 	resp := &ContainerLogs{}
 	err := c.rancherClient.doById(CONTAINER_LOGS_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

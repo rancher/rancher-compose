@@ -70,6 +70,8 @@ type HostOperations interface {
 
 	ActionDeactivate(*Host) (*Host, error)
 
+	ActionDockersocket(*Host) (*HostAccess, error)
+
 	ActionPurge(*Host) (*Host, error)
 
 	ActionRemove(*Host) (*Host, error)
@@ -106,6 +108,11 @@ func (c *HostClient) List(opts *ListOpts) (*HostCollection, error) {
 func (c *HostClient) ById(id string) (*Host, error) {
 	resp := &Host{}
 	err := c.rancherClient.doById(HOST_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 
@@ -136,6 +143,15 @@ func (c *HostClient) ActionDeactivate(resource *Host) (*Host, error) {
 	resp := &Host{}
 
 	err := c.rancherClient.doAction(HOST_TYPE, "deactivate", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *HostClient) ActionDockersocket(resource *Host) (*HostAccess, error) {
+
+	resp := &HostAccess{}
+
+	err := c.rancherClient.doAction(HOST_TYPE, "dockersocket", &resource.Resource, nil, resp)
 
 	return resp, err
 }

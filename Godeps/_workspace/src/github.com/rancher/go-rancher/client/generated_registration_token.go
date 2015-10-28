@@ -98,6 +98,11 @@ func (c *RegistrationTokenClient) List(opts *ListOpts) (*RegistrationTokenCollec
 func (c *RegistrationTokenClient) ById(id string) (*RegistrationToken, error) {
 	resp := &RegistrationToken{}
 	err := c.rancherClient.doById(REGISTRATION_TOKEN_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

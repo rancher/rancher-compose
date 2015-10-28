@@ -1,0 +1,12 @@
+api-server:
+  service_schemas:
+    kubernetesReplicationController:
+      resource_fields:
+        template:
+          type: json
+          create: true
+    kubernetesService:
+      resource_fields:
+        template:
+          type: json
+          create: true

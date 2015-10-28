@@ -58,6 +58,7 @@ type RancherConfig struct {
 	Certs              []string                           `yaml:"certs,omitempty"`
 	Metadata           map[string]interface{}             `yaml:"metadata,omitempty"`
 	Uuid               string                             `yaml:"uuid,omitempty"`
+	ServiceSchemas     map[string]rancherClient.Schema    `yaml:"service_schemas,omitempty"`
 }
 
 func ResolveRancherCompose(composeFile, rancherComposeFile string) (string, error) {

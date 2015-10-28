@@ -90,6 +90,11 @@ func (c *ServiceExposeMapClient) List(opts *ListOpts) (*ServiceExposeMapCollecti
 func (c *ServiceExposeMapClient) ById(id string) (*ServiceExposeMap, error) {
 	resp := &ServiceExposeMap{}
 	err := c.rancherClient.doById(SERVICE_EXPOSE_MAP_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

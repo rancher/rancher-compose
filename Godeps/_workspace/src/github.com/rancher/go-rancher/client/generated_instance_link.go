@@ -100,6 +100,11 @@ func (c *InstanceLinkClient) List(opts *ListOpts) (*InstanceLinkCollection, erro
 func (c *InstanceLinkClient) ById(id string) (*InstanceLink, error) {
 	resp := &InstanceLink{}
 	err := c.rancherClient.doById(INSTANCE_LINK_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

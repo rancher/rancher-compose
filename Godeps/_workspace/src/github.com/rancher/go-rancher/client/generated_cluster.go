@@ -76,6 +76,8 @@ type ClusterOperations interface {
 
 	ActionDeactivate(*Cluster) (*Host, error)
 
+	ActionDockersocket(*Cluster) (*HostAccess, error)
+
 	ActionPurge(*Cluster) (*Host, error)
 
 	ActionRemove(*Cluster) (*Host, error)
@@ -114,6 +116,11 @@ func (c *ClusterClient) List(opts *ListOpts) (*ClusterCollection, error) {
 func (c *ClusterClient) ById(id string) (*Cluster, error) {
 	resp := &Cluster{}
 	err := c.rancherClient.doById(CLUSTER_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 
@@ -153,6 +160,15 @@ func (c *ClusterClient) ActionDeactivate(resource *Cluster) (*Host, error) {
 	resp := &Host{}
 
 	err := c.rancherClient.doAction(CLUSTER_TYPE, "deactivate", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *ClusterClient) ActionDockersocket(resource *Cluster) (*HostAccess, error) {
+
+	resp := &HostAccess{}
+
+	err := c.rancherClient.doAction(CLUSTER_TYPE, "dockersocket", &resource.Resource, nil, resp)
 
 	return resp, err
 }

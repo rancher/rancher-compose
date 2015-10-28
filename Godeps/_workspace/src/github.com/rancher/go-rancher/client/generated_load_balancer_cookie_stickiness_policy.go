@@ -66,6 +66,11 @@ func (c *LoadBalancerCookieStickinessPolicyClient) List(opts *ListOpts) (*LoadBa
 func (c *LoadBalancerCookieStickinessPolicyClient) ById(id string) (*LoadBalancerCookieStickinessPolicy, error) {
 	resp := &LoadBalancerCookieStickinessPolicy{}
 	err := c.rancherClient.doById(LOAD_BALANCER_COOKIE_STICKINESS_POLICY_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

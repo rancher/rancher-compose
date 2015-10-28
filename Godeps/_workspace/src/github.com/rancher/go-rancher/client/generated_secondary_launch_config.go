@@ -230,6 +230,11 @@ func (c *SecondaryLaunchConfigClient) List(opts *ListOpts) (*SecondaryLaunchConf
 func (c *SecondaryLaunchConfigClient) ById(id string) (*SecondaryLaunchConfig, error) {
 	resp := &SecondaryLaunchConfig{}
 	err := c.rancherClient.doById(SECONDARY_LAUNCH_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

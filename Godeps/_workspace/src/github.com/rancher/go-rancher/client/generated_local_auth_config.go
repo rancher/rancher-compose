@@ -62,6 +62,11 @@ func (c *LocalAuthConfigClient) List(opts *ListOpts) (*LocalAuthConfigCollection
 func (c *LocalAuthConfigClient) ById(id string) (*LocalAuthConfig, error) {
 	resp := &LocalAuthConfig{}
 	err := c.rancherClient.doById(LOCAL_AUTH_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

@@ -54,6 +54,11 @@ func (c *ComposeConfigInputClient) List(opts *ListOpts) (*ComposeConfigInputColl
 func (c *ComposeConfigInputClient) ById(id string) (*ComposeConfigInput, error) {
 	resp := &ComposeConfigInput{}
 	err := c.rancherClient.doById(COMPOSE_CONFIG_INPUT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

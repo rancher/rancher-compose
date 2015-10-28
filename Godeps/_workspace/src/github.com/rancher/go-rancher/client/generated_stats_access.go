@@ -56,6 +56,11 @@ func (c *StatsAccessClient) List(opts *ListOpts) (*StatsAccessCollection, error)
 func (c *StatsAccessClient) ById(id string) (*StatsAccess, error) {
 	resp := &StatsAccess{}
 	err := c.rancherClient.doById(STATS_ACCESS_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

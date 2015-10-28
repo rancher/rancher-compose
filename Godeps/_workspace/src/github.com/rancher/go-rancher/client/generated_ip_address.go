@@ -98,6 +98,11 @@ func (c *IpAddressClient) List(opts *ListOpts) (*IpAddressCollection, error) {
 func (c *IpAddressClient) ById(id string) (*IpAddress, error) {
 	resp := &IpAddress{}
 	err := c.rancherClient.doById(IP_ADDRESS_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

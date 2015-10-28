@@ -52,6 +52,11 @@ func (c *InstanceConsoleInputClient) List(opts *ListOpts) (*InstanceConsoleInput
 func (c *InstanceConsoleInputClient) ById(id string) (*InstanceConsoleInput, error) {
 	resp := &InstanceConsoleInput{}
 	err := c.rancherClient.doById(INSTANCE_CONSOLE_INPUT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

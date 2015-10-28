@@ -66,6 +66,11 @@ func (c *LoadBalancerHealthCheckClient) List(opts *ListOpts) (*LoadBalancerHealt
 func (c *LoadBalancerHealthCheckClient) ById(id string) (*LoadBalancerHealthCheck, error) {
 	resp := &LoadBalancerHealthCheck{}
 	err := c.rancherClient.doById(LOAD_BALANCER_HEALTH_CHECK_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

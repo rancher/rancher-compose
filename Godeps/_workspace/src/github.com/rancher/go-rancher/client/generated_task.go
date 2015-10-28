@@ -56,6 +56,11 @@ func (c *TaskClient) List(opts *ListOpts) (*TaskCollection, error) {
 func (c *TaskClient) ById(id string) (*Task, error) {
 	resp := &Task{}
 	err := c.rancherClient.doById(TASK_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

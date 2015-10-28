@@ -90,6 +90,11 @@ func (c *LdapconfigClient) List(opts *ListOpts) (*LdapconfigCollection, error) {
 func (c *LdapconfigClient) ById(id string) (*Ldapconfig, error) {
 	resp := &Ldapconfig{}
 	err := c.rancherClient.doById(LDAPCONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

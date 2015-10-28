@@ -118,6 +118,11 @@ func (c *DnsServiceClient) List(opts *ListOpts) (*DnsServiceCollection, error) {
 func (c *DnsServiceClient) ById(id string) (*DnsService, error) {
 	resp := &DnsService{}
 	err := c.rancherClient.doById(DNS_SERVICE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

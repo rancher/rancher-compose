@@ -76,6 +76,11 @@ func (c *ProcessInstanceClient) List(opts *ListOpts) (*ProcessInstanceCollection
 func (c *ProcessInstanceClient) ById(id string) (*ProcessInstance, error) {
 	resp := &ProcessInstance{}
 	err := c.rancherClient.doById(PROCESS_INSTANCE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

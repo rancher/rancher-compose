@@ -100,6 +100,11 @@ func (c *MountClient) List(opts *ListOpts) (*MountCollection, error) {
 func (c *MountClient) ById(id string) (*Mount, error) {
 	resp := &Mount{}
 	err := c.rancherClient.doById(MOUNT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

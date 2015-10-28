@@ -86,6 +86,11 @@ func (c *LabelClient) List(opts *ListOpts) (*LabelCollection, error) {
 func (c *LabelClient) ById(id string) (*Label, error) {
 	resp := &Label{}
 	err := c.rancherClient.doById(LABEL_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

@@ -124,6 +124,11 @@ func (c *ExternalServiceClient) List(opts *ListOpts) (*ExternalServiceCollection
 func (c *ExternalServiceClient) ById(id string) (*ExternalService, error) {
 	resp := &ExternalService{}
 	err := c.rancherClient.doById(EXTERNAL_SERVICE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

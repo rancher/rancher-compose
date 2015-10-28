@@ -64,6 +64,11 @@ func (c *PacketConfigClient) List(opts *ListOpts) (*PacketConfigCollection, erro
 func (c *PacketConfigClient) ById(id string) (*PacketConfig, error) {
 	resp := &PacketConfig{}
 	err := c.rancherClient.doById(PACKET_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

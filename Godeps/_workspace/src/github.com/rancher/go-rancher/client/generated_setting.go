@@ -56,6 +56,11 @@ func (c *SettingClient) List(opts *ListOpts) (*SettingCollection, error) {
 func (c *SettingClient) ById(id string) (*Setting, error) {
 	resp := &Setting{}
 	err := c.rancherClient.doById(SETTING_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

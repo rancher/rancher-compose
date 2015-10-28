@@ -68,6 +68,11 @@ func (c *ConfigItemStatusClient) List(opts *ListOpts) (*ConfigItemStatusCollecti
 func (c *ConfigItemStatusClient) ById(id string) (*ConfigItemStatus, error) {
 	resp := &ConfigItemStatus{}
 	err := c.rancherClient.doById(CONFIG_ITEM_STATUS_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

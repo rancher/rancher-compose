@@ -82,6 +82,11 @@ func (c *SoftlayerConfigClient) List(opts *ListOpts) (*SoftlayerConfigCollection
 func (c *SoftlayerConfigClient) ById(id string) (*SoftlayerConfig, error) {
 	resp := &SoftlayerConfig{}
 	err := c.rancherClient.doById(SOFTLAYER_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

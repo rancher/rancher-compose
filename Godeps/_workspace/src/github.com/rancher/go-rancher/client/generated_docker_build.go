@@ -64,6 +64,11 @@ func (c *DockerBuildClient) List(opts *ListOpts) (*DockerBuildCollection, error)
 func (c *DockerBuildClient) ById(id string) (*DockerBuild, error) {
 	resp := &DockerBuild{}
 	err := c.rancherClient.doById(DOCKER_BUILD_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

@@ -56,6 +56,11 @@ func (c *SubscribeClient) List(opts *ListOpts) (*SubscribeCollection, error) {
 func (c *SubscribeClient) ById(id string) (*Subscribe, error) {
 	resp := &Subscribe{}
 	err := c.rancherClient.doById(SUBSCRIBE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

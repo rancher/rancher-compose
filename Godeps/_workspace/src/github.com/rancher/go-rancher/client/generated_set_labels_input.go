@@ -54,6 +54,11 @@ func (c *SetLabelsInputClient) List(opts *ListOpts) (*SetLabelsInputCollection, 
 func (c *SetLabelsInputClient) ById(id string) (*SetLabelsInput, error) {
 	resp := &SetLabelsInput{}
 	err := c.rancherClient.doById(SET_LABELS_INPUT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

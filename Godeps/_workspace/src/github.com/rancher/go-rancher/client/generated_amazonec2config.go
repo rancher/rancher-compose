@@ -88,6 +88,11 @@ func (c *Amazonec2ConfigClient) List(opts *ListOpts) (*Amazonec2ConfigCollection
 func (c *Amazonec2ConfigClient) ById(id string) (*Amazonec2Config, error) {
 	resp := &Amazonec2Config{}
 	err := c.rancherClient.doById(AMAZONEC2CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

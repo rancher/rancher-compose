@@ -58,6 +58,11 @@ func (c *ProcessExecutionClient) List(opts *ListOpts) (*ProcessExecutionCollecti
 func (c *ProcessExecutionClient) ById(id string) (*ProcessExecution, error) {
 	resp := &ProcessExecution{}
 	err := c.rancherClient.doById(PROCESS_EXECUTION_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

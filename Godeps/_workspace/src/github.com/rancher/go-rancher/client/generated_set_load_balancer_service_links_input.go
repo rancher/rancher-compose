@@ -54,6 +54,11 @@ func (c *SetLoadBalancerServiceLinksInputClient) List(opts *ListOpts) (*SetLoadB
 func (c *SetLoadBalancerServiceLinksInputClient) ById(id string) (*SetLoadBalancerServiceLinksInput, error) {
 	resp := &SetLoadBalancerServiceLinksInput{}
 	err := c.rancherClient.doById(SET_LOAD_BALANCER_SERVICE_LINKS_INPUT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

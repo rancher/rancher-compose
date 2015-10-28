@@ -56,6 +56,11 @@ func (c *ChangeSecretInputClient) List(opts *ListOpts) (*ChangeSecretInputCollec
 func (c *ChangeSecretInputClient) ById(id string) (*ChangeSecretInput, error) {
 	resp := &ChangeSecretInput{}
 	err := c.rancherClient.doById(CHANGE_SECRET_INPUT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

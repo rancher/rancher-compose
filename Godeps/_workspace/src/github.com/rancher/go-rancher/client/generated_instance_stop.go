@@ -58,6 +58,11 @@ func (c *InstanceStopClient) List(opts *ListOpts) (*InstanceStopCollection, erro
 func (c *InstanceStopClient) ById(id string) (*InstanceStop, error) {
 	resp := &InstanceStop{}
 	err := c.rancherClient.doById(INSTANCE_STOP_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

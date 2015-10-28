@@ -72,6 +72,11 @@ func (c *DatabasechangelogClient) List(opts *ListOpts) (*DatabasechangelogCollec
 func (c *DatabasechangelogClient) ById(id string) (*Databasechangelog, error) {
 	resp := &Databasechangelog{}
 	err := c.rancherClient.doById(DATABASECHANGELOG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

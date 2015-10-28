@@ -54,6 +54,11 @@ func (c *AddRemoveServiceLinkInputClient) List(opts *ListOpts) (*AddRemoveServic
 func (c *AddRemoveServiceLinkInputClient) ById(id string) (*AddRemoveServiceLinkInput, error) {
 	resp := &AddRemoveServiceLinkInput{}
 	err := c.rancherClient.doById(ADD_REMOVE_SERVICE_LINK_INPUT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

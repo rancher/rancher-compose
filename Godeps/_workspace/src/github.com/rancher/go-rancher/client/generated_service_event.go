@@ -92,6 +92,11 @@ func (c *ServiceEventClient) List(opts *ListOpts) (*ServiceEventCollection, erro
 func (c *ServiceEventClient) ById(id string) (*ServiceEvent, error) {
 	resp := &ServiceEvent{}
 	err := c.rancherClient.doById(SERVICE_EVENT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

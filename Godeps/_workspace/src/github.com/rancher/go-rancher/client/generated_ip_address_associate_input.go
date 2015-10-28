@@ -54,6 +54,11 @@ func (c *IpAddressAssociateInputClient) List(opts *ListOpts) (*IpAddressAssociat
 func (c *IpAddressAssociateInputClient) ById(id string) (*IpAddressAssociateInput, error) {
 	resp := &IpAddressAssociateInput{}
 	err := c.rancherClient.doById(IP_ADDRESS_ASSOCIATE_INPUT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

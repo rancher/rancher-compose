@@ -92,6 +92,11 @@ func (c *ImageClient) List(opts *ListOpts) (*ImageCollection, error) {
 func (c *ImageClient) ById(id string) (*Image, error) {
 	resp := &Image{}
 	err := c.rancherClient.doById(IMAGE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

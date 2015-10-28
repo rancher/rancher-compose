@@ -60,6 +60,11 @@ func (c *ContainerExecClient) List(opts *ListOpts) (*ContainerExecCollection, er
 func (c *ContainerExecClient) ById(id string) (*ContainerExec, error) {
 	resp := &ContainerExec{}
 	err := c.rancherClient.doById(CONTAINER_EXEC_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

@@ -80,6 +80,11 @@ func (c *VmwarevcloudairConfigClient) List(opts *ListOpts) (*VmwarevcloudairConf
 func (c *VmwarevcloudairConfigClient) ById(id string) (*VmwarevcloudairConfig, error) {
 	resp := &VmwarevcloudairConfig{}
 	err := c.rancherClient.doById(VMWAREVCLOUDAIR_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

@@ -96,6 +96,11 @@ func (c *PasswordClient) List(opts *ListOpts) (*PasswordCollection, error) {
 func (c *PasswordClient) ById(id string) (*Password, error) {
 	resp := &Password{}
 	err := c.rancherClient.doById(PASSWORD_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

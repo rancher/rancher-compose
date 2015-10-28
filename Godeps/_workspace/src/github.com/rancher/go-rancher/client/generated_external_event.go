@@ -80,6 +80,11 @@ func (c *ExternalEventClient) List(opts *ListOpts) (*ExternalEventCollection, er
 func (c *ExternalEventClient) ById(id string) (*ExternalEvent, error) {
 	resp := &ExternalEvent{}
 	err := c.rancherClient.doById(EXTERNAL_EVENT_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

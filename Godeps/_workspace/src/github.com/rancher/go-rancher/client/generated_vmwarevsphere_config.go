@@ -76,6 +76,11 @@ func (c *VmwarevsphereConfigClient) List(opts *ListOpts) (*VmwarevsphereConfigCo
 func (c *VmwarevsphereConfigClient) ById(id string) (*VmwarevsphereConfig, error) {
 	resp := &VmwarevsphereConfig{}
 	err := c.rancherClient.doById(VMWAREVSPHERE_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

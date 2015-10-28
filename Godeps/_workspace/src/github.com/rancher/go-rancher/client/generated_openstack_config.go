@@ -94,6 +94,11 @@ func (c *OpenstackConfigClient) List(opts *ListOpts) (*OpenstackConfigCollection
 func (c *OpenstackConfigClient) ById(id string) (*OpenstackConfig, error) {
 	resp := &OpenstackConfig{}
 	err := c.rancherClient.doById(OPENSTACK_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

@@ -74,6 +74,11 @@ func (c *PublishClient) List(opts *ListOpts) (*PublishCollection, error) {
 func (c *PublishClient) ById(id string) (*Publish, error) {
 	resp := &Publish{}
 	err := c.rancherClient.doById(PUBLISH_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

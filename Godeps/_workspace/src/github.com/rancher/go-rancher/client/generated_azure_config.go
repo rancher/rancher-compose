@@ -74,6 +74,11 @@ func (c *AzureConfigClient) List(opts *ListOpts) (*AzureConfigCollection, error)
 func (c *AzureConfigClient) ById(id string) (*AzureConfig, error) {
 	resp := &AzureConfig{}
 	err := c.rancherClient.doById(AZURE_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

@@ -56,6 +56,11 @@ func (c *LogConfigClient) List(opts *ListOpts) (*LogConfigCollection, error) {
 func (c *LogConfigClient) ById(id string) (*LogConfig, error) {
 	resp := &LogConfig{}
 	err := c.rancherClient.doById(LOG_CONFIG_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

@@ -64,6 +64,11 @@ func (c *TaskInstanceClient) List(opts *ListOpts) (*TaskInstanceCollection, erro
 func (c *TaskInstanceClient) ById(id string) (*TaskInstance, error) {
 	resp := &TaskInstance{}
 	err := c.rancherClient.doById(TASK_INSTANCE_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

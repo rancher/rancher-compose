@@ -90,6 +90,11 @@ func (c *ServiceConsumeMapClient) List(opts *ListOpts) (*ServiceConsumeMapCollec
 func (c *ServiceConsumeMapClient) ById(id string) (*ServiceConsumeMap, error) {
 	resp := &ServiceConsumeMap{}
 	err := c.rancherClient.doById(SERVICE_CONSUME_MAP_TYPE, id, resp)
+	if apiError, ok := err.(*ApiError); ok {
+		if apiError.StatusCode == 404 {
+			return nil, nil
+		}
+	}
 	return resp, err
 }
 

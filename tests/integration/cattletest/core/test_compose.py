@@ -1703,6 +1703,44 @@ foo:
     assert 'ports' not in foo.launchConfig
 
 
+def test_create_no_update_links(client, compose):
+    template = '''
+foo:
+    image: nginx
+    links:
+    - foo2
+foo2:
+    image: tianon/true
+foo3:
+    image: tianon/true
+'''
+
+    project_name = random_str()
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'up', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 3
+
+    foo = _get_service(project.services(), 'foo')
+    foo2 = find_one(foo.consumedservices)
+
+    assert foo2.name == 'foo2'
+
+    template2 = '''
+foo:
+    image: tianon/true
+    links:
+    - foo3
+foo2:
+    image: tianon/true
+foo3:
+    image: tianon/true
+'''
+    compose.check_call(template2, '-p', project_name, '-f', '-', 'create')
+    foo2 = find_one(foo.consumedservices)
+    assert foo2.name == 'foo2'
+
+
 def test_pull_sidekick(client, compose):
     template = '''
 foo:

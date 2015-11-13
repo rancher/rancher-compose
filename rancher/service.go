@@ -73,7 +73,7 @@ func (r *RancherService) Create() error {
 	if err == nil && service == nil {
 		service, err = r.createService()
 	} else if err == nil && service != nil {
-		err = r.setupLinks(service)
+		err = r.setupLinks(service, service.State == "inactive")
 	}
 
 	return err
@@ -134,7 +134,7 @@ func (r *RancherService) up(create bool) error {
 	if service == nil {
 		service, err = r.createService()
 	} else {
-		err = r.setupLinks(service)
+		err = r.setupLinks(service, true)
 	}
 
 	if err != nil {
@@ -301,7 +301,7 @@ func (r *RancherService) createService() (*rancherClient.Service, error) {
 		return nil, err
 	}
 
-	if err := r.setupLinks(service); err != nil {
+	if err := r.setupLinks(service, true); err != nil {
 		return nil, err
 	}
 
@@ -309,9 +309,22 @@ func (r *RancherService) createService() (*rancherClient.Service, error) {
 	return service, err
 }
 
-func (r *RancherService) setupLinks(service *rancherClient.Service) error {
+func (r *RancherService) setupLinks(service *rancherClient.Service, update bool) error {
 	var err error
 	var links []interface{}
+
+	existingLinks, err := r.context.Client.ServiceConsumeMap.List(&rancherClient.ListOpts{
+		Filters: map[string]interface{}{
+			"serviceId": service.Id,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(existingLinks.Data) > 0 && !update {
+		return nil
+	}
 
 	if service.Type == rancherClient.LOAD_BALANCER_SERVICE_TYPE {
 		links, err = r.getLbLinks()

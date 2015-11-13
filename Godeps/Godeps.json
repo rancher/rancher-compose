@@ -235,43 +235,43 @@
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/cli/app",
-			"Comment": "rancher-compose-v0.4.1",
-			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
+			"Comment": "rancher-compose-v0.4.2",
+			"Rev": "e9b7b3c235e0102ac23b1e4b30e64b06974d6edc"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/cli/command",
-			"Comment": "rancher-compose-v0.4.1",
-			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
+			"Comment": "rancher-compose-v0.4.2",
+			"Rev": "e9b7b3c235e0102ac23b1e4b30e64b06974d6edc"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/cli/logger",
-			"Comment": "rancher-compose-v0.4.1",
-			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
+			"Comment": "rancher-compose-v0.4.2",
+			"Rev": "e9b7b3c235e0102ac23b1e4b30e64b06974d6edc"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/docker",
-			"Comment": "rancher-compose-v0.4.1",
-			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
+			"Comment": "rancher-compose-v0.4.2",
+			"Rev": "e9b7b3c235e0102ac23b1e4b30e64b06974d6edc"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/logger",
-			"Comment": "rancher-compose-v0.4.1",
-			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
+			"Comment": "rancher-compose-v0.4.2",
+			"Rev": "e9b7b3c235e0102ac23b1e4b30e64b06974d6edc"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/lookup",
-			"Comment": "rancher-compose-v0.4.1",
-			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
+			"Comment": "rancher-compose-v0.4.2",
+			"Rev": "e9b7b3c235e0102ac23b1e4b30e64b06974d6edc"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/project",
-			"Comment": "rancher-compose-v0.4.1",
-			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
+			"Comment": "rancher-compose-v0.4.2",
+			"Rev": "e9b7b3c235e0102ac23b1e4b30e64b06974d6edc"
 		},
 		{
 			"ImportPath": "github.com/docker/libcompose/utils",
-			"Comment": "rancher-compose-v0.4.1",
-			"Rev": "ac41617480a1dead8d9d44489551fddc65348198"
+			"Comment": "rancher-compose-v0.4.2",
+			"Rev": "e9b7b3c235e0102ac23b1e4b30e64b06974d6edc"
 		},
 		{
 			"ImportPath": "github.com/docker/libtrust",

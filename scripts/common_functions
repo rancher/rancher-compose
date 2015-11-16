@@ -11,7 +11,7 @@ set_project_vars()
 
 get_version()
 {
-    VERSION=$(git tag -l --contains HEAD)
+    VERSION=$(git tag -l --contains HEAD | head -n 1)
     if [ -z "$VERSION" ]; then
         VERSION=$(git rev-parse --short HEAD)
     fi

@@ -153,6 +153,7 @@ func (f *NormalFactory) upgrade(r *RancherService, existingService *rancherClien
 		InServiceStrategy: &rancherClient.InServiceUpgradeStrategy{
 			BatchSize:      r.context.BatchSize,
 			IntervalMillis: r.context.Interval,
+			StartFirst:     r.RancherConfig().UpgradeStrategy.StartFirst,
 		},
 	}
 

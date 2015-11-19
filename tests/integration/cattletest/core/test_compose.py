@@ -1795,3 +1795,27 @@ child:
                        'parent')
     parent = _get_service(project.services(), 'parent')
     find_one(parent.consumedservices)
+
+
+def test_sidekick_build_remote(client, compose):
+    template = '''
+parent:
+    labels:
+      io.rancher.sidekicks: child
+    build: http://parent
+    dockerfile: parent-file
+child:
+    build: http://child
+    dockerfile: child-file
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 1
+
+    parent = _get_service(project.services(), 'parent')
+    assert parent.launchConfig.build.remote == 'http://parent'
+    assert parent.launchConfig.build.dockerfile == 'parent-file'
+    assert len(parent.secondaryLaunchConfigs) == 1
+    assert parent.secondaryLaunchConfigs[0].build.remote == 'http://child'
+    assert parent.secondaryLaunchConfigs[0].build.dockerfile == 'child-file'

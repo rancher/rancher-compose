@@ -80,7 +80,7 @@ func createLaunchConfig(r *RancherService, serviceConfig *project.ServiceConfig)
 	setupNetworking(serviceConfig.Net, &result)
 	setupVolumesFrom(serviceConfig.VolumesFrom, &result)
 
-	err = r.setupBuild(&result, serviceConfig)
+	err = setupBuild(r, &result, serviceConfig)
 
 	if result.Labels == nil {
 		result.Labels = map[string]interface{}{}
@@ -105,7 +105,7 @@ func setupVolumesFrom(volumesFrom []string, launchConfig *rancherClient.LaunchCo
 	launchConfig.DataVolumesFromLaunchConfigs = volumesFrom
 }
 
-func setupBuild(r RancherService, result *rancherClient.LaunchConfig, serviceConfig *project.ServiceConfig) error {
+func setupBuild(r *RancherService, result *rancherClient.LaunchConfig, serviceConfig *project.ServiceConfig) error {
 	if serviceConfig.Build != "" {
 		result.Build = &rancherClient.DockerBuild{
 			Remote:     serviceConfig.Build,

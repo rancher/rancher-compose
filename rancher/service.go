@@ -6,7 +6,6 @@ import (
 	"io"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/runconfig"
@@ -434,46 +433,6 @@ func (r *RancherService) getLinks() (map[Link]string, error) {
 	}
 
 	return result, nil
-}
-
-func (r *RancherService) setupBuild(result *rancherClient.LaunchConfig, serviceConfig *project.ServiceConfig) error {
-	if serviceConfig.Build != "" {
-		result.Build = &rancherClient.DockerBuild{
-			Remote:     serviceConfig.Build,
-			Dockerfile: serviceConfig.Dockerfile,
-		}
-
-		needBuild := true
-		for _, remote := range project.ValidRemotes {
-			if strings.HasPrefix(serviceConfig.Build, remote) {
-				needBuild = false
-				break
-			}
-		}
-
-		if needBuild {
-			image, url, err := Upload(r.context, r.name)
-			if err != nil {
-				return err
-			}
-			logrus.Infof("Build for %s available at %s", r.name, url)
-			serviceConfig.Build = url
-
-			if serviceConfig.Image == "" {
-				serviceConfig.Image = image
-			}
-
-			result.Build = &rancherClient.DockerBuild{
-				Context:    url,
-				Dockerfile: serviceConfig.Dockerfile,
-			}
-			result.ImageUuid = "docker:" + image
-		} else if result.ImageUuid == "" {
-			result.ImageUuid = fmt.Sprintf("docker:%s_%s_%d", r.context.ProjectName, r.name, time.Now().UnixNano()/int64(time.Millisecond))
-		}
-	}
-
-	return nil
 }
 
 func (r *RancherService) Scale(count int) error {

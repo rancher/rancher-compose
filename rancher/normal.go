@@ -65,7 +65,7 @@ func (f *NormalFactory) config(r *RancherService) (*CompositeService, *rancherCl
 		},
 		ExternalIpAddresses: rancherConfig.ExternalIps,
 		Hostname:            rancherConfig.Hostname,
-		HealthCheck:         r.HealthCheck(),
+		HealthCheck:         r.HealthCheck(""),
 	}
 
 	if err := populateLbFields(r, &launchConfig, service); err != nil {

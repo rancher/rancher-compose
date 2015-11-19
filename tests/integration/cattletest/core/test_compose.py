@@ -1819,3 +1819,13 @@ child:
     assert len(parent.secondaryLaunchConfigs) == 1
     assert parent.secondaryLaunchConfigs[0].build.remote == 'http://child'
     assert parent.secondaryLaunchConfigs[0].build.dockerfile == 'child-file'
+
+
+def test_sidekick_healthcheck(client, compose):
+    project_name = create_project(compose, file='assets/sidekick-health/docker-compose.yml')
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 1
+
+    parent = _get_service(project.services(), 'parent')
+    assert parent.launchConfig.healthCheck.port == 80
+    assert parent.secondaryLaunchConfigs[0].healthCheck.port == 81

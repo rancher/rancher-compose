@@ -264,8 +264,11 @@ func (r *RancherService) Metadata() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
-func (r *RancherService) HealthCheck() *rancherClient.InstanceHealthCheck {
-	if config, ok := r.context.RancherConfig[r.name]; ok {
+func (r *RancherService) HealthCheck(service string) *rancherClient.InstanceHealthCheck {
+	if service == "" {
+		service = r.name
+	}
+	if config, ok := r.context.RancherConfig[service]; ok {
 		return config.HealthCheck
 	}
 

@@ -1,0 +1,6 @@
+parent:
+  health_check:
+    port: 80
+child:
+  health_check:
+    port: 81

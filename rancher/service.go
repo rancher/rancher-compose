@@ -120,7 +120,7 @@ func (r *RancherService) up(create bool) error {
 			}
 		}
 
-		service, err = r.upgrade(service, r.context.ForceUpgrade)
+		service, err = r.upgrade(service, r.context.ForceUpgrade, r.context.Args)
 		if err != nil {
 			return err
 		}

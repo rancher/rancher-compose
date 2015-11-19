@@ -39,6 +39,7 @@ type Context struct {
 	Uploader            Uploader
 	PullCached          bool
 	Pull                bool
+	Args                []string
 
 	Upgrade        bool
 	ForceUpgrade   bool

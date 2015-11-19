@@ -6,13 +6,13 @@ import (
 	"github.com/rancher/rancher-compose/digest"
 )
 
-func (r *RancherService) upgrade(service *rancherClient.Service, force bool) (*rancherClient.Service, error) {
+func (r *RancherService) upgrade(service *rancherClient.Service, force bool, selected []string) (*rancherClient.Service, error) {
 	factory, err := GetFactory(r)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := factory.Upgrade(r, force); err != nil {
+	if err := factory.Upgrade(r, force, selected); err != nil {
 		return nil, err
 	}
 

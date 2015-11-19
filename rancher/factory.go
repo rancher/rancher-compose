@@ -5,7 +5,7 @@ import "github.com/rancher/rancher-compose/digest"
 type Factory interface {
 	Hash(service *RancherService) (digest.ServiceHash, error)
 	Create(service *RancherService) error
-	Upgrade(r *RancherService, force bool) error
+	Upgrade(r *RancherService, force bool, selected []string) error
 	Rollback(r *RancherService) error
 }
 

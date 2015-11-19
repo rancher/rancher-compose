@@ -1770,3 +1770,28 @@ def test_service_schema(client, compose):
 
     assert 'kubernetesReplicationController' in service.serviceSchemas
     assert 'kubernetesService' in service.serviceSchemas
+
+
+def test_no_update_selector_link(client, compose):
+    template = '''
+parent:
+    labels:
+      io.rancher.service.selector.link: foo=bar
+    image: tianon/true
+child:
+    labels:
+      foo: bar
+    image: tianon/true
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 2
+
+    parent = _get_service(project.services(), 'parent')
+    find_one(parent.consumedservices)
+
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-d',
+                       'parent')
+    parent = _get_service(project.services(), 'parent')
+    find_one(parent.consumedservices)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/libcompose/utils"
 	rancherClient "github.com/rancher/go-rancher/client"
 	"github.com/rancher/rancher-compose/digest"
 )
@@ -65,7 +66,7 @@ func (f *NormalFactory) config(r *RancherService) (*CompositeService, *rancherCl
 		},
 		ExternalIpAddresses: rancherConfig.ExternalIps,
 		Hostname:            rancherConfig.Hostname,
-		HealthCheck:         r.HealthCheck(),
+		HealthCheck:         r.HealthCheck(""),
 	}
 
 	if err := populateLbFields(r, &launchConfig, service); err != nil {
@@ -110,7 +111,18 @@ func (f *NormalFactory) Rollback(r *RancherService) error {
 	return r.Wait(existingService)
 }
 
-func (f *NormalFactory) Upgrade(r *RancherService, force bool) error {
+func isForce(name string, force bool, selected []string) bool {
+	if !force {
+		return false
+	}
+	if len(selected) == 0 {
+		return true
+	}
+
+	return utils.Contains(selected, name)
+}
+
+func (f *NormalFactory) Upgrade(r *RancherService, force bool, selected []string) error {
 	existingService, err := r.FindExisting(r.Name())
 	if err != nil || existingService == nil {
 		return err
@@ -128,11 +140,11 @@ func (f *NormalFactory) Upgrade(r *RancherService, force bool) error {
 		return err
 	}
 
-	service := hash.Service != existingHash.Service || force
-	launchConfig := hash.LaunchConfig != existingHash.LaunchConfig || force
+	service := hash.Service != existingHash.Service || isForce(r.Name(), force, selected)
+	launchConfig := hash.LaunchConfig != existingHash.LaunchConfig || isForce(r.Name(), force, selected)
 	for newSecondary, newHash := range hash.SecondaryLaunchConfigs {
 		if oldHash, ok := existingHash.SecondaryLaunchConfigs[newSecondary]; ok {
-			if oldHash != newHash || force {
+			if oldHash != newHash || isForce(newSecondary, force, selected) {
 				secondaryNames = append(secondaryNames, newSecondary)
 			}
 		} else {
@@ -153,6 +165,7 @@ func (f *NormalFactory) upgrade(r *RancherService, existingService *rancherClien
 		InServiceStrategy: &rancherClient.InServiceUpgradeStrategy{
 			BatchSize:      r.context.BatchSize,
 			IntervalMillis: r.context.Interval,
+			StartFirst:     r.RancherConfig().UpgradeStrategy.StartFirst,
 		},
 	}
 

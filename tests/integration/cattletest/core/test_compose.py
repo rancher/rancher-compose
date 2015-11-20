@@ -1770,3 +1770,99 @@ def test_service_schema(client, compose):
 
     assert 'kubernetesReplicationController' in service.serviceSchemas
     assert 'kubernetesService' in service.serviceSchemas
+
+
+def test_no_update_selector_link(client, compose):
+    template = '''
+parent:
+    labels:
+      io.rancher.service.selector.link: foo=bar
+    image: tianon/true
+child:
+    labels:
+      foo: bar
+    image: tianon/true
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 2
+
+    parent = _get_service(project.services(), 'parent')
+    find_one(parent.consumedservices)
+
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-d',
+                       'parent')
+    parent = _get_service(project.services(), 'parent')
+    find_one(parent.consumedservices)
+
+
+def test_sidekick_build_remote(client, compose):
+    template = '''
+parent:
+    labels:
+      io.rancher.sidekicks: child
+    build: http://parent
+    dockerfile: parent-file
+child:
+    build: http://child
+    dockerfile: child-file
+'''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 1
+
+    parent = _get_service(project.services(), 'parent')
+    assert parent.launchConfig.build.remote == 'http://parent'
+    assert parent.launchConfig.build.dockerfile == 'parent-file'
+    assert len(parent.secondaryLaunchConfigs) == 1
+    assert parent.secondaryLaunchConfigs[0].build.remote == 'http://child'
+    assert parent.secondaryLaunchConfigs[0].build.dockerfile == 'child-file'
+
+
+def test_sidekick_healthcheck(client, compose):
+    project_name = create_project(compose, file='assets/sidekick-health/'
+                                                'docker-compose.yml')
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 1
+
+    parent = _get_service(project.services(), 'parent')
+    assert parent.launchConfig.healthCheck.port == 80
+    assert parent.secondaryLaunchConfigs[0].healthCheck.port == 81
+
+
+def test_force_upgrade_primary(client, compose):
+    template = '''
+parent:
+    labels:
+      io.rancher.sidekicks: child
+    image: nginx
+child:
+    image: nginx
+'''
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 1
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-d')
+
+    parent = _get_service(project.services(), 'parent')
+    instances = parent.instances()
+    child_prefix = project_name + '_child'
+    child_id = [x.id for x in instances if x.name.startswith(child_prefix)]
+    assert len(instances) == 2
+
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up',
+                       '--force-upgrade', '-d', 'parent')
+    new_instances = parent.instances()
+    new_child_id = [x.id for x in instances if x.name.startswith(child_prefix)]
+    assert child_id == new_child_id
+    ids = {x.id for x in instances}.union({x.id for x in new_instances})
+    assert len(ids) == 3
+
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up',
+                       '-c', '-d')
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up',
+                       '--force-upgrade', '-d')
+    ids = ids.union({x.id for x in parent.instances()})
+    assert len(ids) == 5

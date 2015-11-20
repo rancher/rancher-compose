@@ -1,0 +1,7 @@
+parent:
+  labels:
+    io.rancher.sidekicks: child
+  image: tianon/true 
+
+child:
+  image: tianon/true 

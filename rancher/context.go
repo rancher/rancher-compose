@@ -39,6 +39,7 @@ type Context struct {
 	Uploader            Uploader
 	PullCached          bool
 	Pull                bool
+	Args                []string
 
 	Upgrade        bool
 	ForceUpgrade   bool
@@ -49,16 +50,17 @@ type Context struct {
 }
 
 type RancherConfig struct {
-	Scale              int                                `yaml:"scale,omitempty"`
-	LoadBalancerConfig *rancherClient.LoadBalancerConfig  `yaml:"load_balancer_config,omitempty"`
-	ExternalIps        []string                           `yaml:"external_ips,omitempty"`
-	Hostname           string                             `yaml:"hostname,omitempty"`
-	HealthCheck        *rancherClient.InstanceHealthCheck `yaml:"health_check,omitempty"`
-	DefaultCert        string                             `yaml:"default_cert,omitempty"`
-	Certs              []string                           `yaml:"certs,omitempty"`
-	Metadata           map[string]interface{}             `yaml:"metadata,omitempty"`
-	Uuid               string                             `yaml:"uuid,omitempty"`
-	ServiceSchemas     map[string]rancherClient.Schema    `yaml:"service_schemas,omitempty"`
+	Scale              int                                    `yaml:"scale,omitempty"`
+	LoadBalancerConfig *rancherClient.LoadBalancerConfig      `yaml:"load_balancer_config,omitempty"`
+	ExternalIps        []string                               `yaml:"external_ips,omitempty"`
+	Hostname           string                                 `yaml:"hostname,omitempty"`
+	HealthCheck        *rancherClient.InstanceHealthCheck     `yaml:"health_check,omitempty"`
+	DefaultCert        string                                 `yaml:"default_cert,omitempty"`
+	Certs              []string                               `yaml:"certs,omitempty"`
+	Metadata           map[string]interface{}                 `yaml:"metadata,omitempty"`
+	Uuid               string                                 `yaml:"uuid,omitempty"`
+	ServiceSchemas     map[string]rancherClient.Schema        `yaml:"service_schemas,omitempty"`
+	UpgradeStrategy    rancherClient.InServiceUpgradeStrategy `yaml:"upgrade_strategy,omitempty"`
 }
 
 func ResolveRancherCompose(composeFile, rancherComposeFile string) (string, error) {

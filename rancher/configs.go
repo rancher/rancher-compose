@@ -19,6 +19,7 @@ func createLaunchConfigs(r *RancherService) (rancherClient.LaunchConfig, []ranch
 	if err != nil {
 		return launchConfig, nil, err
 	}
+	launchConfig.HealthCheck = r.HealthCheck("")
 
 	if secondaries, ok := r.Context().SidekickInfo.primariesToSidekicks[r.Name()]; ok {
 		for _, secondaryName := range secondaries {
@@ -31,6 +32,7 @@ func createLaunchConfigs(r *RancherService) (rancherClient.LaunchConfig, []ranch
 			if err != nil {
 				return launchConfig, nil, err
 			}
+			launchConfig.HealthCheck = r.HealthCheck(secondaryName)
 
 			var secondaryLaunchConfig rancherClient.SecondaryLaunchConfig
 			utils.Convert(launchConfig, &secondaryLaunchConfig)
@@ -75,12 +77,10 @@ func createLaunchConfig(r *RancherService, serviceConfig *project.ServiceConfig)
 		return result, err
 	}
 
-	result.HealthCheck = r.HealthCheck()
-
 	setupNetworking(serviceConfig.Net, &result)
 	setupVolumesFrom(serviceConfig.VolumesFrom, &result)
 
-	err = r.setupBuild(&result, serviceConfig)
+	err = setupBuild(r, &result, serviceConfig)
 
 	if result.Labels == nil {
 		result.Labels = map[string]interface{}{}
@@ -105,7 +105,7 @@ func setupVolumesFrom(volumesFrom []string, launchConfig *rancherClient.LaunchCo
 	launchConfig.DataVolumesFromLaunchConfigs = volumesFrom
 }
 
-func setupBuild(r RancherService, result *rancherClient.LaunchConfig, serviceConfig *project.ServiceConfig) error {
+func setupBuild(r *RancherService, result *rancherClient.LaunchConfig, serviceConfig *project.ServiceConfig) error {
 	if serviceConfig.Build != "" {
 		result.Build = &rancherClient.DockerBuild{
 			Remote:     serviceConfig.Build,

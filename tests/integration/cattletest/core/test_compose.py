@@ -1822,7 +1822,8 @@ child:
 
 
 def test_sidekick_healthcheck(client, compose):
-    project_name = create_project(compose, file='assets/sidekick-health/docker-compose.yml')
+    project_name = create_project(compose, file='assets/sidekick-health/'
+                                                'docker-compose.yml')
     project = find_one(client.list_environment, name=project_name)
     assert len(project.services()) == 1
 

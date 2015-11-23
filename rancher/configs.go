@@ -15,7 +15,7 @@ import (
 
 func createLaunchConfigs(r *RancherService) (rancherClient.LaunchConfig, []rancherClient.SecondaryLaunchConfig, error) {
 	secondaryLaunchConfigs := []rancherClient.SecondaryLaunchConfig{}
-	launchConfig, err := createLaunchConfig(r, r.Config())
+	launchConfig, err := createLaunchConfig(r, r.Name(), r.Config())
 	if err != nil {
 		return launchConfig, nil, err
 	}
@@ -28,7 +28,7 @@ func createLaunchConfigs(r *RancherService) (rancherClient.LaunchConfig, []ranch
 				return launchConfig, nil, fmt.Errorf("Failed to find sidekick: %s", secondaryName)
 			}
 
-			launchConfig, err := createLaunchConfig(r, serviceConfig)
+			launchConfig, err := createLaunchConfig(r, secondaryName, serviceConfig)
 			if err != nil {
 				return launchConfig, nil, err
 			}
@@ -48,7 +48,7 @@ func createLaunchConfigs(r *RancherService) (rancherClient.LaunchConfig, []ranch
 	return launchConfig, secondaryLaunchConfigs, nil
 }
 
-func createLaunchConfig(r *RancherService, serviceConfig *project.ServiceConfig) (rancherClient.LaunchConfig, error) {
+func createLaunchConfig(r *RancherService, name string, serviceConfig *project.ServiceConfig) (rancherClient.LaunchConfig, error) {
 	var result rancherClient.LaunchConfig
 
 	schemasUrl := strings.SplitN(r.Context().Client.Schemas.Links["self"], "/schemas", 2)[0]
@@ -65,12 +65,7 @@ func createLaunchConfig(r *RancherService, serviceConfig *project.ServiceConfig)
 	}
 
 	dockerContainer.HostConfig.NetworkMode = runconfig.NetworkMode("")
-
-	if serviceConfig.Name != "" {
-		dockerContainer.Name = "/" + serviceConfig.Name
-	} else {
-		dockerContainer.Name = "/" + r.name
-	}
+	dockerContainer.Name = "/" + name
 
 	err = r.Context().Client.Post(scriptsUrl, dockerContainer, &result)
 	if err != nil {
@@ -80,7 +75,7 @@ func createLaunchConfig(r *RancherService, serviceConfig *project.ServiceConfig)
 	setupNetworking(serviceConfig.Net, &result)
 	setupVolumesFrom(serviceConfig.VolumesFrom, &result)
 
-	err = setupBuild(r, &result, serviceConfig)
+	err = setupBuild(r, name, &result, serviceConfig)
 
 	if result.Labels == nil {
 		result.Labels = map[string]interface{}{}
@@ -105,7 +100,7 @@ func setupVolumesFrom(volumesFrom []string, launchConfig *rancherClient.LaunchCo
 	launchConfig.DataVolumesFromLaunchConfigs = volumesFrom
 }
 
-func setupBuild(r *RancherService, result *rancherClient.LaunchConfig, serviceConfig *project.ServiceConfig) error {
+func setupBuild(r *RancherService, name string, result *rancherClient.LaunchConfig, serviceConfig *project.ServiceConfig) error {
 	if serviceConfig.Build != "" {
 		result.Build = &rancherClient.DockerBuild{
 			Remote:     serviceConfig.Build,
@@ -121,11 +116,11 @@ func setupBuild(r *RancherService, result *rancherClient.LaunchConfig, serviceCo
 		}
 
 		if needBuild {
-			image, url, err := Upload(r.Context(), r.Name())
+			image, url, err := Upload(r.Context(), name)
 			if err != nil {
 				return err
 			}
-			logrus.Infof("Build for %s available at %s", r.name, url)
+			logrus.Infof("Build for %s available at %s", name, url)
 			serviceConfig.Build = url
 
 			if serviceConfig.Image == "" {
@@ -138,7 +133,7 @@ func setupBuild(r *RancherService, result *rancherClient.LaunchConfig, serviceCo
 			}
 			result.ImageUuid = "docker:" + image
 		} else if result.ImageUuid == "" {
-			result.ImageUuid = fmt.Sprintf("docker:%s_%s_%d", r.Context().ProjectName, r.Name(), time.Now().UnixNano()/int64(time.Millisecond))
+			result.ImageUuid = fmt.Sprintf("docker:%s_%s_%d", r.Context().ProjectName, name, time.Now().UnixNano()/int64(time.Millisecond))
 		}
 	}
 

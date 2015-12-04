@@ -25,6 +25,8 @@ type Environment struct {
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
+	Outputs map[string]interface{} `json:"outputs,omitempty" yaml:"outputs,omitempty"`
+
 	PreviousExternalId string `json:"previousExternalId,omitempty" yaml:"previous_external_id,omitempty"`
 
 	RancherCompose string `json:"rancherCompose,omitempty" yaml:"rancher_compose,omitempty"`
@@ -32,6 +34,8 @@ type Environment struct {
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
+
+	StartOnCreate bool `json:"startOnCreate,omitempty" yaml:"start_on_create,omitempty"`
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 
@@ -60,11 +64,17 @@ type EnvironmentOperations interface {
 	ById(id string) (*Environment, error)
 	Delete(container *Environment) error
 
+	ActionActivateservices(*Environment) (*Environment, error)
+
+	ActionAddoutputs(*Environment, *AddOutputsInput) (*Environment, error)
+
 	ActionCancelrollback(*Environment) (*Environment, error)
 
 	ActionCancelupgrade(*Environment) (*Environment, error)
 
 	ActionCreate(*Environment) (*Environment, error)
+
+	ActionDeactivateservices(*Environment) (*Environment, error)
 
 	ActionError(*Environment) (*Environment, error)
 
@@ -120,6 +130,24 @@ func (c *EnvironmentClient) Delete(container *Environment) error {
 	return c.rancherClient.doResourceDelete(ENVIRONMENT_TYPE, &container.Resource)
 }
 
+func (c *EnvironmentClient) ActionActivateservices(resource *Environment) (*Environment, error) {
+
+	resp := &Environment{}
+
+	err := c.rancherClient.doAction(ENVIRONMENT_TYPE, "activateservices", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *EnvironmentClient) ActionAddoutputs(resource *Environment, input *AddOutputsInput) (*Environment, error) {
+
+	resp := &Environment{}
+
+	err := c.rancherClient.doAction(ENVIRONMENT_TYPE, "addoutputs", &resource.Resource, input, resp)
+
+	return resp, err
+}
+
 func (c *EnvironmentClient) ActionCancelrollback(resource *Environment) (*Environment, error) {
 
 	resp := &Environment{}
@@ -143,6 +171,15 @@ func (c *EnvironmentClient) ActionCreate(resource *Environment) (*Environment, e
 	resp := &Environment{}
 
 	err := c.rancherClient.doAction(ENVIRONMENT_TYPE, "create", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *EnvironmentClient) ActionDeactivateservices(resource *Environment) (*Environment, error) {
+
+	resp := &Environment{}
+
+	err := c.rancherClient.doAction(ENVIRONMENT_TYPE, "deactivateservices", &resource.Resource, nil, resp)
 
 	return resp, err
 }

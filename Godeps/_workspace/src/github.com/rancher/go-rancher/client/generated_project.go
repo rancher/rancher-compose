@@ -15,6 +15,8 @@ type Project struct {
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
+	Kubernetes bool `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
+
 	Members []interface{} `json:"members,omitempty" yaml:"members,omitempty"`
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
@@ -24,6 +26,8 @@ type Project struct {
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
+
+	Swarm bool `json:"swarm,omitempty" yaml:"swarm,omitempty"`
 
 	Transitioning string `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
 

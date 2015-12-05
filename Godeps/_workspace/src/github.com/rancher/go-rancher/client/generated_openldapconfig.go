@@ -1,10 +1,10 @@
 package client
 
 const (
-	LDAPCONFIG_TYPE = "ldapconfig"
+	OPENLDAPCONFIG_TYPE = "openldapconfig"
 )
 
-type Ldapconfig struct {
+type Openldapconfig struct {
 	Resource
 
 	AccessMode string `json:"accessMode,omitempty" yaml:"access_mode,omitempty"`
@@ -50,50 +50,50 @@ type Ldapconfig struct {
 	UserSearchField string `json:"userSearchField,omitempty" yaml:"user_search_field,omitempty"`
 }
 
-type LdapconfigCollection struct {
+type OpenldapconfigCollection struct {
 	Collection
-	Data []Ldapconfig `json:"data,omitempty"`
+	Data []Openldapconfig `json:"data,omitempty"`
 }
 
-type LdapconfigClient struct {
+type OpenldapconfigClient struct {
 	rancherClient *RancherClient
 }
 
-type LdapconfigOperations interface {
-	List(opts *ListOpts) (*LdapconfigCollection, error)
-	Create(opts *Ldapconfig) (*Ldapconfig, error)
-	Update(existing *Ldapconfig, updates interface{}) (*Ldapconfig, error)
-	ById(id string) (*Ldapconfig, error)
-	Delete(container *Ldapconfig) error
+type OpenldapconfigOperations interface {
+	List(opts *ListOpts) (*OpenldapconfigCollection, error)
+	Create(opts *Openldapconfig) (*Openldapconfig, error)
+	Update(existing *Openldapconfig, updates interface{}) (*Openldapconfig, error)
+	ById(id string) (*Openldapconfig, error)
+	Delete(container *Openldapconfig) error
 }
 
-func newLdapconfigClient(rancherClient *RancherClient) *LdapconfigClient {
-	return &LdapconfigClient{
+func newOpenldapconfigClient(rancherClient *RancherClient) *OpenldapconfigClient {
+	return &OpenldapconfigClient{
 		rancherClient: rancherClient,
 	}
 }
 
-func (c *LdapconfigClient) Create(container *Ldapconfig) (*Ldapconfig, error) {
-	resp := &Ldapconfig{}
-	err := c.rancherClient.doCreate(LDAPCONFIG_TYPE, container, resp)
+func (c *OpenldapconfigClient) Create(container *Openldapconfig) (*Openldapconfig, error) {
+	resp := &Openldapconfig{}
+	err := c.rancherClient.doCreate(OPENLDAPCONFIG_TYPE, container, resp)
 	return resp, err
 }
 
-func (c *LdapconfigClient) Update(existing *Ldapconfig, updates interface{}) (*Ldapconfig, error) {
-	resp := &Ldapconfig{}
-	err := c.rancherClient.doUpdate(LDAPCONFIG_TYPE, &existing.Resource, updates, resp)
+func (c *OpenldapconfigClient) Update(existing *Openldapconfig, updates interface{}) (*Openldapconfig, error) {
+	resp := &Openldapconfig{}
+	err := c.rancherClient.doUpdate(OPENLDAPCONFIG_TYPE, &existing.Resource, updates, resp)
 	return resp, err
 }
 
-func (c *LdapconfigClient) List(opts *ListOpts) (*LdapconfigCollection, error) {
-	resp := &LdapconfigCollection{}
-	err := c.rancherClient.doList(LDAPCONFIG_TYPE, opts, resp)
+func (c *OpenldapconfigClient) List(opts *ListOpts) (*OpenldapconfigCollection, error) {
+	resp := &OpenldapconfigCollection{}
+	err := c.rancherClient.doList(OPENLDAPCONFIG_TYPE, opts, resp)
 	return resp, err
 }
 
-func (c *LdapconfigClient) ById(id string) (*Ldapconfig, error) {
-	resp := &Ldapconfig{}
-	err := c.rancherClient.doById(LDAPCONFIG_TYPE, id, resp)
+func (c *OpenldapconfigClient) ById(id string) (*Openldapconfig, error) {
+	resp := &Openldapconfig{}
+	err := c.rancherClient.doById(OPENLDAPCONFIG_TYPE, id, resp)
 	if apiError, ok := err.(*ApiError); ok {
 		if apiError.StatusCode == 404 {
 			return nil, nil
@@ -102,6 +102,6 @@ func (c *LdapconfigClient) ById(id string) (*Ldapconfig, error) {
 	return resp, err
 }
 
-func (c *LdapconfigClient) Delete(container *Ldapconfig) error {
-	return c.rancherClient.doResourceDelete(LDAPCONFIG_TYPE, &container.Resource)
+func (c *OpenldapconfigClient) Delete(container *Openldapconfig) error {
+	return c.rancherClient.doResourceDelete(OPENLDAPCONFIG_TYPE, &container.Resource)
 }

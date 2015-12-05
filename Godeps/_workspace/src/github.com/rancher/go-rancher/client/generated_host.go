@@ -33,6 +33,8 @@ type Host struct {
 
 	PhysicalHostId string `json:"physicalHostId,omitempty" yaml:"physical_host_id,omitempty"`
 
+	PublicEndpoints []int64 `json:"publicEndpoints,omitempty" yaml:"public_endpoints,omitempty"`
+
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`

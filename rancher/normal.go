@@ -128,8 +128,8 @@ func (f *NormalFactory) Upgrade(r *RancherService, force bool, selected []string
 		return err
 	}
 
-	if existingService.State != "active" {
-		return fmt.Errorf("Service %s must be state=active to upgrade, currently: state=%s", r.Name(), existingService.State)
+	if existingService.State != "active" && existingService.State != "inactive" {
+		return fmt.Errorf("Service %s must be state=active or inactive to upgrade, currently: state=%s", r.Name(), existingService.State)
 	}
 
 	existingHash, _ := digest.LookupHash(existingService)

@@ -208,9 +208,6 @@ def test_args(client, compose):
     assert service.launchConfig.memory == 100
     assert service.launchConfig.memorySwap == 101
     assert service.launchConfig.privileged
-    assert service.launchConfig.restartPolicy == {
-        'name': 'always'
-    }
     assert service.launchConfig.stdinOpen
     assert service.launchConfig.tty
     assert 'name' not in service.launchConfig
@@ -948,6 +945,37 @@ def test_service_inplace_rollback(client, compose):
     s2 = find_one(project.services)
     assert s2.state == 'active'
     assert s2.launchConfig.imageUuid == 'docker:nginx'
+
+
+def test_service_inplace_upgrade_inactive(client, compose):
+    project_name = random_str()
+    template = '''
+    web:
+        image: nginx
+    '''
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'create')
+    project = find_one(client.list_environment, name=project_name)
+    s = find_one(project.services)
+    assert s.state == 'inactive'
+
+    template = '''
+    web:
+        image: nginx:1.9.5
+    '''
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-u',
+                       '-d')
+    s2 = find_one(project.services)
+
+    assert s.launchConfig.labels['io.rancher.service.hash'] != \
+           s2.launchConfig.labels['io.rancher.service.hash']
+    assert s2.launchConfig.imageUuid == 'docker:nginx:1.9.5'
+    assert s2.state == 'upgraded'
+
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-c',
+                       '-d')
+    s2 = find_one(project.services)
+    assert s2.state == 'active'
 
 
 def test_service_inplace_upgrade(client, compose):

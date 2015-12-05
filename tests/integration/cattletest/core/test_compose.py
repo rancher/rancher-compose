@@ -208,9 +208,6 @@ def test_args(client, compose):
     assert service.launchConfig.memory == 100
     assert service.launchConfig.memorySwap == 101
     assert service.launchConfig.privileged
-    assert service.launchConfig.restartPolicy == {
-        'name': 'always'
-    }
     assert service.launchConfig.stdinOpen
     assert service.launchConfig.tty
     assert 'name' not in service.launchConfig
@@ -470,41 +467,6 @@ def test_extends_1556(client, compose):
 def test_extends_1556_2(compose):
     with pytest.raises(AssertionError):
         create_project(compose, file='assets/extends_2/docker-compose.yml')
-
-
-def test_restart_policies(client, compose):
-    template = '''
-    web:
-        restart: on-failure:5
-        image: nginx
-    '''
-
-    project_name = create_project(compose, input=template)
-
-    project = find_one(client.list_environment, name=project_name)
-    service = find_one(project.services)
-
-    assert service.launchConfig.restartPolicy == {
-        'name': 'on-failure',
-        'maximumRetryCount': 5
-    }
-
-
-def test_restart_policies_on_failure_default(client, compose):
-    template = '''
-    web:
-        restart: on-failure
-        image: nginx
-    '''
-
-    project_name = create_project(compose, input=template)
-
-    project = find_one(client.list_environment, name=project_name)
-    service = find_one(project.services)
-
-    assert service.launchConfig.restartPolicy == {
-        'name': 'on-failure'
-    }
 
 
 def test_lb_private(client, compose):
@@ -768,20 +730,12 @@ def test_lb_full_config(client, compose):
 
     assert lb.type == 'loadBalancerService'
 
-    assert lb.loadBalancerConfig.name == 'lb config'
     assert lb.loadBalancerConfig.appCookieStickinessPolicy.cookie == 'foo'
     assert lb.loadBalancerConfig.appCookieStickinessPolicy.maxLength == 1024
     assert 'prefix' not in lb.loadBalancerConfig.appCookieStickinessPolicy
     assert lb.loadBalancerConfig.appCookieStickinessPolicy.requestLearn
     assert lb.loadBalancerConfig.appCookieStickinessPolicy.mode == \
         'path_parameters'
-    assert 'port' not in lb.loadBalancerConfig.healthCheck
-    assert lb.loadBalancerConfig.healthCheck.interval == 2000
-    assert lb.loadBalancerConfig.healthCheck.unhealthyThreshold == 3
-    assert lb.loadBalancerConfig.healthCheck.requestLine == \
-        'OPTIONS /ping HTTP/1.1\r\nHost:\\ www.example.com'
-    assert lb.loadBalancerConfig.healthCheck.healthyThreshold == 2
-    assert lb.loadBalancerConfig.healthCheck.responseTimeout == 2000
 
 
 def test_links(client, compose):
@@ -948,6 +902,37 @@ def test_service_inplace_rollback(client, compose):
     s2 = find_one(project.services)
     assert s2.state == 'active'
     assert s2.launchConfig.imageUuid == 'docker:nginx'
+
+
+def test_service_inplace_upgrade_inactive(client, compose):
+    project_name = random_str()
+    template = '''
+    web:
+        image: nginx
+    '''
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'create')
+    project = find_one(client.list_environment, name=project_name)
+    s = find_one(project.services)
+    assert s.state == 'inactive'
+
+    template = '''
+    web:
+        image: nginx:1.9.5
+    '''
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-u',
+                       '-d')
+    s2 = find_one(project.services)
+
+    assert s.launchConfig.labels['io.rancher.service.hash'] != \
+        s2.launchConfig.labels['io.rancher.service.hash']
+    assert s2.launchConfig.imageUuid == 'docker:nginx:1.9.5'
+    assert s2.state == 'upgraded'
+
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-c',
+                       '-d')
+    s2 = find_one(project.services)
+    assert s2.state == 'active'
 
 
 def test_service_inplace_upgrade(client, compose):

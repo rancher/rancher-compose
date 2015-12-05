@@ -313,7 +313,7 @@ func (r *RancherService) createService() (*rancherClient.Service, error) {
 
 func (r *RancherService) setupLinks(service *rancherClient.Service, update bool) error {
 	// Don't modify links for selector based linking, don't want to conflict
-	if service.SelectorLink != "" {
+	if service.SelectorLink != "" || FindServiceType(r) == ExternalServiceType {
 		return nil
 	}
 

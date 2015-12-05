@@ -849,6 +849,22 @@ def test_sidekick_container_network(client, compose):
     assert service.secondaryLaunchConfigs[0].networkLaunchConfig == 'web'
 
 
+def test_not_external_service_hostname(client, compose):
+    template = '''
+    web:
+        hostname: foo
+        image: nginx
+    '''
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_environment, name=project_name)
+    service = find_one(project.services)
+
+    assert service.name == 'web'
+    assert service.type == 'service'
+    assert service.launchConfig.hostname == 'foo'
+
+
 def test_external_service_hostname(client, compose):
     project_name = create_project(compose, file='assets/hostname/test.yml')
 
@@ -1851,3 +1867,34 @@ child:
                        '--force-upgrade', '-d')
     ids = ids.union({x.id for x in parent.instances()})
     assert len(ids) == 5
+
+
+def test_virtual_machine(client, compose):
+    template = '''
+vm:
+    type: virtualMachine
+    image: nginx
+    vcpu: 2
+    memory: 1024
+    userdata: |
+        #cloud-config
+        foo
+    disks:
+    - name: foo
+      size: 1g
+      opts:
+        foo: bar
+    - name: foo2
+      size: 2g
+'''
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+    vm = find_one(project.services)
+
+    assert vm.launchConfig.kind == 'virtualMachine'
+    assert vm.launchConfig.vcpu == 2
+    assert vm.launchConfig.userdata == '#cloud-config\nfoo\n'
+    assert vm.launchConfig.memoryMb == 1024
+    assert vm.launchConfig.disks[0] == {'name': 'foo', 'size': '1g',
+                                        'opts': {'foo': 'bar'}}
+    assert vm.launchConfig.disks[1] == {'name': 'foo2', 'size': '2g'}

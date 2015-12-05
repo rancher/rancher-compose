@@ -51,6 +51,8 @@ func createLaunchConfigs(r *RancherService) (rancherClient.LaunchConfig, []ranch
 func createLaunchConfig(r *RancherService, name string, serviceConfig *project.ServiceConfig) (rancherClient.LaunchConfig, error) {
 	var result rancherClient.LaunchConfig
 
+	rancherConfig := r.context.RancherConfig[name]
+
 	schemasUrl := strings.SplitN(r.Context().Client.Schemas.Links["self"], "/schemas", 2)[0]
 	scriptsUrl := schemasUrl + "/scripts/transform"
 
@@ -79,6 +81,19 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *project.S
 
 	if result.Labels == nil {
 		result.Labels = map[string]interface{}{}
+	}
+
+	result.Kind = rancherConfig.Type
+	result.Vcpu = rancherConfig.Vcpu
+	result.Userdata = rancherConfig.Userdata
+	result.MemoryMb = rancherConfig.Memory
+	result.Disks = []interface{}{}
+	for _, i := range rancherConfig.Disks {
+		result.Disks = append(result.Disks, i)
+	}
+
+	if strings.EqualFold(result.Kind, "virtual_machine") || strings.EqualFold(result.Kind, "virtualmachine") {
+		result.Kind = "virtualMachine"
 	}
 
 	return result, err

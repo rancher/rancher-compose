@@ -314,13 +314,13 @@
 		},
 		{
 			"ImportPath": "github.com/rancher/go-rancher/client",
-			"Comment": "v0.1.0-87-g90d8786",
-			"Rev": "90d8786df8b13d56bb7e4335e0c24d704101322f"
+			"Comment": "v0.1.0-111-gbf0d45b",
+			"Rev": "bf0d45babcc58e492da04c1678f7f641ad4377f4"
 		},
 		{
 			"ImportPath": "github.com/rancher/go-rancher/hostaccess",
-			"Comment": "v0.1.0-87-g90d8786",
-			"Rev": "90d8786df8b13d56bb7e4335e0c24d704101322f"
+			"Comment": "v0.1.0-111-gbf0d45b",
+			"Rev": "bf0d45babcc58e492da04c1678f7f641ad4377f4"
 		},
 		{
 			"ImportPath": "github.com/rancher/rancher-catalog-service/model",

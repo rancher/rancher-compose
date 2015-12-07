@@ -50,6 +50,13 @@ type Context struct {
 }
 
 type RancherConfig struct {
+	// VirtualMachine fields
+	Vcpu     int64                              `yaml:"vcpu,omitempty"`
+	Userdata string                             `yaml:"userdata,omitempty"`
+	Memory   int64                              `yaml:"memory,omitempty"`
+	Disks    []rancherClient.VirtualMachineDisk `yaml:"disks,omitempty"`
+
+	Type               string                                 `yaml:"type,omitempty"`
 	Scale              int                                    `yaml:"scale,omitempty"`
 	LoadBalancerConfig *rancherClient.LoadBalancerConfig      `yaml:"load_balancer_config,omitempty"`
 	ExternalIps        []string                               `yaml:"external_ips,omitempty"`
@@ -89,7 +96,6 @@ func (c *Context) readRancherConfig() error {
 		logrus.Debugf("Opening rancher-compose file: %s", c.RancherComposeFile)
 		if composeBytes, err := ioutil.ReadFile(c.RancherComposeFile); os.IsNotExist(err) {
 			logrus.Debugf("Not found: %s", c.RancherComposeFile)
-			return nil
 		} else if err != nil {
 			logrus.Errorf("Failed to open %s", c.RancherComposeFile)
 			return err
@@ -98,13 +104,24 @@ func (c *Context) readRancherConfig() error {
 		}
 	}
 
-	return c.unmarshalBytes(c.RancherComposeBytes)
+	return c.unmarshalBytes(c.ComposeBytes, c.RancherComposeBytes)
 }
 
-func (c *Context) unmarshalBytes(bytes []byte) error {
+func (c *Context) unmarshalBytes(composeBytes, bytes []byte) error {
 	rawServiceMap := project.RawServiceMap{}
-	if err := yaml.Unmarshal(bytes, &rawServiceMap); err != nil {
-		return err
+	if composeBytes != nil {
+		if err := yaml.Unmarshal(composeBytes, &rawServiceMap); err != nil {
+			return err
+		}
+
+		for key := range rawServiceMap {
+			delete(rawServiceMap[key], "hostname")
+		}
+	}
+	if bytes != nil {
+		if err := yaml.Unmarshal(bytes, &rawServiceMap); err != nil {
+			return err
+		}
 	}
 	if err := project.Interpolate(c.EnvironmentLookup, &rawServiceMap); err != nil {
 		return err

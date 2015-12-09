@@ -40,7 +40,7 @@ func createEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cli
 		return emptyReply(event, apiClient)
 	}
 
-	context, project, err := constructProject(logger, env, apiClient.Opts.Url, apiClient.Opts.AccessKey, apiClient.Opts.SecretKey)
+	_, project, err := constructProject(logger, env, apiClient.Opts.Url, apiClient.Opts.AccessKey, apiClient.Opts.SecretKey)
 	if err != nil {
 		return err
 	}
@@ -59,6 +59,10 @@ func createEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cli
 	}
 
 	if startOnCreate {
+		if err := project.Create(); err != nil {
+			return err
+		}
+
 		if err := project.Up(); err != nil {
 			return err
 		}
@@ -69,12 +73,5 @@ func createEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cli
 		}
 	}
 
-	uuid := context.Uuid()
-	if uuid == "" {
-		return emptyReply(event, apiClient)
-	}
-
-	return reply(event, apiClient, map[string]interface{}{
-		"externalId": uuid,
-	})
+	return emptyReply(event, apiClient)
 }

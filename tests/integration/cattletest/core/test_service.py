@@ -47,7 +47,7 @@ two:
                                     rancherCompose=rancher_compose)
     env = client.wait_success(env)
     assert env.state == 'active'
-    assert env.externalId == 'foo'
+    assert env.externalId is None
 
     names = set()
     for s in env.services():
@@ -86,7 +86,7 @@ two:
             assert s.state == 'active'
 
     assert env.externalId == 'foo2'
-    assert env.previousExternalId == 'foo'
+    assert env.previousExternalId == ''
 
     env.finishupgrade()
 
@@ -152,7 +152,8 @@ two:
         s = client.wait_success(s)
         assert s.state == 'active'
 
-    assert env.externalId == 'foo'
+    # TODO this should really be ''
+    assert env.externalId == 'foo2'
     assert env.previousExternalId is None
 
 

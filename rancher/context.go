@@ -65,7 +65,6 @@ type RancherConfig struct {
 	DefaultCert        string                                 `yaml:"default_cert,omitempty"`
 	Certs              []string                               `yaml:"certs,omitempty"`
 	Metadata           map[string]interface{}                 `yaml:"metadata,omitempty"`
-	Uuid               string                                 `yaml:"uuid,omitempty"`
 	ServiceSchemas     map[string]rancherClient.Schema        `yaml:"service_schemas,omitempty"`
 	UpgradeStrategy    rancherClient.InServiceUpgradeStrategy `yaml:"upgrade_strategy,omitempty"`
 }
@@ -289,8 +288,4 @@ func (c *Context) LoadEnv() (*rancherClient.Environment, error) {
 	c.Environment = env
 
 	return c.Environment, nil
-}
-
-func (c *Context) Uuid() string {
-	return c.RancherConfig[".catalog"].Uuid
 }

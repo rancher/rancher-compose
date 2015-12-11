@@ -736,6 +736,8 @@ def test_lb_full_config(client, compose):
     assert lb.loadBalancerConfig.appCookieStickinessPolicy.requestLearn
     assert lb.loadBalancerConfig.appCookieStickinessPolicy.mode == \
         'path_parameters'
+    assert lb.loadBalancerConfig.haproxyConfig['global'] == 'foo bar\n'
+    assert lb.loadBalancerConfig.haproxyConfig.defaults == 'def 1\n'
 
 
 def test_links(client, compose):

@@ -19,6 +19,7 @@ type RancherClient struct {
 	ToServiceUpgradeStrategy                 ToServiceUpgradeStrategyOperations
 	PublicEndpoint                           PublicEndpointOperations
 	VirtualMachineDisk                       VirtualMachineDiskOperations
+	HaproxyConfig                            HaproxyConfigOperations
 	AddOutputsInput                          AddOutputsInputOperations
 	AddRemoveClusterHostInput                AddRemoveClusterHostInputOperations
 	AddRemoveServiceLinkInput                AddRemoveServiceLinkInputOperations
@@ -57,6 +58,7 @@ type RancherClient struct {
 	LoadBalancerConfig                       LoadBalancerConfigOperations
 	Account                                  AccountOperations
 	Agent                                    AgentOperations
+	AuditLog                                 AuditLogOperations
 	Certificate                              CertificateOperations
 	ConfigItem                               ConfigItemOperations
 	ConfigItemStatus                         ConfigItemStatusOperations
@@ -151,6 +153,7 @@ func constructClient() *RancherClient {
 	client.ToServiceUpgradeStrategy = newToServiceUpgradeStrategyClient(client)
 	client.PublicEndpoint = newPublicEndpointClient(client)
 	client.VirtualMachineDisk = newVirtualMachineDiskClient(client)
+	client.HaproxyConfig = newHaproxyConfigClient(client)
 	client.AddOutputsInput = newAddOutputsInputClient(client)
 	client.AddRemoveClusterHostInput = newAddRemoveClusterHostInputClient(client)
 	client.AddRemoveServiceLinkInput = newAddRemoveServiceLinkInputClient(client)
@@ -189,6 +192,7 @@ func constructClient() *RancherClient {
 	client.LoadBalancerConfig = newLoadBalancerConfigClient(client)
 	client.Account = newAccountClient(client)
 	client.Agent = newAgentClient(client)
+	client.AuditLog = newAuditLogClient(client)
 	client.Certificate = newCertificateClient(client)
 	client.ConfigItem = newConfigItemClient(client)
 	client.ConfigItemStatus = newConfigItemStatusClient(client)

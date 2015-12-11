@@ -10,6 +10,8 @@ type LoadBalancerServiceLink struct {
 	Ports []string `json:"ports,omitempty" yaml:"ports,omitempty"`
 
 	ServiceId string `json:"serviceId,omitempty" yaml:"service_id,omitempty"`
+
+	Uuid string `json:"uuid,omitempty" yaml:"uuid,omitempty"`
 }
 
 type LoadBalancerServiceLinkCollection struct {

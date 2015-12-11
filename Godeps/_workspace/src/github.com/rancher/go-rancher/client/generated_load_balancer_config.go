@@ -9,6 +9,8 @@ type LoadBalancerConfig struct {
 
 	AppCookieStickinessPolicy *LoadBalancerAppCookieStickinessPolicy `json:"appCookieStickinessPolicy,omitempty" yaml:"app_cookie_stickiness_policy,omitempty"`
 
+	HaproxyConfig *HaproxyConfig `json:"haproxyConfig,omitempty" yaml:"haproxy_config,omitempty"`
+
 	LbCookieStickinessPolicy *LoadBalancerCookieStickinessPolicy `json:"lbCookieStickinessPolicy,omitempty" yaml:"lb_cookie_stickiness_policy,omitempty"`
 }
 

@@ -494,25 +494,24 @@ func (r *RancherService) containers() ([]rancherClient.Container, error) {
 }
 
 func (r *RancherService) Restart() error {
-	containers, err := r.containers()
+	service, err := r.FindExisting(r.name)
 	if err != nil {
 		return err
 	}
 
-	for _, container := range containers {
-		logrus.Infof("Restarting container: %s", container.Name)
-		instance, err := r.context.Client.Container.ActionRestart(&container)
-		if err != nil {
-			return err
-		}
+	service, err = r.context.Client.Service.ActionRestart(service, &rancherClient.ServiceRestart{
+		RollingRestartStrategy: rancherClient.RollingRestartStrategy{
+			BatchSize:      r.context.BatchSize,
+			IntervalMillis: r.context.Interval,
+		},
+	})
 
-		r.waitInstance(instance)
-		if instance.State != "running" {
-			return fmt.Errorf("Failed to restart %s, in state: %s", instance.Name, instance.State)
-		}
+	if err != nil {
+		logrus.Errorf("Failed to restart %s: %v", r.Name(), err)
+		return err
 	}
 
-	return nil
+	return r.Wait(service)
 }
 
 func (r *RancherService) Log() error {

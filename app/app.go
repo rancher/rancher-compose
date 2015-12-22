@@ -103,6 +103,26 @@ func UpgradeCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+func RestartCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "restart",
+		Usage:  "Restart services",
+		Action: app.WithProject(factory, app.ProjectRestart),
+		Flags: []cli.Flag{
+			cli.IntFlag{
+				Name:  "batch-size",
+				Usage: "Number of containers to retart at once",
+				Value: 1,
+			},
+			cli.IntFlag{
+				Name:  "interval",
+				Usage: "Restart interval in milliseconds",
+				Value: 0,
+			},
+		},
+	}
+}
+
 func UpCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
 		Name:   "up",

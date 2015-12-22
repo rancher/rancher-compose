@@ -86,6 +86,8 @@ type ExternalServiceOperations interface {
 
 	ActionRemoveservicelink(*ExternalService, *AddRemoveServiceLinkInput) (*Service, error)
 
+	ActionRestart(*ExternalService, *ServiceRestart) (*Service, error)
+
 	ActionRollback(*ExternalService) (*Service, error)
 
 	ActionSetservicelinks(*ExternalService, *SetServiceLinksInput) (*Service, error)
@@ -211,6 +213,15 @@ func (c *ExternalServiceClient) ActionRemoveservicelink(resource *ExternalServic
 	resp := &Service{}
 
 	err := c.rancherClient.doAction(EXTERNAL_SERVICE_TYPE, "removeservicelink", &resource.Resource, input, resp)
+
+	return resp, err
+}
+
+func (c *ExternalServiceClient) ActionRestart(resource *ExternalService, input *ServiceRestart) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(EXTERNAL_SERVICE_TYPE, "restart", &resource.Resource, input, resp)
 
 	return resp, err
 }

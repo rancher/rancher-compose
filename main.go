@@ -74,7 +74,7 @@ func cliMain() {
 		rancherApp.UpCommand(factory),
 		command.StartCommand(factory),
 		command.LogsCommand(factory),
-		command.RestartCommand(factory),
+		rancherApp.RestartCommand(factory),
 		command.StopCommand(factory),
 		command.ScaleCommand(factory),
 		command.RmCommand(factory),

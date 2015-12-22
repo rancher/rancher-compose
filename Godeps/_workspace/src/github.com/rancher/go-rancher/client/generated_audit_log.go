@@ -15,6 +15,8 @@ type AuditLog struct {
 
 	AuthenticatedAsIdentityId string `json:"authenticatedAsIdentityId,omitempty" yaml:"authenticated_as_identity_id,omitempty"`
 
+	ClientIp string `json:"clientIp,omitempty" yaml:"client_ip,omitempty"`
+
 	Created string `json:"created,omitempty" yaml:"created,omitempty"`
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
@@ -23,7 +25,7 @@ type AuditLog struct {
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`
 
-	RequestObject interface{} `json:"requestObject,omitempty" yaml:"request_object,omitempty"`
+	RequestObject string `json:"requestObject,omitempty" yaml:"request_object,omitempty"`
 
 	ResourceId int64 `json:"resourceId,omitempty" yaml:"resource_id,omitempty"`
 
@@ -31,7 +33,7 @@ type AuditLog struct {
 
 	ResponseCode string `json:"responseCode,omitempty" yaml:"response_code,omitempty"`
 
-	ResponseObject interface{} `json:"responseObject,omitempty" yaml:"response_object,omitempty"`
+	ResponseObject string `json:"responseObject,omitempty" yaml:"response_object,omitempty"`
 }
 
 type AuditLogCollection struct {

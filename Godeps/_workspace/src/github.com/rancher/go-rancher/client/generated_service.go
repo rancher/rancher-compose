@@ -96,6 +96,8 @@ type ServiceOperations interface {
 
 	ActionRemoveservicelink(*Service, *AddRemoveServiceLinkInput) (*Service, error)
 
+	ActionRestart(*Service, *ServiceRestart) (*Service, error)
+
 	ActionRollback(*Service) (*Service, error)
 
 	ActionSetservicelinks(*Service, *SetServiceLinksInput) (*Service, error)
@@ -221,6 +223,15 @@ func (c *ServiceClient) ActionRemoveservicelink(resource *Service, input *AddRem
 	resp := &Service{}
 
 	err := c.rancherClient.doAction(SERVICE_TYPE, "removeservicelink", &resource.Resource, input, resp)
+
+	return resp, err
+}
+
+func (c *ServiceClient) ActionRestart(resource *Service, input *ServiceRestart) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(SERVICE_TYPE, "restart", &resource.Resource, input, resp)
 
 	return resp, err
 }

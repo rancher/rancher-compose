@@ -25,6 +25,8 @@ type Project struct {
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
 
+	ServicesPortRange *ServicesPortRange `json:"servicesPortRange,omitempty" yaml:"services_port_range,omitempty"`
+
 	State string `json:"state,omitempty" yaml:"state,omitempty"`
 
 	Swarm bool `json:"swarm,omitempty" yaml:"swarm,omitempty"`

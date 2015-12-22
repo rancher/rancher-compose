@@ -20,6 +20,9 @@ type RancherClient struct {
 	PublicEndpoint                           PublicEndpointOperations
 	VirtualMachineDisk                       VirtualMachineDiskOperations
 	HaproxyConfig                            HaproxyConfigOperations
+	RollingRestartStrategy                   RollingRestartStrategyOperations
+	ServiceRestart                           ServiceRestartOperations
+	ServicesPortRange                        ServicesPortRangeOperations
 	AddOutputsInput                          AddOutputsInputOperations
 	AddRemoveClusterHostInput                AddRemoveClusterHostInputOperations
 	AddRemoveServiceLinkInput                AddRemoveServiceLinkInputOperations
@@ -154,6 +157,9 @@ func constructClient() *RancherClient {
 	client.PublicEndpoint = newPublicEndpointClient(client)
 	client.VirtualMachineDisk = newVirtualMachineDiskClient(client)
 	client.HaproxyConfig = newHaproxyConfigClient(client)
+	client.RollingRestartStrategy = newRollingRestartStrategyClient(client)
+	client.ServiceRestart = newServiceRestartClient(client)
+	client.ServicesPortRange = newServicesPortRangeClient(client)
 	client.AddOutputsInput = newAddOutputsInputClient(client)
 	client.AddRemoveClusterHostInput = newAddRemoveClusterHostInputClient(client)
 	client.AddRemoveServiceLinkInput = newAddRemoveServiceLinkInputClient(client)

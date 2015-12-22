@@ -82,6 +82,8 @@ type DnsServiceOperations interface {
 
 	ActionRemoveservicelink(*DnsService, *AddRemoveServiceLinkInput) (*Service, error)
 
+	ActionRestart(*DnsService, *ServiceRestart) (*Service, error)
+
 	ActionRollback(*DnsService) (*Service, error)
 
 	ActionSetservicelinks(*DnsService, *SetServiceLinksInput) (*Service, error)
@@ -207,6 +209,15 @@ func (c *DnsServiceClient) ActionRemoveservicelink(resource *DnsService, input *
 	resp := &Service{}
 
 	err := c.rancherClient.doAction(DNS_SERVICE_TYPE, "removeservicelink", &resource.Resource, input, resp)
+
+	return resp, err
+}
+
+func (c *DnsServiceClient) ActionRestart(resource *DnsService, input *ServiceRestart) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(DNS_SERVICE_TYPE, "restart", &resource.Resource, input, resp)
 
 	return resp, err
 }

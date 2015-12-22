@@ -94,6 +94,8 @@ type LoadBalancerServiceOperations interface {
 
 	ActionRemoveservicelink(*LoadBalancerService, *AddRemoveLoadBalancerServiceLinkInput) (*Service, error)
 
+	ActionRestart(*LoadBalancerService, *ServiceRestart) (*Service, error)
+
 	ActionRollback(*LoadBalancerService) (*Service, error)
 
 	ActionSetservicelinks(*LoadBalancerService, *SetLoadBalancerServiceLinksInput) (*Service, error)
@@ -219,6 +221,15 @@ func (c *LoadBalancerServiceClient) ActionRemoveservicelink(resource *LoadBalanc
 	resp := &Service{}
 
 	err := c.rancherClient.doAction(LOAD_BALANCER_SERVICE_TYPE, "removeservicelink", &resource.Resource, input, resp)
+
+	return resp, err
+}
+
+func (c *LoadBalancerServiceClient) ActionRestart(resource *LoadBalancerService, input *ServiceRestart) (*Service, error) {
+
+	resp := &Service{}
+
+	err := c.rancherClient.doAction(LOAD_BALANCER_SERVICE_TYPE, "restart", &resource.Resource, input, resp)
 
 	return resp, err
 }

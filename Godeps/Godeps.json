@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/rancher/rancher-compose",
-	"GoVersion": "go1.4.1",
+	"GoVersion": "go1.5.2",
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
@@ -314,13 +314,13 @@
 		},
 		{
 			"ImportPath": "github.com/rancher/go-rancher/client",
-			"Comment": "v0.1.0-122-gc0ac606",
-			"Rev": "c0ac606a9b55873260b5757a419fe948b14e73f2"
+			"Comment": "v0.1.0-126-g3fd6270",
+			"Rev": "3fd6270714dddd2aaca1d6fb983c20f55d344231"
 		},
 		{
 			"ImportPath": "github.com/rancher/go-rancher/hostaccess",
-			"Comment": "v0.1.0-122-gc0ac606",
-			"Rev": "c0ac606a9b55873260b5757a419fe948b14e73f2"
+			"Comment": "v0.1.0-126-g3fd6270",
+			"Rev": "3fd6270714dddd2aaca1d6fb983c20f55d344231"
 		},
 		{
 			"ImportPath": "github.com/rancher/rancher-catalog-service/model",

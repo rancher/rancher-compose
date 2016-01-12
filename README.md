@@ -13,38 +13,40 @@ Run `./scripts/build` to create `./bin/rancher-compose`
 
 ```
 NAME:
-   rancher-compose - Docker-compose to Rancher
+  rancher-compose - Docker-compose to Rancher
 
 USAGE:
-   rancher-compose [global options] command [command options] [arguments...]
+  rancher-compose [global options] command [command options] [arguments...]
 
-VERSION:
-   0.1.0
+Version: v0.6.2
 
 AUTHOR:
   Rancher
 
 COMMANDS:
-   create	Create all services but do not start
-   up		Bring all services up
-   start	Start services
-   logs		Get service logs
-   restart	Restart services
-   stop, down	Stop services
-   scale	Scale services
-   rm		Delete services
-   help, h	Shows a list of commands or help for one command
+  create	Create all services but do not start
+  up		Bring all services up
+  start		Start services
+  logs		Get service logs
+  restart	Restart services
+  stop, down	Stop services
+  scale		Scale services
+  rm		Delete services
+  pull		Pulls images for services
+  upgrade	Perform rolling upgrade between services
+  help, h	Shows a list of commands or help for one command
    
 GLOBAL OPTIONS:
-   --debug				
-   --url 				Specify the Rancher API endpoint URL [$RANCHER_URL]
-   --access-key 			Specify Rancher API access key [$RANCHER_ACCESS_KEY]
-   --secret-key 			Specify Rancher API secret key [$RANCHER_SECRET_KEY]
-   --file, -f "docker-compose.yml"	Specify an alternate compose file (default: docker-compose.yml)
-   --rancher-file, -r 			Specify an alternate Rancher compose file (default: rancher-compose.yml)
-   --project-name, -p 			Specify an alternate project name (default: directory name)
-   --help, -h				show help
-   --version, -v			print the version
+  --verbose, --debug
+  --file, -f "docker-compose.yml"	Specify an alternate compose file (default: docker-compose.yml) [$COMPOSE_FILE]
+  --project-name, -p 			Specify an alternate project name (default: directory name)
+  --url 				Specify the Rancher API endpoint URL [$RANCHER_URL]
+  --access-key 				Specify Rancher API access key [$RANCHER_ACCESS_KEY]
+  --secret-key 				Specify Rancher API secret key [$RANCHER_SECRET_KEY]
+  --rancher-file, -r 			Specify an alternate Rancher compose file (default: rancher-compose.yml)
+  --env-file, -e 			Specify a file from which to read environment variables
+  --help, -h				show help
+  --version, -v				print the version
 ```
 
 # Compose compatibility

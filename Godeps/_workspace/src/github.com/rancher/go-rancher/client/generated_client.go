@@ -23,6 +23,7 @@ type RancherClient struct {
 	RollingRestartStrategy                   RollingRestartStrategyOperations
 	ServiceRestart                           ServiceRestartOperations
 	ServicesPortRange                        ServicesPortRangeOperations
+	RecreateOnQuorumStrategyConfig           RecreateOnQuorumStrategyConfigOperations
 	AddOutputsInput                          AddOutputsInputOperations
 	AddRemoveClusterHostInput                AddRemoveClusterHostInputOperations
 	AddRemoveServiceLinkInput                AddRemoveServiceLinkInputOperations
@@ -74,6 +75,7 @@ type RancherClient struct {
 	ExternalHandler                          ExternalHandlerOperations
 	ExternalHandlerExternalHandlerProcessMap ExternalHandlerExternalHandlerProcessMapOperations
 	ExternalHandlerProcess                   ExternalHandlerProcessOperations
+	HealthcheckInstanceHostMap               HealthcheckInstanceHostMapOperations
 	Host                                     HostOperations
 	Image                                    ImageOperations
 	Instance                                 InstanceOperations
@@ -160,6 +162,7 @@ func constructClient() *RancherClient {
 	client.RollingRestartStrategy = newRollingRestartStrategyClient(client)
 	client.ServiceRestart = newServiceRestartClient(client)
 	client.ServicesPortRange = newServicesPortRangeClient(client)
+	client.RecreateOnQuorumStrategyConfig = newRecreateOnQuorumStrategyConfigClient(client)
 	client.AddOutputsInput = newAddOutputsInputClient(client)
 	client.AddRemoveClusterHostInput = newAddRemoveClusterHostInputClient(client)
 	client.AddRemoveServiceLinkInput = newAddRemoveServiceLinkInputClient(client)
@@ -211,6 +214,7 @@ func constructClient() *RancherClient {
 	client.ExternalHandler = newExternalHandlerClient(client)
 	client.ExternalHandlerExternalHandlerProcessMap = newExternalHandlerExternalHandlerProcessMapClient(client)
 	client.ExternalHandlerProcess = newExternalHandlerProcessClient(client)
+	client.HealthcheckInstanceHostMap = newHealthcheckInstanceHostMapClient(client)
 	client.Host = newHostClient(client)
 	client.Image = newImageClient(client)
 	client.Instance = newInstanceClient(client)

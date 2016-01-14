@@ -9,6 +9,8 @@ type Openldapconfig struct {
 
 	AccessMode string `json:"accessMode,omitempty" yaml:"access_mode,omitempty"`
 
+	ConnectionTimeout int64 `json:"connectionTimeout,omitempty" yaml:"connection_timeout,omitempty"`
+
 	Domain string `json:"domain,omitempty" yaml:"domain,omitempty"`
 
 	Enabled bool `json:"enabled,omitempty" yaml:"enabled,omitempty"`

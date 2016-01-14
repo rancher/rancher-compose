@@ -15,9 +15,13 @@ type InstanceHealthCheck struct {
 
 	Port int64 `json:"port,omitempty" yaml:"port,omitempty"`
 
+	RecreateOnQuorumStrategyConfig *RecreateOnQuorumStrategyConfig `json:"recreateOnQuorumStrategyConfig,omitempty" yaml:"recreate_on_quorum_strategy_config,omitempty"`
+
 	RequestLine string `json:"requestLine,omitempty" yaml:"request_line,omitempty"`
 
 	ResponseTimeout int64 `json:"responseTimeout,omitempty" yaml:"response_timeout,omitempty"`
+
+	Strategy string `json:"strategy,omitempty" yaml:"strategy,omitempty"`
 
 	UnhealthyThreshold int64 `json:"unhealthyThreshold,omitempty" yaml:"unhealthy_threshold,omitempty"`
 }

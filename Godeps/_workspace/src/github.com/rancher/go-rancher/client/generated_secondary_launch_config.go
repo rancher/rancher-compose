@@ -208,6 +208,8 @@ type SecondaryLaunchConfigOperations interface {
 
 	ActionUpdatehealthy(*SecondaryLaunchConfig) (*Instance, error)
 
+	ActionUpdatereinitializing(*SecondaryLaunchConfig) (*Instance, error)
+
 	ActionUpdateunhealthy(*SecondaryLaunchConfig) (*Instance, error)
 }
 
@@ -390,6 +392,15 @@ func (c *SecondaryLaunchConfigClient) ActionUpdatehealthy(resource *SecondaryLau
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(SECONDARY_LAUNCH_CONFIG_TYPE, "updatehealthy", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *SecondaryLaunchConfigClient) ActionUpdatereinitializing(resource *SecondaryLaunchConfig) (*Instance, error) {
+
+	resp := &Instance{}
+
+	err := c.rancherClient.doAction(SECONDARY_LAUNCH_CONFIG_TYPE, "updatereinitializing", &resource.Resource, nil, resp)
 
 	return resp, err
 }

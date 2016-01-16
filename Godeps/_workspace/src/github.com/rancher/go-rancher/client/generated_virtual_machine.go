@@ -168,6 +168,8 @@ type VirtualMachineOperations interface {
 
 	ActionUpdatehealthy(*VirtualMachine) (*Instance, error)
 
+	ActionUpdatereinitializing(*VirtualMachine) (*Instance, error)
+
 	ActionUpdateunhealthy(*VirtualMachine) (*Instance, error)
 }
 
@@ -350,6 +352,15 @@ func (c *VirtualMachineClient) ActionUpdatehealthy(resource *VirtualMachine) (*I
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(VIRTUAL_MACHINE_TYPE, "updatehealthy", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *VirtualMachineClient) ActionUpdatereinitializing(resource *VirtualMachine) (*Instance, error) {
+
+	resp := &Instance{}
+
+	err := c.rancherClient.doAction(VIRTUAL_MACHINE_TYPE, "updatereinitializing", &resource.Resource, nil, resp)
 
 	return resp, err
 }

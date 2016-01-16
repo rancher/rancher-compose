@@ -206,6 +206,8 @@ type LaunchConfigOperations interface {
 
 	ActionUpdatehealthy(*LaunchConfig) (*Instance, error)
 
+	ActionUpdatereinitializing(*LaunchConfig) (*Instance, error)
+
 	ActionUpdateunhealthy(*LaunchConfig) (*Instance, error)
 }
 
@@ -388,6 +390,15 @@ func (c *LaunchConfigClient) ActionUpdatehealthy(resource *LaunchConfig) (*Insta
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "updatehealthy", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *LaunchConfigClient) ActionUpdatereinitializing(resource *LaunchConfig) (*Instance, error) {
+
+	resp := &Instance{}
+
+	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "updatereinitializing", &resource.Resource, nil, resp)
 
 	return resp, err
 }

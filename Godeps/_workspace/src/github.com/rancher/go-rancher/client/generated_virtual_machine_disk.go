@@ -13,6 +13,8 @@ type VirtualMachineDisk struct {
 
 	Opts map[string]interface{} `json:"opts,omitempty" yaml:"opts,omitempty"`
 
+	Root bool `json:"root,omitempty" yaml:"root,omitempty"`
+
 	Size string `json:"size,omitempty" yaml:"size,omitempty"`
 }
 

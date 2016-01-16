@@ -198,6 +198,8 @@ type ContainerOperations interface {
 
 	ActionUpdatehealthy(*Container) (*Instance, error)
 
+	ActionUpdatereinitializing(*Container) (*Instance, error)
+
 	ActionUpdateunhealthy(*Container) (*Instance, error)
 }
 
@@ -380,6 +382,15 @@ func (c *ContainerClient) ActionUpdatehealthy(resource *Container) (*Instance, e
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(CONTAINER_TYPE, "updatehealthy", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *ContainerClient) ActionUpdatereinitializing(resource *Container) (*Instance, error) {
+
+	resp := &Instance{}
+
+	err := c.rancherClient.doAction(CONTAINER_TYPE, "updatereinitializing", &resource.Resource, nil, resp)
 
 	return resp, err
 }

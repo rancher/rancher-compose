@@ -78,6 +78,8 @@ type InstanceOperations interface {
 
 	ActionUpdatehealthy(*Instance) (*Instance, error)
 
+	ActionUpdatereinitializing(*Instance) (*Instance, error)
+
 	ActionUpdateunhealthy(*Instance) (*Instance, error)
 }
 
@@ -233,6 +235,15 @@ func (c *InstanceClient) ActionUpdatehealthy(resource *Instance) (*Instance, err
 	resp := &Instance{}
 
 	err := c.rancherClient.doAction(INSTANCE_TYPE, "updatehealthy", &resource.Resource, nil, resp)
+
+	return resp, err
+}
+
+func (c *InstanceClient) ActionUpdatereinitializing(resource *Instance) (*Instance, error) {
+
+	resp := &Instance{}
+
+	err := c.rancherClient.doAction(INSTANCE_TYPE, "updatereinitializing", &resource.Resource, nil, resp)
 
 	return resp, err
 }

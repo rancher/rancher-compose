@@ -1775,6 +1775,18 @@ def test_service_schema(client, compose):
     assert 'kubernetesService' in service.serviceSchemas
 
 
+def test_retain_ip(client, compose):
+    project_name = create_project(compose, file='assets/retain-ip/'
+                                                'docker-compose.yml')
+
+    project = find_one(client.list_environment, name=project_name)
+    retain = _get_service(project.services(), 'retain')
+    not_retain = _get_service(project.services(), 'not-retain')
+
+    assert retain.retainIp
+    assert not not_retain.retainIp
+
+
 def test_no_update_selector_link(client, compose):
     template = '''
 parent:

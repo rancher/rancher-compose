@@ -33,6 +33,8 @@ type DnsService struct {
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`
 
+	RetainIp bool `json:"retainIp,omitempty" yaml:"retain_ip,omitempty"`
+
 	SelectorLink string `json:"selectorLink,omitempty" yaml:"selector_link,omitempty"`
 
 	State string `json:"state,omitempty" yaml:"state,omitempty"`

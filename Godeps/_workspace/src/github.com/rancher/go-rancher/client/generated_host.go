@@ -23,6 +23,8 @@ type Host struct {
 
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 
+	Hostname string `json:"hostname,omitempty" yaml:"hostname,omitempty"`
+
 	Info interface{} `json:"info,omitempty" yaml:"info,omitempty"`
 
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`

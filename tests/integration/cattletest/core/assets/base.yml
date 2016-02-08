@@ -7,14 +7,14 @@ local:
     environment:
       key: value
     ports:
-    - 80
+    - 80:80
     image: local
 
 other-base:
     environment:
       key2: value2
     ports:
-    - 81
+    - 81:81
     extends:
         service: local
     image: other

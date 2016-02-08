@@ -1,0 +1,6 @@
+retain:
+  image: nginx
+  retain_ip: true
+
+not-retain:
+  image: nginx

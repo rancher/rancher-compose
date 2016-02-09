@@ -193,7 +193,9 @@ def test_args(client, compose):
     assert service.name == 'web'
     assert service.launchConfig.command == ['/bin/sh', '-c']
     assert service.launchConfig.imageUuid == 'docker:nginx'
-    assert set(service.launchConfig.ports) == {'80:81/tcp', '123/tcp'}
+    assert len(service.launchConfig.ports) == 2
+    for p in service.launchConfig.ports:
+        assert p == '80:81/tcp' or p.endswith(':123/tcp')
     assert service.launchConfig.dataVolumes == ['/tmp/foo', '/tmp/x:/tmp/y']
     assert service.launchConfig.environment == {'foo': 'bar', 'a': 'b'}
     assert service.launchConfig.dns == ['8.8.8.8', '1.1.1.1']
@@ -439,10 +441,10 @@ def test_extends(client, compose):
     assert base.launchConfig.imageUuid == 'docker:second'
 
     assert local.launchConfig.imageUuid == 'docker:local'
-    assert local.launchConfig.ports == ['80/tcp']
+    assert local.launchConfig.ports == ['80:80/tcp']
     assert local.launchConfig.environment == {'key': 'value'}
 
-    assert other_base.launchConfig.ports == ['80/tcp', '81/tcp']
+    assert other_base.launchConfig.ports == ['80:80/tcp', '81:81/tcp']
     assert other_base.launchConfig.imageUuid == 'docker:other'
     assert other_base.launchConfig.environment == {'key': 'value',
                                                    'key2': 'value2'}
@@ -500,7 +502,7 @@ def test_lb_basic(client, compose):
     lb:
         image: rancher/load-balancer-service
         ports:
-        - 80
+        - 80:80
         links:
         - web
         - web2
@@ -529,7 +531,7 @@ def test_lb_basic(client, compose):
             assert False
 
     assert lb.type == 'loadBalancerService'
-    assert lb.launchConfig.ports == ['80']
+    assert lb.launchConfig.ports == ['80:80']
 
 
 def test_lb_default_port_http(client, compose):
@@ -698,7 +700,7 @@ def test_lb_path_name_minimal(client, compose):
     lb:
         image: rancher/load-balancer-service
         ports:
-        - 84
+        - 84:84
         links:
         - web
     web:
@@ -717,7 +719,7 @@ def test_lb_path_name_minimal(client, compose):
     assert map.consumedServiceId == web.id
 
     assert lb.type == 'loadBalancerService'
-    assert lb.launchConfig.ports == ['84']
+    assert lb.launchConfig.ports == ['84:84']
 
 
 def test_lb_full_config(client, compose):
@@ -730,12 +732,6 @@ def test_lb_full_config(client, compose):
 
     assert lb.type == 'loadBalancerService'
 
-    assert lb.loadBalancerConfig.appCookieStickinessPolicy.cookie == 'foo'
-    assert lb.loadBalancerConfig.appCookieStickinessPolicy.maxLength == 1024
-    assert 'prefix' not in lb.loadBalancerConfig.appCookieStickinessPolicy
-    assert lb.loadBalancerConfig.appCookieStickinessPolicy.requestLearn
-    assert lb.loadBalancerConfig.appCookieStickinessPolicy.mode == \
-        'path_parameters'
     assert lb.loadBalancerConfig.haproxyConfig['global'] == 'foo bar\n'
     assert lb.loadBalancerConfig.haproxyConfig.defaults == 'def 1\n'
 
@@ -1533,49 +1529,6 @@ def test_cert_not_found(new_context, compose_bin, request):
                           'assets/ssl/docker-compose.yml', 'create')
 
 
-def test_cert_removed(new_context, compose_bin, request):
-    client = new_context.client
-    compose = new_compose(client, compose_bin, request)
-    cert = client.create_certificate(name='cert1',
-                                     cert=CERT,
-                                     certChain=CERT,
-                                     key=KEY)
-    cert2 = client.create_certificate(name='cert2',
-                                      cert=CERT,
-                                      certChain=CERT,
-                                      key=KEY)
-
-    cert = client.wait_success(cert)
-    cert2 = client.wait_success(cert2)
-
-    assert cert.state == 'active'
-    assert cert2.state == 'active'
-
-    cert2 = client.wait_success(cert2.remove())
-
-    wait_for(
-        lambda: len(client.list_certificate()) == 1
-    )
-
-    cert3 = client.create_certificate(name='cert2',
-                                      cert=CERT,
-                                      certChain=CERT,
-                                      key=KEY)
-
-    cert3 = client.wait_success(cert3)
-    assert cert3.state == 'active'
-
-    project_name = create_project(compose,
-                                  file='assets/ssl/docker-compose.yml')
-    project = find_one(client.list_environment, name=project_name)
-    assert len(project.services()) == 2
-
-    lb = _get_service(project.services(), 'lb')
-
-    assert lb.defaultCertificateId == cert.id
-    assert lb.certificateIds == [cert.id, cert3.id]
-
-
 def test_project_name(client, compose):
     project_name = 'FooBar23-' + random_str()
     stack = client.create_environment(name=project_name)
@@ -1773,6 +1726,18 @@ def test_service_schema(client, compose):
 
     assert 'kubernetesReplicationController' in service.serviceSchemas
     assert 'kubernetesService' in service.serviceSchemas
+
+
+def test_retain_ip(client, compose):
+    project_name = create_project(compose, file='assets/retain-ip/'
+                                                'docker-compose.yml')
+
+    project = find_one(client.list_environment, name=project_name)
+    retain = _get_service(project.services(), 'retain')
+    not_retain = _get_service(project.services(), 'not-retain')
+
+    assert retain.retainIp
+    assert not not_retain.retainIp
 
 
 def test_no_update_selector_link(client, compose):

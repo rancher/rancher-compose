@@ -58,6 +58,7 @@ type RancherConfig struct {
 
 	Type               string                                 `yaml:"type,omitempty"`
 	Scale              int                                    `yaml:"scale,omitempty"`
+	RetainIp           bool                                   `yaml:"retain_ip,omitempty"`
 	LoadBalancerConfig *rancherClient.LoadBalancerConfig      `yaml:"load_balancer_config,omitempty"`
 	ExternalIps        []string                               `yaml:"external_ips,omitempty"`
 	Hostname           string                                 `yaml:"hostname,omitempty"`

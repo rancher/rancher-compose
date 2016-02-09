@@ -21,6 +21,8 @@ type Project struct {
 
 	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 
+	PublicDns bool `json:"publicDns,omitempty" yaml:"public_dns,omitempty"`
+
 	RemoveTime string `json:"removeTime,omitempty" yaml:"remove_time,omitempty"`
 
 	Removed string `json:"removed,omitempty" yaml:"removed,omitempty"`

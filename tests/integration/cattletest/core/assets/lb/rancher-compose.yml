@@ -11,13 +11,6 @@ lb:
     lb_cookie_stickiness_policy: null
     description: null
     name: lb config
-    app_cookie_stickiness_policy:
-      cookie: foo
-      max_length: 1024
-      prefix: false
-      request_learn: true
-      timeout: 3600000
-      mode: path_parameters
     health_check:
       port: null
       interval: 2000

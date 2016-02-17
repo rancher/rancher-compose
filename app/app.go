@@ -111,7 +111,7 @@ func RestartCommand(factory app.ProjectFactory) cli.Command {
 		Flags: []cli.Flag{
 			cli.IntFlag{
 				Name:  "batch-size",
-				Usage: "Number of containers to retart at once",
+				Usage: "Number of containers to restart at once",
 				Value: 1,
 			},
 			cli.IntFlag{

@@ -1,0 +1,285 @@
+import:
+- package:  github.com/Sirupsen/logrus
+  version:  26709e2714106fb8ad40b773b711ebce25b78914
+
+- package:  github.com/awslabs/aws-sdk-go/aws
+  version:  75d65bc91a02d9f67cf4a5297c46d4d2c4c09c6c
+
+- package:  github.com/awslabs/aws-sdk-go/internal/apierr
+  version:  75d65bc91a02d9f67cf4a5297c46d4d2c4c09c6c
+
+- package:  github.com/awslabs/aws-sdk-go/internal/endpoints
+  version:  75d65bc91a02d9f67cf4a5297c46d4d2c4c09c6c
+
+- package:  github.com/awslabs/aws-sdk-go/internal/protocol/query
+  version:  75d65bc91a02d9f67cf4a5297c46d4d2c4c09c6c
+
+- package:  github.com/awslabs/aws-sdk-go/internal/protocol/rest
+  version:  75d65bc91a02d9f67cf4a5297c46d4d2c4c09c6c
+
+- package:  github.com/awslabs/aws-sdk-go/internal/protocol/restxml
+  version:  75d65bc91a02d9f67cf4a5297c46d4d2c4c09c6c
+
+- package:  github.com/awslabs/aws-sdk-go/internal/protocol/xml/xmlutil
+  version:  75d65bc91a02d9f67cf4a5297c46d4d2c4c09c6c
+
+- package:  github.com/awslabs/aws-sdk-go/internal/signer/v4
+  version:  75d65bc91a02d9f67cf4a5297c46d4d2c4c09c6c
+
+- package:  github.com/awslabs/aws-sdk-go/service/s3
+  version:  75d65bc91a02d9f67cf4a5297c46d4d2c4c09c6c
+
+- package:  github.com/codegangsta/cli
+  version:  6086d7927ec35315964d9fea46df6c04e6d697c1
+
+- package:  github.com/docker/distribution
+  version:  c301f8ab27f4913c968b8d73a38e5dda79b9d3d7
+
+- package:  github.com/docker/docker/api
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/autogen/dockerversion
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/builder
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/cliconfig
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/daemon/graphdriver
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/daemon/network
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/dockerversion
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/errors
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/graph/tags
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/image
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/layer
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/opts
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/archive
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/broadcaster
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/chrootarchive
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/fileutils
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/gitutils
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/homedir
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/httputils
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/idtools
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/ioutils
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/jsonlog
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/jsonmessage
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/mflag
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/mount
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/nat
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/parsers
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/pools
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/progress
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/promise
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/random
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/reexec
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/signal
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/stdcopy
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/streamformatter
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/stringid
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/stringutils
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/symlink
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/system
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/tarsum
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/term
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/timeutils
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/tlsconfig
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/ulimit
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/units
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/urlutil
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/useragent
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/pkg/version
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/reference
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/registry
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/runconfig
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/utils
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/docker/volume
+  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+
+- package:  github.com/docker/engine-api/client
+  version:  9a940e4ead265e18d4feb9e3c515428966a08278
+
+- package:  github.com/docker/engine-api/types
+  version:  9a940e4ead265e18d4feb9e3c515428966a08278
+
+- package:  github.com/docker/go-connections/sockets
+  version:  f549a9393d05688dff0992ef3efd8bbe6c628aeb
+
+- package:  github.com/docker/libcompose/cli/app
+  version:  7a692371034aa5e388ee298ed946dcdfe0ddc61b
+  repo:     https://github.com/rancher/libcompose
+
+- package:  github.com/docker/libcompose/cli/command
+  version:  7a692371034aa5e388ee298ed946dcdfe0ddc61b
+  repo:     https://github.com/rancher/libcompose
+
+- package:  github.com/docker/libcompose/cli/logger
+  version:  7a692371034aa5e388ee298ed946dcdfe0ddc61b
+  repo:     https://github.com/rancher/libcompose
+
+- package:  github.com/docker/libcompose/docker
+  version:  7a692371034aa5e388ee298ed946dcdfe0ddc61b
+  repo:     https://github.com/rancher/libcompose
+
+- package:  github.com/docker/libcompose/logger
+  version:  7a692371034aa5e388ee298ed946dcdfe0ddc61b
+  repo:     https://github.com/rancher/libcompose
+
+- package:  github.com/docker/libcompose/lookup
+  version:  7a692371034aa5e388ee298ed946dcdfe0ddc61b
+  repo:     https://github.com/rancher/libcompose
+
+- package:  github.com/docker/libcompose/project
+  version:  7a692371034aa5e388ee298ed946dcdfe0ddc61b
+  repo:     https://github.com/rancher/libcompose
+
+- package:  github.com/docker/libcompose/utils
+  version:  7a692371034aa5e388ee298ed946dcdfe0ddc61b
+  repo:     https://github.com/rancher/libcompose
+
+- package:  github.com/docker/libtrust
+  version:  9cbd2a1374f46905c68a4eb3694a130610adc62a
+
+- package:  github.com/flynn/go-shlex
+  version:  3f9db97f856818214da2e1057f8ad84803971cff
+
+- package:  github.com/gorilla/context
+  version:  215affda49addc4c8ef7e2534915df2c8c35c6cd
+
+- package:  github.com/gorilla/mux
+  version:  f15e0c49460fd49eebe2bcc8486b05d1bef68d3a
+
+- package:  github.com/gorilla/websocket
+  version:  1551221275a7bd42978745a376b2531f791d88f3
+
+- package:  github.com/hashicorp/go-version
+  version:  2b9865f60ce11e527bd1255ba82036d465570aa3
+
+- package:  github.com/opencontainers/runc/libcontainer/user
+  version:  b40c7901845dcec5950ecb37cb9de178fc2c0604
+
+- package:  github.com/rancher/go-machine-service/events
+  version:  ecc762f6877af82d7c6f56cae2a50045951f8af1
+
+- package:  github.com/rancher/go-machine-service/locks
+  version:  ecc762f6877af82d7c6f56cae2a50045951f8af1
+
+- package:  github.com/rancher/go-rancher/client
+  version:  20c7f1d3cad8cf2fd6c0e73c77b56a832359f49f
+
+- package:  github.com/rancher/go-rancher/hostaccess
+  version:  20c7f1d3cad8cf2fd6c0e73c77b56a832359f49f
+
+- package:  github.com/rancher/rancher-catalog-service/model
+  version:  a3a8b500adceb82b3a0387b2c7b06a60e7eeee9a
+
+- package:  github.com/vaughan0/go-ini
+  version:  a98ad7ee00ec53921f08832bc06ecf7fd600e6a1
+
+- package:  golang.org/x/crypto/ssh/terminal
+  version:  4d48e5fa3d62b5e6e71260571bf76c767198ca02
+
+- package:  golang.org/x/net/context
+  version:  3a29182c25eeabbaaf94daaeecbc7823d86261e7
+
+- package:  gopkg.in/yaml.v2
+  version:  49c95bdc21843256fb6c4e0d370a05f24a0bf213
+

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/docker/runconfig"
+	"github.com/docker/engine-api/types/container"
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
@@ -56,7 +56,7 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *project.S
 	schemasUrl := strings.SplitN(r.Context().Client.Schemas.Links["self"], "/schemas", 2)[0]
 	scriptsUrl := schemasUrl + "/scripts/transform"
 
-	config, hostConfig, err := docker.Convert(serviceConfig)
+	config, hostConfig, err := docker.Convert(serviceConfig, r.context.Context)
 	if err != nil {
 		return result, err
 	}
@@ -66,13 +66,15 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *project.S
 		HostConfig: hostConfig,
 	}
 
-	dockerContainer.HostConfig.NetworkMode = runconfig.NetworkMode("")
+	dockerContainer.HostConfig.NetworkMode = container.NetworkMode("")
 	dockerContainer.Name = "/" + name
 
 	err = r.Context().Client.Post(scriptsUrl, dockerContainer, &result)
 	if err != nil {
 		return result, err
 	}
+
+	result.VolumeDriver = hostConfig.VolumeDriver
 
 	setupNetworking(serviceConfig.Net, &result)
 	setupVolumesFrom(serviceConfig.VolumesFrom, &result)
@@ -102,7 +104,7 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *project.S
 func setupNetworking(netMode string, launchConfig *rancherClient.LaunchConfig) {
 	if netMode == "" {
 		launchConfig.NetworkMode = "managed"
-	} else if runconfig.IpcMode(netMode).IsContainer() {
+	} else if container.IpcMode(netMode).IsContainer() {
 		// For some reason NetworkMode object is gone runconfig, but IpcMode works the same for this
 		launchConfig.NetworkMode = "container"
 		launchConfig.NetworkLaunchConfig = strings.TrimPrefix(netMode, "container:")

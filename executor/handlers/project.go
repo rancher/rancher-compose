@@ -22,8 +22,10 @@ func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgr
 
 	context := rancher.Context{
 		Context: project.Context{
-			ProjectName:  env.Name,
-			ComposeBytes: []byte(upgradeOpts.DockerCompose),
+			ProjectName: env.Name,
+			ComposeBytes: [][]byte{
+				[]byte(upgradeOpts.DockerCompose),
+			},
 			EnvironmentLookup: &lookup.MapEnvLookup{
 				Env: variables,
 			},
@@ -47,8 +49,10 @@ func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgr
 func constructProject(logger *logrus.Entry, env *client.Environment, url, accessKey, secretKey string) (*rancher.Context, *project.Project, error) {
 	context := rancher.Context{
 		Context: project.Context{
-			ProjectName:  env.Name,
-			ComposeBytes: []byte(env.DockerCompose),
+			ProjectName: env.Name,
+			ComposeBytes: [][]byte{
+				[]byte(env.DockerCompose),
+			},
 			EnvironmentLookup: &lookup.MapEnvLookup{
 				Env: env.Environment,
 			},

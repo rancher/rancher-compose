@@ -658,7 +658,7 @@ def test_lb_path_name(client, compose):
         - 80:8080
         labels:
           io.rancher.loadbalancer.target.web: hostname/path:6000,hostname:7000
-          io.rancher.loadbalancer.target.web2: 9000
+          io.rancher.loadbalancer.target.web2: "9000"
         links:
         - web
         - web2
@@ -1129,7 +1129,7 @@ def test_service_upgrade_no_global_on_src(client, compose):
     web:
         image: nginx
         labels:
-            io.rancher.scheduler.global: true
+            io.rancher.scheduler.global: "true"
     '''
 
     project_name = create_project(compose, input=template)

@@ -86,7 +86,7 @@ func ResolveRancherCompose(composeFile, rancherComposeFile string) (string, erro
 func (c *Context) readRancherConfig() error {
 	if c.RancherComposeBytes == nil {
 		var err error
-		c.RancherComposeFile, err = ResolveRancherCompose(c.ComposeFile, c.RancherComposeFile)
+		c.RancherComposeFile, err = ResolveRancherCompose(c.ComposeFiles[0], c.RancherComposeFile)
 		if err != nil {
 			return err
 		}
@@ -104,7 +104,7 @@ func (c *Context) readRancherConfig() error {
 		}
 	}
 
-	return c.unmarshalBytes(c.ComposeBytes, c.RancherComposeBytes)
+	return c.unmarshalBytes(c.ComposeBytes[0], c.RancherComposeBytes)
 }
 
 func (c *Context) unmarshalBytes(composeBytes, bytes []byte) error {

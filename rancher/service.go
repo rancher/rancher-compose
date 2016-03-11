@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/docker/runconfig"
+	"github.com/docker/engine-api/types/container"
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/project"
 	"github.com/gorilla/websocket"
@@ -25,8 +25,8 @@ type IsDone func(*rancherClient.Resource) (bool, error)
 
 type ContainerInspect struct {
 	Name       string
-	Config     *runconfig.Config
-	HostConfig *runconfig.HostConfig
+	Config     *container.Config
+	HostConfig *container.HostConfig
 }
 
 type RancherService struct {
@@ -600,7 +600,7 @@ func (r *RancherService) Kill() error {
 	return project.ErrUnsupported
 }
 
-func (r *RancherService) Info() (project.InfoSet, error) {
+func (r *RancherService) Info(_ bool) (project.InfoSet, error) {
 	return project.InfoSet{}, nil
 }
 
@@ -680,6 +680,14 @@ func (r *RancherService) Pull() (err error) {
 
 	wg.Wait()
 	return
+}
+
+func (r *RancherService) Pause() (err error) {
+	return project.ErrUnsupported
+}
+
+func (r *RancherService) Unpause() (err error) {
+	return project.ErrUnsupported
 }
 
 func appendHash(service *RancherService, labels map[string]interface{}) (map[string]interface{}, error) {

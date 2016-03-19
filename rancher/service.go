@@ -551,9 +551,6 @@ func (r *RancherService) pipeLogs(container *rancherClient.Container, conn *webs
 
 	for {
 		messageType, bytes, err := conn.ReadMessage()
-		if messageType != websocket.TextMessage {
-			continue
-		}
 
 		if err == io.EOF {
 			return
@@ -562,7 +559,7 @@ func (r *RancherService) pipeLogs(container *rancherClient.Container, conn *webs
 			return
 		}
 
-		if len(bytes) <= 3 {
+		if messageType != websocket.TextMessage || len(bytes) <= 3 {
 			continue
 		}
 

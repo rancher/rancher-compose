@@ -30,9 +30,9 @@ cd $(dirname $0)/..
 
 set_project_vars
 
-go test ./...
+go test $(go list ./... | grep -v /vendor)
 
-result=$(find . -name "*.go" | grep -v ./Godeps | xargs gofmt -l)
+result=$(find . -name "*.go" | grep -v ./vendor | xargs gofmt -l)
 for i in $result; do
     echo Violates gofmt: $i
 done

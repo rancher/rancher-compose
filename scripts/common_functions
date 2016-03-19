@@ -5,8 +5,6 @@ set_project_vars()
 {
     PACKAGE=./gopath/src/$(<.package)
     PROJECT=$(basename $PACKAGE)
-
-    export GOPATH=$(pwd)/Godeps/_workspace:$(pwd)/gopath
 }
 
 get_version()

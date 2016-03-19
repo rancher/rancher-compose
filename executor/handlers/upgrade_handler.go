@@ -139,7 +139,7 @@ func wait(apiClient *client.RancherClient, service *client.Service) error {
 	case "no":
 		return nil
 	default:
-		return fmt.Errorf("Waiting for %s failed: %s", service.TransitioningMessage)
+		return fmt.Errorf("Waiting for %s failed: %s", service.Name, service.TransitioningMessage)
 	}
 }
 

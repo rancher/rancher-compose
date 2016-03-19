@@ -1,0 +1,4 @@
+FROM scratch
+ADD ./dist/artifacts/go-machine-service /go-machine-service
+
+CMD ["/go-machine-service"]

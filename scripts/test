@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 SCRATCH_TEMP=
@@ -26,18 +25,9 @@ destroy_root()
 
 cd $(dirname $0)/..
 
-. ./scripts/common_functions
+PACKAGES=". $(find -name '*.go' | xargs -I{} dirname {} |  cut -f2 -d/ | sort -u | grep -Ev '(^\.$|.git|.trash-cache|vendor|bin)' | sed -e 's!^!./!' -e 's!$!/...!')"
 
-set_project_vars
-
-go test $(go list ./... | grep -v /vendor)
-
-result=$(find . -name "*.go" | grep -v ./vendor | xargs gofmt -l)
-for i in $result; do
-    echo Violates gofmt: $i
-done
-
-[ -n "$result" ] && exit 1
+go test -race -cover -tags=test ${PACKAGES}
 
 setup_root
 

@@ -3,6 +3,9 @@
 
 .idea
 
+/.dapper
+/.gpath
+/.trash-cache
 /bin
 /build
 /dist

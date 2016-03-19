@@ -1865,3 +1865,9 @@ vm:
     assert vm.launchConfig.disks[0] == {'name': 'foo', 'size': '1g',
                                         'opts': {'foo': 'bar'}}
     assert vm.launchConfig.disks[1] == {'name': 'foo2', 'size': '2g'}
+
+
+def test_cyclic_link_dependency(client, compose):
+    # cyclic link dependencies shouldn't error or hang
+    create_project(compose, file='assets/cyclic-link-dependency/'
+                                 'docker-compose.yml')

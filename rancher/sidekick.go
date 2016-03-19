@@ -41,7 +41,14 @@ func (s *Sidekick) Config() *project.ServiceConfig {
 }
 
 func (s *Sidekick) DependentServices() []project.ServiceRelationship {
-	return project.DefaultDependentServices(s.context.Project, s)
+	dependentServices := project.DefaultDependentServices(s.context.Project, s)
+	for i, dependentService := range dependentServices {
+		if dependentService.Type == project.RelTypeLink {
+			dependentServices[i].Optional = true
+		}
+	}
+
+	return dependentServices
 }
 
 func (s *Sidekick) Log() error {

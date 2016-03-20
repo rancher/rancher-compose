@@ -185,64 +185,70 @@ def test_build(client, compose):
 
 
 def test_args(client, compose):
-    project_name = create_project(compose, file='assets/full.yml')
-    project = find_one(client.list_environment, name=project_name)
-    assert project.name == project_name
-
-    service = find_one(project.services)
-    assert service.name == 'web'
-    assert service.launchConfig.command == ['/bin/sh', '-c']
-    assert service.launchConfig.imageUuid == 'docker:nginx'
-    assert len(service.launchConfig.ports) == 2
-    for p in service.launchConfig.ports:
-        assert p == '80:81/tcp' or p.endswith(':123/tcp')
-    assert service.launchConfig.dataVolumes == ['/tmp/foo', '/tmp/x:/tmp/y']
-    assert service.launchConfig.environment == {'foo': 'bar', 'a': 'b'}
-    assert service.launchConfig.dns == ['8.8.8.8', '1.1.1.1']
-    assert service.launchConfig.capAdd == ['ALL', 'SYS_ADMIN']
-    assert service.launchConfig.capDrop == ['NET_ADMIN', 'SYS_ADMIN']
-    assert service.launchConfig.dnsSearch == ['foo.com', 'bar.com']
-    assert service.launchConfig.entryPoint == ['/bin/foo', 'bar']
-    assert service.launchConfig.workingDir == '/somewhere'
-    assert service.launchConfig.user == 'somebody'
-    assert service.launchConfig.hostname == 'myhostname'
-    assert service.launchConfig.domainName == 'example.com'
-    assert service.launchConfig.memory == 100
-    assert service.launchConfig.memorySwap == 101
-    assert service.launchConfig.privileged
-    assert service.launchConfig.stdinOpen
-    assert service.launchConfig.tty
-    assert 'name' not in service.launchConfig
-    assert service.launchConfig.cpuShares == 42
-    assert service.launchConfig.cpuSet == '1,2'
-    assert service.launchConfig.devices == ['/dev/sda:/dev/a:rwm',
-                                            '/dev/sdb:/dev/c:ro']
-    s = 'io.rancher.service.selector.'
-    assert service.launchConfig.labels['io.rancher.service.hash'] is not None
-    del service.launchConfig.labels['io.rancher.service.hash']
-    assert service.launchConfig.labels == {'a': 'b',
-                                           s + 'link': 'bar in (a,b)',
-                                           s + 'container': 'foo',
-                                           'c': 'd'}
-    assert service.selectorLink == 'bar in (a,b)'
-    assert service.selectorContainer == 'foo'
-    assert service.launchConfig.securityOpt == ['label:foo', 'label:bar']
-    assert service.launchConfig.pidMode == 'host'
-    assert service.launchConfig.logConfig == {
-        'driver': 'syslog',
-        'config': {
-            'tag': 'foo',
-        }
-    }
-    assert service.launchConfig.extraHosts == ['host:1.1.1.1', 'host:2.2.2.2']
-    assert service.launchConfig.networkMode == 'host'
-    assert service.launchConfig.volumeDriver == 'foo'
+    project_name = create_project(compose, file='assets/full-with-build.yml')
+    project_with_build = find_one(client.list_environment, name=project_name)
+    service = find_one(project_with_build.services)
     assert service.launchConfig.build == {
         'dockerfile': 'something/other',
         'remote': 'github.com/ibuildthecloud/tiny-build',
     }
-    # Not supported
-    # assert service.launchConfig.externalLinks == ['foo', 'bar']
+
+    project_name = create_project(compose, file='assets/full-with-image.yml')
+    project_with_image = find_one(client.list_environment, name=project_name)
+    service = find_one(project_with_image.services)
+    assert service.launchConfig.imageUuid == 'docker:nginx'
+
+    for project in (project_with_build, project_with_image):
+        service = find_one(project.services)
+        assert service.name == 'web'
+        launch_config = service.launchConfig
+        assert launch_config.command == ['/bin/sh', '-c']
+        assert len(launch_config.ports) == 2
+        for p in launch_config.ports:
+            assert p == '80:81/tcp' or p.endswith(':123/tcp')
+        assert launch_config.dataVolumes == ['/tmp/foo', '/tmp/x:/tmp/y']
+        assert launch_config.environment == {'foo': 'bar', 'a': 'b'}
+        assert launch_config.dns == ['8.8.8.8', '1.1.1.1']
+        assert launch_config.capAdd == ['ALL', 'SYS_ADMIN']
+        assert launch_config.capDrop == ['NET_ADMIN', 'SYS_ADMIN']
+        assert launch_config.dnsSearch == ['foo.com', 'bar.com']
+        assert launch_config.entryPoint == ['/bin/foo', 'bar']
+        assert launch_config.workingDir == '/somewhere'
+        assert launch_config.user == 'somebody'
+        assert launch_config.hostname == 'myhostname'
+        assert launch_config.domainName == 'example.com'
+        assert launch_config.memory == 100
+        assert launch_config.memorySwap == 101
+        assert launch_config.privileged
+        assert launch_config.stdinOpen
+        assert launch_config.tty
+        assert 'name' not in launch_config
+        assert launch_config.cpuShares == 42
+        assert launch_config.cpuSet == '1,2'
+        assert launch_config.devices == ['/dev/sda:/dev/a:rwm',
+                                         '/dev/sdb:/dev/c:ro']
+        s = 'io.rancher.service.selector.'
+        assert launch_config.labels['io.rancher.service.hash'] is not None
+        del launch_config.labels['io.rancher.service.hash']
+        assert launch_config.labels == {'a': 'b',
+                                        s + 'link': 'bar in (a,b)',
+                                        s + 'container': 'foo',
+                                        'c': 'd'}
+        assert service.selectorLink == 'bar in (a,b)'
+        assert service.selectorContainer == 'foo'
+        assert launch_config.securityOpt == ['label:foo', 'label:bar']
+        assert launch_config.pidMode == 'host'
+        assert launch_config.logConfig == {
+            'driver': 'syslog',
+            'config': {
+                'tag': 'foo',
+            }
+        }
+        assert launch_config.extraHosts == ['host:1.1.1.1', 'host:2.2.2.2']
+        assert launch_config.networkMode == 'host'
+        assert launch_config.volumeDriver == 'foo'
+        # Not supported
+        # assert launch_config.externalLinks == ['foo', 'bar']
 
 
 def test_git_build(client, compose):
@@ -1179,7 +1185,7 @@ def test_service_map_syntax(client, compose):
     foo:
         image: nginx
         links:
-            web: alias
+         - web:alias
     web:
         image: nginx
     '''
@@ -1464,7 +1470,7 @@ def test_restart_no(client, compose):
     template = '''
     web:
         image: nginx
-        restart: no
+        restart: "no"
     '''
 
     project_name = create_project(compose, input=template)

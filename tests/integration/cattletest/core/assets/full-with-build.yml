@@ -1,7 +1,6 @@
 web:
     build: github.com/ibuildthecloud/tiny-build
     dockerfile: something/other
-    name: foo
     command: /bin/sh -c
     net: host
     pid: host
@@ -11,7 +10,6 @@ web:
     ports:
     - 80:81
     - 123
-    image: nginx
     volumes:
     - /tmp/foo
     - /tmp/x:/tmp/y

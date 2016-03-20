@@ -21,7 +21,7 @@ import:
   version:  f549a9393d05688dff0992ef3efd8bbe6c628aeb
 
 - package:  github.com/docker/libcompose
-  version:  7a692371034aa5e388ee298ed946dcdfe0ddc61b
+  version:  bcbf420ee22a76b7ba76c7bfdc16f8d995568e9c
   repo:     https://github.com/rancher/libcompose
 
 - package:  github.com/docker/libtrust
@@ -80,3 +80,12 @@ import:
 
 - package: github.com/Microsoft/go-winio
   version: eb176a9831c54b88eaf9eb4fbc24b94080d910ad
+
+- package: github.com/xeipuuv/gojsonschema
+  version: 3988ac14d6f66842abf574a0615d2935ef5dab9d
+
+- package: github.com/xeipuuv/gojsonreference
+  version: e02fc20de94c78484cd5ffb007f8af96be030a45
+
+- package: github.com/xeipuuv/gojsonpointer
+  version: e0fe6f68307607d540ed8eac07a342c33fa1b54a

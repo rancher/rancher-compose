@@ -4,6 +4,7 @@ cd $(dirname $0)/..
 
 source $(dirname $0)/version
 
+go generate
 go build -ldflags="-w -X github.com/rancher/rancher-compose/version.VERSION=$VERSION" -o bin/rancher-compose
 
 if [ -n "$CROSS" ]; then

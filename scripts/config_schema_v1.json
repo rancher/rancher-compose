@@ -170,7 +170,7 @@
           "type": "object",
           "patternProperties": {
             ".+": {
-              "type": ["string", "number", "null"]
+              "type": ["string", "number", "null", "boolean"]
             }
           },
           "additionalProperties": false

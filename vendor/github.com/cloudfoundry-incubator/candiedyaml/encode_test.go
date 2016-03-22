@@ -68,6 +68,14 @@ var _ = Describe("Encode", func() {
 
 		})
 
+		It("handles strings that contain colons followed by whitespace", func() {
+			err := enc.Encode("contains: colon")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(buf.String()).To(Equal(`'contains: colon'
+`))
+
+		})
+
 		Context("handles ints", func() {
 			It("handles ints", func() {
 				err := enc.Encode(13)

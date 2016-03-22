@@ -1717,17 +1717,6 @@ foo2:
     assert 'tianon/true' in out
 
 
-def test_service_schema(client, compose):
-    project_name = create_project(compose, file='assets/service-schema/'
-                                                'docker-compose.yml')
-
-    project = find_one(client.list_environment, name=project_name)
-    service = find_one(project.services)
-
-    assert 'kubernetesReplicationController' in service.serviceSchemas
-    assert 'kubernetesService' in service.serviceSchemas
-
-
 def test_retain_ip(client, compose):
     project_name = create_project(compose, file='assets/retain-ip/'
                                                 'docker-compose.yml')

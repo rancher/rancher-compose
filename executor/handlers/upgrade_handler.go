@@ -68,7 +68,8 @@ func FinishUpgradeEnvironment(event *events.Event, apiClient *client.RancherClie
 
 	logger.Info("Finish Stack Upgrade Event Done")
 	return reply(event, apiClient, map[string]interface{}{
-		"previousExternalId": nil,
+		"previousExternalId":  nil,
+		"previousEnvironment": nil,
 	})
 }
 
@@ -114,10 +115,16 @@ func RollbackEnvironment(event *events.Event, apiClient *client.RancherClient) e
 	if newId == "" {
 		newId = env.ExternalId
 	}
+	newEnv := env.PreviousEnvironment
+	if len(newEnv) == 0 {
+		newEnv = env.Environment
+	}
 
 	return reply(event, apiClient, map[string]interface{}{
-		"previousExternalId": nil,
-		"externalId":         newId,
+		"previousExternalId":  nil,
+		"previousEnvironment": nil,
+		"externalId":          newId,
+		"environment":         newEnv,
 	})
 }
 
@@ -163,7 +170,7 @@ func upgradeEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cl
 		return emptyReply(event, apiClient)
 	}
 
-	project, err := constructProjectUpgrade(logger, env, upgradeOpts, apiClient.Opts.Url, apiClient.Opts.AccessKey, apiClient.Opts.SecretKey)
+	project, newEnv, err := constructProjectUpgrade(logger, env, upgradeOpts, apiClient.Opts.Url, apiClient.Opts.AccessKey, apiClient.Opts.SecretKey)
 	if err != nil {
 		return err
 	}
@@ -179,8 +186,15 @@ func upgradeEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cl
 		previous = env.ExternalId
 	}
 
+	previousEnv := env.PreviousEnvironment
+	if len(previousEnv) == 0 {
+		previousEnv = env.Environment
+	}
+
 	return reply(event, apiClient, map[string]interface{}{
-		"externalId":         upgradeOpts.ExternalId,
-		"previousExternalId": previous,
+		"externalId":          upgradeOpts.ExternalId,
+		"environment":         newEnv,
+		"previousExternalId":  previous,
+		"previousEnvironment": previousEnv,
 	})
 }

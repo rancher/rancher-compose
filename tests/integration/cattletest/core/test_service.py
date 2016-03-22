@@ -114,10 +114,12 @@ two:
 '''
 
     env = client.create_environment(name=name, dockerCompose=template,
+                                    environment={'a': 'b', 'd': 'e'},
                                     rancherCompose=rancher_compose)
     env = client.wait_success(env)
     env = client.wait_success(env.activateservices())
     assert env.state == 'active'
+    assert env.environment == {'a': 'b', 'd': 'e'}
     for s in env.services():
         s = client.wait_success(s)
         assert s.state == 'active'
@@ -136,14 +138,18 @@ two:
 
     # TODO: externalId should not be in upgrade
     env = env.upgrade(dockerCompose=template,
+                      environment={'a': 'x'},
                       rancherCompose=rancher_compose,
                       externalId='foo2')
+    assert env.environment == {'a': 'b', 'd': 'e'}
     env = client.wait_success(env, timeout=120)
     assert env.state == 'upgraded'
     for s in env.services():
         s = client.wait_success(s)
         if s.name == 'one':
             assert s.state == 'upgraded'
+    assert env.environment == {'a': 'x', 'd': 'e'}
+    assert env.previousEnvironment == {'a': 'b', 'd': 'e'}
 
     env = env.rollback()
     env = client.wait_success(env, timeout=120)
@@ -154,7 +160,9 @@ two:
 
     # TODO this should really be ''
     assert env.externalId == 'foo2'
+    assert env.environment == {'a': 'b', 'd': 'e'}
     assert env.previousExternalId is None
+    assert env.previousEnvironment is None
 
 
 def test_stack_change_scale_upgrade(client):

@@ -10,10 +10,10 @@ import (
 	"github.com/rancher/rancher-compose/rancher"
 )
 
-func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgradeOpts client.EnvironmentUpgrade, url, accessKey, secretKey string) (*project.Project, error) {
-	variables := env.Environment
-	if variables == nil {
-		variables = map[string]interface{}{}
+func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgradeOpts client.EnvironmentUpgrade, url, accessKey, secretKey string) (*project.Project, map[string]interface{}, error) {
+	variables := map[string]interface{}{}
+	for k, v := range env.Environment {
+		variables[k] = v
 	}
 
 	for k, v := range upgradeOpts.Environment {
@@ -37,11 +37,11 @@ func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgr
 
 	p, err := rancher.NewProject(&context)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	p.AddListener(NewListenLogger(logger, p))
-	return p, p.Parse()
+	return p, variables, p.Parse()
 }
 
 func constructProject(logger *logrus.Entry, env *client.Environment, url, accessKey, secretKey string) (*rancher.Context, *project.Project, error) {

@@ -38,7 +38,7 @@ func mergeProject(p *Project, file string, bytes []byte) (map[string]*ServiceCon
 	configs := make(map[string]*ServiceConfig)
 
 	datas := make(RawServiceMap)
-	if err := yaml.Unmarshal(bytes, &datas); err != nil {
+	if err := unmarshalAndPreprocess(bytes, &datas); err != nil {
 		return nil, err
 	}
 
@@ -226,7 +226,7 @@ func parse(resourceLookup ResourceLookup, environmentLookup EnvironmentLookup, i
 		}
 
 		var baseRawServices RawServiceMap
-		if err := yaml.Unmarshal(bytes, &baseRawServices); err != nil {
+		if err := unmarshalAndPreprocess(bytes, &baseRawServices); err != nil {
 			return nil, err
 		}
 
@@ -330,4 +330,62 @@ func asString(obj interface{}) string {
 		return v
 	}
 	return ""
+}
+
+func unmarshalAndPreprocess(bytes []byte, datas *RawServiceMap) error {
+	if err := yaml.Unmarshal(bytes, &datas); err != nil {
+		return err
+	}
+
+	*datas = preprocessServiceMap(*datas)
+
+	return nil
+}
+
+func preprocessServiceMap(serviceMap RawServiceMap) RawServiceMap {
+	newServiceMap := make(RawServiceMap)
+
+	for k, v := range serviceMap {
+		newServiceMap[k] = make(RawService)
+
+		for k2, v2 := range v {
+			if k2 == "environment" || k2 == "labels" {
+				newServiceMap[k][k2] = preprocess(v2, true)
+			} else {
+				newServiceMap[k][k2] = preprocess(v2, false)
+			}
+
+		}
+	}
+
+	return newServiceMap
+}
+
+func preprocess(item interface{}, replaceTypes bool) interface{} {
+	switch typedDatas := item.(type) {
+
+	case map[interface{}]interface{}:
+		newMap := make(map[interface{}]interface{})
+
+		for key, value := range typedDatas {
+			newMap[key] = preprocess(value, replaceTypes)
+		}
+		return newMap
+
+	case []interface{}:
+		// newArray := make([]interface{}, 0) will cause golint to complain
+		var newArray []interface{}
+		newArray = make([]interface{}, 0)
+
+		for _, value := range typedDatas {
+			newArray = append(newArray, preprocess(value, replaceTypes))
+		}
+		return newArray
+
+	default:
+		if replaceTypes {
+			return fmt.Sprint(item)
+		}
+		return item
+	}
 }

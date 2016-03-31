@@ -1877,3 +1877,15 @@ def test_cyclic_link_dependency(client, compose):
     # cyclic link dependencies shouldn't error or hang
     create_project(compose, file='assets/cyclic-link-dependency/'
                                  'docker-compose.yml')
+
+
+def test_yaml_corner_cases(client, compose):
+    create_project(compose, input='''
+service:
+    image: nginx
+    environment:
+        A: :A
+        B: ":B"
+        C: "contains: colon"
+        D: 'contains: colon'
+''')

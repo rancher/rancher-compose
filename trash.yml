@@ -70,7 +70,8 @@ import:
   version: 5d2041e26a699eaca682e2ea41c8f891e1060444
 
 - package: github.com/cloudfoundry-incubator/candiedyaml
-  version: 4e924c79e32959414e8c7aaed6607176d8ee79c3
+  version: 62607cb161382547c6f363df27c86b33bf24854b
+  repo:    https://github.com/rancher/candiedyaml
 
 - package: github.com/vbatts/tar-split
   version: e2a62d6b0d98fd7f1a57646812c74564fda999b4

@@ -21,7 +21,7 @@ import:
   version:  f549a9393d05688dff0992ef3efd8bbe6c628aeb
 
 - package:  github.com/docker/libcompose
-  version:  0998d44ccc95e1f28be09a9c07dc09a91d75378f
+  version:  98aea33df2e3392f52640b867a56890922f77109
   repo:     https://github.com/rancher/libcompose
 
 - package:  github.com/docker/libtrust

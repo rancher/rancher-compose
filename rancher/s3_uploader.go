@@ -52,9 +52,10 @@ func (s *S3Uploader) Upload(p *project.Project, name string, reader io.ReadSeeke
 
 func putFile(svc *s3.S3, bucket, object string, reader io.ReadSeeker) error {
 	_, err := svc.PutObject(&s3.PutObjectInput{
-		Bucket: &bucket,
-		Key:    &object,
-		Body:   reader,
+		Bucket:      &bucket,
+		Key:         &object,
+		Body:        reader,
+		ContentType: aws.String("application/tar"),
 	})
 
 	return err

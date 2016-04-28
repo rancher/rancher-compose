@@ -25,12 +25,10 @@ type RancherClient struct {
 	ServicesPortRange                        ServicesPortRangeOperations
 	RecreateOnQuorumStrategyConfig           RecreateOnQuorumStrategyConfigOperations
 	AddOutputsInput                          AddOutputsInputOperations
-	AddRemoveClusterHostInput                AddRemoveClusterHostInputOperations
 	AddRemoveServiceLinkInput                AddRemoveServiceLinkInputOperations
 	ChangeSecretInput                        ChangeSecretInputOperations
 	SetLabelsInput                           SetLabelsInputOperations
 	ApiKey                                   ApiKeyOperations
-	Cluster                                  ClusterOperations
 	ComposeConfigInput                       ComposeConfigInputOperations
 	Container                                ContainerOperations
 	InstanceConsole                          InstanceConsoleOperations
@@ -47,6 +45,7 @@ type RancherClient struct {
 	LoadBalancerService                      LoadBalancerServiceOperations
 	ExternalService                          ExternalServiceOperations
 	DnsService                               DnsServiceOperations
+	KubernetesService                        KubernetesServiceOperations
 	LaunchConfig                             LaunchConfigOperations
 	SecondaryLaunchConfig                    SecondaryLaunchConfigOperations
 	AddRemoveLoadBalancerServiceLinkInput    AddRemoveLoadBalancerServiceLinkInputOperations
@@ -60,6 +59,9 @@ type RancherClient struct {
 	ExternalDnsEvent                         ExternalDnsEventOperations
 	ExternalHostEvent                        ExternalHostEventOperations
 	LoadBalancerConfig                       LoadBalancerConfigOperations
+	ComposeService                           ComposeServiceOperations
+	ComposeProject                           ComposeProjectOperations
+	MachineDriverErrorInput                  MachineDriverErrorInputOperations
 	Account                                  AccountOperations
 	Agent                                    AgentOperations
 	AuditLog                                 AuditLogOperations
@@ -70,6 +72,7 @@ type RancherClient struct {
 	Credential                               CredentialOperations
 	Databasechangelog                        DatabasechangelogOperations
 	Databasechangeloglock                    DatabasechangeloglockOperations
+	DynamicSchema                            DynamicSchemaOperations
 	Environment                              EnvironmentOperations
 	ExternalEvent                            ExternalEventOperations
 	ExternalHandler                          ExternalHandlerOperations
@@ -82,6 +85,7 @@ type RancherClient struct {
 	InstanceLink                             InstanceLinkOperations
 	IpAddress                                IpAddressOperations
 	Label                                    LabelOperations
+	MachineDriver                            MachineDriverOperations
 	Mount                                    MountOperations
 	Network                                  NetworkOperations
 	PhysicalHost                             PhysicalHostOperations
@@ -103,6 +107,8 @@ type RancherClient struct {
 	FieldDocumentation                       FieldDocumentationOperations
 	ContainerExec                            ContainerExecOperations
 	ContainerLogs                            ContainerLogsOperations
+	ContainerProxy                           ContainerProxyOperations
+	ServiceProxy                             ServiceProxyOperations
 	HostAccess                               HostAccessOperations
 	DockerBuild                              DockerBuildOperations
 	ActiveSetting                            ActiveSettingOperations
@@ -117,19 +123,7 @@ type RancherClient struct {
 	Openldapconfig                           OpenldapconfigOperations
 	LocalAuthConfig                          LocalAuthConfigOperations
 	StatsAccess                              StatsAccessOperations
-	Amazonec2Config                          Amazonec2ConfigOperations
-	AzureConfig                              AzureConfigOperations
-	DigitaloceanConfig                       DigitaloceanConfigOperations
-	ExoscaleConfig                           ExoscaleConfigOperations
-	OpenstackConfig                          OpenstackConfigOperations
-	PacketConfig                             PacketConfigOperations
-	RackspaceConfig                          RackspaceConfigOperations
-	SoftlayerConfig                          SoftlayerConfigOperations
-	UbiquityConfig                           UbiquityConfigOperations
-	VirtualboxConfig                         VirtualboxConfigOperations
-	VmwarevcloudairConfig                    VmwarevcloudairConfigOperations
-	VmwarevsphereConfig                      VmwarevsphereConfigOperations
-	Machine                                  MachineOperations
+	BaseMachineConfig                        BaseMachineConfigOperations
 	HostApiProxyToken                        HostApiProxyTokenOperations
 	Register                                 RegisterOperations
 	RegistrationToken                        RegistrationTokenOperations
@@ -164,12 +158,10 @@ func constructClient() *RancherClient {
 	client.ServicesPortRange = newServicesPortRangeClient(client)
 	client.RecreateOnQuorumStrategyConfig = newRecreateOnQuorumStrategyConfigClient(client)
 	client.AddOutputsInput = newAddOutputsInputClient(client)
-	client.AddRemoveClusterHostInput = newAddRemoveClusterHostInputClient(client)
 	client.AddRemoveServiceLinkInput = newAddRemoveServiceLinkInputClient(client)
 	client.ChangeSecretInput = newChangeSecretInputClient(client)
 	client.SetLabelsInput = newSetLabelsInputClient(client)
 	client.ApiKey = newApiKeyClient(client)
-	client.Cluster = newClusterClient(client)
 	client.ComposeConfigInput = newComposeConfigInputClient(client)
 	client.Container = newContainerClient(client)
 	client.InstanceConsole = newInstanceConsoleClient(client)
@@ -186,6 +178,7 @@ func constructClient() *RancherClient {
 	client.LoadBalancerService = newLoadBalancerServiceClient(client)
 	client.ExternalService = newExternalServiceClient(client)
 	client.DnsService = newDnsServiceClient(client)
+	client.KubernetesService = newKubernetesServiceClient(client)
 	client.LaunchConfig = newLaunchConfigClient(client)
 	client.SecondaryLaunchConfig = newSecondaryLaunchConfigClient(client)
 	client.AddRemoveLoadBalancerServiceLinkInput = newAddRemoveLoadBalancerServiceLinkInputClient(client)
@@ -199,6 +192,9 @@ func constructClient() *RancherClient {
 	client.ExternalDnsEvent = newExternalDnsEventClient(client)
 	client.ExternalHostEvent = newExternalHostEventClient(client)
 	client.LoadBalancerConfig = newLoadBalancerConfigClient(client)
+	client.ComposeService = newComposeServiceClient(client)
+	client.ComposeProject = newComposeProjectClient(client)
+	client.MachineDriverErrorInput = newMachineDriverErrorInputClient(client)
 	client.Account = newAccountClient(client)
 	client.Agent = newAgentClient(client)
 	client.AuditLog = newAuditLogClient(client)
@@ -209,6 +205,7 @@ func constructClient() *RancherClient {
 	client.Credential = newCredentialClient(client)
 	client.Databasechangelog = newDatabasechangelogClient(client)
 	client.Databasechangeloglock = newDatabasechangeloglockClient(client)
+	client.DynamicSchema = newDynamicSchemaClient(client)
 	client.Environment = newEnvironmentClient(client)
 	client.ExternalEvent = newExternalEventClient(client)
 	client.ExternalHandler = newExternalHandlerClient(client)
@@ -221,6 +218,7 @@ func constructClient() *RancherClient {
 	client.InstanceLink = newInstanceLinkClient(client)
 	client.IpAddress = newIpAddressClient(client)
 	client.Label = newLabelClient(client)
+	client.MachineDriver = newMachineDriverClient(client)
 	client.Mount = newMountClient(client)
 	client.Network = newNetworkClient(client)
 	client.PhysicalHost = newPhysicalHostClient(client)
@@ -242,6 +240,8 @@ func constructClient() *RancherClient {
 	client.FieldDocumentation = newFieldDocumentationClient(client)
 	client.ContainerExec = newContainerExecClient(client)
 	client.ContainerLogs = newContainerLogsClient(client)
+	client.ContainerProxy = newContainerProxyClient(client)
+	client.ServiceProxy = newServiceProxyClient(client)
 	client.HostAccess = newHostAccessClient(client)
 	client.DockerBuild = newDockerBuildClient(client)
 	client.ActiveSetting = newActiveSettingClient(client)
@@ -256,19 +256,7 @@ func constructClient() *RancherClient {
 	client.Openldapconfig = newOpenldapconfigClient(client)
 	client.LocalAuthConfig = newLocalAuthConfigClient(client)
 	client.StatsAccess = newStatsAccessClient(client)
-	client.Amazonec2Config = newAmazonec2ConfigClient(client)
-	client.AzureConfig = newAzureConfigClient(client)
-	client.DigitaloceanConfig = newDigitaloceanConfigClient(client)
-	client.ExoscaleConfig = newExoscaleConfigClient(client)
-	client.OpenstackConfig = newOpenstackConfigClient(client)
-	client.PacketConfig = newPacketConfigClient(client)
-	client.RackspaceConfig = newRackspaceConfigClient(client)
-	client.SoftlayerConfig = newSoftlayerConfigClient(client)
-	client.UbiquityConfig = newUbiquityConfigClient(client)
-	client.VirtualboxConfig = newVirtualboxConfigClient(client)
-	client.VmwarevcloudairConfig = newVmwarevcloudairConfigClient(client)
-	client.VmwarevsphereConfig = newVmwarevsphereConfigClient(client)
-	client.Machine = newMachineClient(client)
+	client.BaseMachineConfig = newBaseMachineConfigClient(client)
 	client.HostApiProxyToken = newHostApiProxyTokenClient(client)
 	client.Register = newRegisterClient(client)
 	client.RegistrationToken = newRegistrationTokenClient(client)

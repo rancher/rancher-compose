@@ -49,11 +49,6 @@ func (f *NormalFactory) config(r *RancherService) (*CompositeService, *rancherCl
 
 	rancherConfig, _ := r.context.RancherConfig[r.name]
 
-	serviceSchemas := map[string]interface{}{}
-	for k, v := range rancherConfig.ServiceSchemas {
-		serviceSchemas[k] = v
-	}
-
 	service := &CompositeService{
 		Service: rancherClient.Service{
 			Name:              r.name,
@@ -63,7 +58,6 @@ func (f *NormalFactory) config(r *RancherService) (*CompositeService, *rancherCl
 			EnvironmentId:     r.Context().Environment.Id,
 			SelectorContainer: r.SelectorContainer(),
 			SelectorLink:      r.SelectorLink(),
-			ServiceSchemas:    serviceSchemas,
 		},
 		ExternalIpAddresses: rancherConfig.ExternalIps,
 		Hostname:            rancherConfig.Hostname,

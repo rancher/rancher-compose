@@ -49,7 +49,7 @@ import:
   version:  ecc762f6877af82d7c6f56cae2a50045951f8af1
 
 - package:  github.com/rancher/go-rancher
-  version:  20c7f1d3cad8cf2fd6c0e73c77b56a832359f49f
+  version:  121abb93e27120a438c626bc580ddc987577f1e4
 
 - package:  github.com/rancher/rancher-catalog-service
   version:  a3a8b500adceb82b3a0387b2c7b06a60e7eeee9a

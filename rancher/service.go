@@ -410,7 +410,7 @@ func (r *RancherService) getLinks() (map[Link]string, error) {
 	for _, link := range append(r.serviceConfig.Links.Slice(), r.serviceConfig.ExternalLinks...) {
 		parts := strings.SplitN(link, ":", 2)
 		name := parts[0]
-		alias := name
+		alias := ""
 		if len(parts) == 2 {
 			alias = parts[1]
 		}

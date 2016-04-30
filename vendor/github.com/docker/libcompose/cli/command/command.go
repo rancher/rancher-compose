@@ -124,6 +124,16 @@ func StartCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// RunCommand defines the libcompose run subcommand.
+func RunCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "run",
+		Usage:  "Run a one-off command",
+		Action: app.WithProject(factory, app.ProjectRun),
+		Flags:  []cli.Flag{},
+	}
+}
+
 // PullCommand defines the libcompose pull subcommand.
 func PullCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
@@ -144,6 +154,10 @@ func LogsCommand(factory app.ProjectFactory) cli.Command {
 				Name:  "lines",
 				Usage: "number of lines to tail",
 				Value: 100,
+			},
+			cli.BoolFlag{
+				Name:  "follow",
+				Usage: "Follow log output.",
 			},
 		},
 	}
@@ -168,10 +182,9 @@ func RestartCommand(factory app.ProjectFactory) cli.Command {
 // StopCommand defines the libcompose stop subcommand.
 func StopCommand(factory app.ProjectFactory) cli.Command {
 	return cli.Command{
-		Name:      "stop",
-		ShortName: "down",
-		Usage:     "Stop services",
-		Action:    app.WithProject(factory, app.ProjectDown),
+		Name:   "stop",
+		Usage:  "Stop services",
+		Action: app.WithProject(factory, app.ProjectStop),
 		Flags: []cli.Flag{
 			cli.IntFlag{
 				Name:  "timeout,t",
@@ -179,6 +192,16 @@ func StopCommand(factory app.ProjectFactory) cli.Command {
 				Value: 10,
 			},
 		},
+	}
+}
+
+// DownCommand defines the libcompose stop subcommand.
+func DownCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "down",
+		Usage:  "Stop and remove containers, networks, images, and volumes",
+		Action: app.WithProject(factory, app.ProjectDown),
+		Flags:  []cli.Flag{},
 	}
 }
 
@@ -287,6 +310,7 @@ func Populate(context *project.Context, c *cli.Context) {
 
 	if c.Command.Name == "logs" {
 		context.Log = true
+		context.FollowLog = c.Bool("follow")
 	} else if c.Command.Name == "up" || c.Command.Name == "create" {
 		context.Log = !c.Bool("d")
 		context.NoRecreate = c.Bool("no-recreate")

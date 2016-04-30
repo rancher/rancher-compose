@@ -1,30 +1,8 @@
 .PHONY: all binary build cross default docs docs-build docs-shell shell test test-docker-py test-integration-cli test-unit validate
 
 # get OS/Arch of docker engine
-DOCKER_OSARCH := $(shell bash -c 'source hack/make/.detect-daemon-osarch && echo $${DOCKER_ENGINE_OSARCH:+$$DOCKER_CLIENT_OSARCH}')
-# default for linux/amd64 and others
-DOCKERFILE := Dockerfile
-# switch to different Dockerfile for linux/arm
-ifeq ($(DOCKER_OSARCH), linux/arm)
-	DOCKERFILE := Dockerfile.armhf
-else
-ifeq ($(DOCKER_OSARCH), linux/arm64)
-	DOCKERFILE := Dockerfile.aarch64
-else
-ifeq ($(DOCKER_OSARCH), linux/ppc64le)
-	DOCKERFILE := Dockerfile.ppc64le
-else
-ifeq ($(DOCKER_OSARCH), linux/s390x)
-	DOCKERFILE := Dockerfile.s390x
-else
-ifeq ($(DOCKER_OSARCH), windows/amd64)
-	DOCKERFILE := Dockerfile.windows
-endif
-endif
-endif
-endif
-endif
-export DOCKERFILE
+DOCKER_OSARCH := $(shell bash -c 'source hack/make/.detect-daemon-osarch && echo $${DOCKER_ENGINE_OSARCH:-$$DOCKER_CLIENT_OSARCH}')
+DOCKERFILE := $(shell bash -c 'source hack/make/.detect-daemon-osarch && echo $${DOCKERFILE}')
 
 # env vars passed through directly to Docker's build scripts
 # to allow things like `make DOCKER_CLIENTONLY=1 binary` easily
@@ -37,7 +15,6 @@ DOCKER_ENVS := \
 	-e DOCKER_CLIENTONLY \
 	-e DOCKER_DEBUG \
 	-e DOCKER_EXPERIMENTAL \
-	-e DOCKERFILE \
 	-e DOCKER_GRAPHDRIVER \
 	-e DOCKER_INCREMENTAL_BINARY \
 	-e DOCKER_REMAP_ROOT \
@@ -54,6 +31,10 @@ DOCKER_ENVS := \
 BIND_DIR := $(if $(BINDDIR),$(BINDDIR),$(if $(DOCKER_HOST),,bundles))
 DOCKER_MOUNT := $(if $(BIND_DIR),-v "$(CURDIR)/$(BIND_DIR):/go/src/github.com/docker/docker/$(BIND_DIR)")
 
+# This allows the test suite to be able to run without worrying about the underlying fs used by the container running the daemon (e.g. aufs-on-aufs), so long as the host running the container is running a supported fs.
+# The volume will be cleaned up when the container is removed due to `--rm`.
+# Note that `BIND_DIR` will already be set to `bundles` if `DOCKER_HOST` is not set (see above BIND_DIR line), in such case this will do nothing since `DOCKER_MOUNT` will already be set.
+DOCKER_MOUNT := $(if $(DOCKER_MOUNT),$(DOCKER_MOUNT),-v "/go/src/github.com/docker/docker/bundles")
 
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
 DOCKER_IMAGE := docker-dev$(if $(GIT_BRANCH),:$(GIT_BRANCH))
@@ -87,6 +68,12 @@ bundles:
 
 cross: build
 	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary binary cross
+
+win: build
+	$(DOCKER_RUN_DOCKER) hack/make.sh win
+
+tgz: build
+	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary binary cross tgz
 
 deb: build
 	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary build-deb

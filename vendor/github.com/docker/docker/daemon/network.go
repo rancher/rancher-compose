@@ -3,9 +3,10 @@ package daemon
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"strings"
 
-	derr "github.com/docker/docker/errors"
+	"github.com/docker/docker/errors"
 	"github.com/docker/docker/runconfig"
 	"github.com/docker/engine-api/types/network"
 	"github.com/docker/libnetwork"
@@ -90,21 +91,23 @@ func (daemon *Daemon) GetAllNetworks() []libnetwork.Network {
 }
 
 // CreateNetwork creates a network with the given name, driver and other optional parameters
-func (daemon *Daemon) CreateNetwork(name, driver string, ipam network.IPAM, options map[string]string, internal bool) (libnetwork.Network, error) {
+func (daemon *Daemon) CreateNetwork(name, driver string, ipam network.IPAM, netOption map[string]string, labels map[string]string, internal bool, enableIPv6 bool) (libnetwork.Network, error) {
 	c := daemon.netController
 	if driver == "" {
 		driver = c.Config().Daemon.DefaultDriver
 	}
-
-	nwOptions := []libnetwork.NetworkOption{}
 
 	v4Conf, v6Conf, err := getIpamConfig(ipam.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	nwOptions = append(nwOptions, libnetwork.NetworkOptionIpam(ipam.Driver, "", v4Conf, v6Conf, ipam.Options))
-	nwOptions = append(nwOptions, libnetwork.NetworkOptionDriverOpts(options))
+	nwOptions := []libnetwork.NetworkOption{
+		libnetwork.NetworkOptionIpam(ipam.Driver, "", v4Conf, v6Conf, ipam.Options),
+		libnetwork.NetworkOptionEnableIPv6(enableIPv6),
+		libnetwork.NetworkOptionDriverOpts(netOption),
+		libnetwork.NetworkOptionLabels(labels),
+	}
 	if internal {
 		nwOptions = append(nwOptions, libnetwork.NetworkOptionInternalNetwork())
 	}
@@ -190,7 +193,8 @@ func (daemon *Daemon) DeleteNetwork(networkID string) error {
 	}
 
 	if runconfig.IsPreDefinedNetwork(nw.Name()) {
-		return derr.ErrorCodeCantDeletePredefinedNetwork.WithArgs(nw.Name())
+		err := fmt.Errorf("%s is a pre-defined network and cannot be removed", nw.Name())
+		return errors.NewErrorWithStatusCode(err, http.StatusForbidden)
 	}
 
 	if err := nw.Delete(); err != nil {

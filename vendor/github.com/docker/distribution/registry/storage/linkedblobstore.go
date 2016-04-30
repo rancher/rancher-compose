@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"time"
 
 	"github.com/docker/distribution"
@@ -37,6 +38,9 @@ type linkedBlobStore struct {
 	// removed an the blob links folder should be merged. The first entry is
 	// treated as the "canonical" link location and will be used for writes.
 	linkPathFns []linkPathFunc
+
+	// linkDirectoryPathSpec locates the root directories in which one might find links
+	linkDirectoryPathSpec pathSpec
 }
 
 var _ distribution.BlobStore = &linkedBlobStore{}
@@ -142,7 +146,7 @@ func (lbs *linkedBlobStore) Create(ctx context.Context, options ...distribution.
 	}
 
 	if opts.Mount.ShouldMount {
-		desc, err := lbs.mount(ctx, opts.Mount.From.Name(), opts.Mount.From.Digest())
+		desc, err := lbs.mount(ctx, opts.Mount.From, opts.Mount.From.Digest())
 		if err == nil {
 			// Mount successful, no need to initiate an upload session
 			return nil, distribution.ErrBlobMounted{From: opts.Mount.From, Descriptor: desc}
@@ -153,7 +157,7 @@ func (lbs *linkedBlobStore) Create(ctx context.Context, options ...distribution.
 	startedAt := time.Now().UTC()
 
 	path, err := pathFor(uploadDataPathSpec{
-		name: lbs.repository.Name(),
+		name: lbs.repository.Named().Name(),
 		id:   uuid,
 	})
 
@@ -162,7 +166,7 @@ func (lbs *linkedBlobStore) Create(ctx context.Context, options ...distribution.
 	}
 
 	startedAtPath, err := pathFor(uploadStartedAtPathSpec{
-		name: lbs.repository.Name(),
+		name: lbs.repository.Named().Name(),
 		id:   uuid,
 	})
 
@@ -175,14 +179,14 @@ func (lbs *linkedBlobStore) Create(ctx context.Context, options ...distribution.
 		return nil, err
 	}
 
-	return lbs.newBlobUpload(ctx, uuid, path, startedAt)
+	return lbs.newBlobUpload(ctx, uuid, path, startedAt, false)
 }
 
 func (lbs *linkedBlobStore) Resume(ctx context.Context, id string) (distribution.BlobWriter, error) {
 	context.GetLogger(ctx).Debug("(*linkedBlobStore).Resume")
 
 	startedAtPath, err := pathFor(uploadStartedAtPathSpec{
-		name: lbs.repository.Name(),
+		name: lbs.repository.Named().Name(),
 		id:   id,
 	})
 
@@ -206,7 +210,7 @@ func (lbs *linkedBlobStore) Resume(ctx context.Context, id string) (distribution
 	}
 
 	path, err := pathFor(uploadDataPathSpec{
-		name: lbs.repository.Name(),
+		name: lbs.repository.Named().Name(),
 		id:   id,
 	})
 
@@ -214,7 +218,7 @@ func (lbs *linkedBlobStore) Resume(ctx context.Context, id string) (distribution
 		return nil, err
 	}
 
-	return lbs.newBlobUpload(ctx, id, path, startedAt)
+	return lbs.newBlobUpload(ctx, id, path, startedAt, true)
 }
 
 func (lbs *linkedBlobStore) Delete(ctx context.Context, dgst digest.Digest) error {
@@ -236,7 +240,56 @@ func (lbs *linkedBlobStore) Delete(ctx context.Context, dgst digest.Digest) erro
 	return nil
 }
 
-func (lbs *linkedBlobStore) mount(ctx context.Context, sourceRepo string, dgst digest.Digest) (distribution.Descriptor, error) {
+func (lbs *linkedBlobStore) Enumerate(ctx context.Context, ingestor func(digest.Digest) error) error {
+	rootPath, err := pathFor(lbs.linkDirectoryPathSpec)
+	if err != nil {
+		return err
+	}
+	err = Walk(ctx, lbs.blobStore.driver, rootPath, func(fileInfo driver.FileInfo) error {
+		// exit early if directory...
+		if fileInfo.IsDir() {
+			return nil
+		}
+		filePath := fileInfo.Path()
+
+		// check if it's a link
+		_, fileName := path.Split(filePath)
+		if fileName != "link" {
+			return nil
+		}
+
+		// read the digest found in link
+		digest, err := lbs.blobStore.readlink(ctx, filePath)
+		if err != nil {
+			return err
+		}
+
+		// ensure this conforms to the linkPathFns
+		_, err = lbs.Stat(ctx, digest)
+		if err != nil {
+			// we expect this error to occur so we move on
+			if err == distribution.ErrBlobUnknown {
+				return nil
+			}
+			return err
+		}
+
+		err = ingestor(digest)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (lbs *linkedBlobStore) mount(ctx context.Context, sourceRepo reference.Named, dgst digest.Digest) (distribution.Descriptor, error) {
 	repo, err := lbs.registry.Repository(ctx, sourceRepo)
 	if err != nil {
 		return distribution.Descriptor{}, err
@@ -259,18 +312,21 @@ func (lbs *linkedBlobStore) mount(ctx context.Context, sourceRepo string, dgst d
 }
 
 // newBlobUpload allocates a new upload controller with the given state.
-func (lbs *linkedBlobStore) newBlobUpload(ctx context.Context, uuid, path string, startedAt time.Time) (distribution.BlobWriter, error) {
-	fw, err := newFileWriter(ctx, lbs.driver, path)
+func (lbs *linkedBlobStore) newBlobUpload(ctx context.Context, uuid, path string, startedAt time.Time, append bool) (distribution.BlobWriter, error) {
+	fw, err := lbs.driver.Writer(ctx, path, append)
 	if err != nil {
 		return nil, err
 	}
 
 	bw := &blobWriter{
-		blobStore:              lbs,
-		id:                     uuid,
-		startedAt:              startedAt,
-		digester:               digest.Canonical.New(),
-		bufferedFileWriter:     *fw,
+		ctx:        ctx,
+		blobStore:  lbs,
+		id:         uuid,
+		startedAt:  startedAt,
+		digester:   digest.Canonical.New(),
+		fileWriter: fw,
+		driver:     lbs.driver,
+		path:       path,
 		resumableDigestEnabled: lbs.resumableDigestEnabled,
 	}
 
@@ -298,7 +354,7 @@ func (lbs *linkedBlobStore) linkBlob(ctx context.Context, canonical distribution
 		}
 		seenDigests[dgst] = struct{}{}
 
-		blobLinkPath, err := linkPathFn(lbs.repository.Name(), dgst)
+		blobLinkPath, err := linkPathFn(lbs.repository.Named().Name(), dgst)
 		if err != nil {
 			return err
 		}
@@ -368,7 +424,7 @@ func (lbs *linkedBlobStatter) Stat(ctx context.Context, dgst digest.Digest) (dis
 func (lbs *linkedBlobStatter) Clear(ctx context.Context, dgst digest.Digest) (err error) {
 	// clear any possible existence of a link described in linkPathFns
 	for _, linkPathFn := range lbs.linkPathFns {
-		blobLinkPath, err := linkPathFn(lbs.repository.Name(), dgst)
+		blobLinkPath, err := linkPathFn(lbs.repository.Named().Name(), dgst)
 		if err != nil {
 			return err
 		}
@@ -391,7 +447,7 @@ func (lbs *linkedBlobStatter) Clear(ctx context.Context, dgst digest.Digest) (er
 // linkPathFuncs to let us try a few different paths before returning not
 // found.
 func (lbs *linkedBlobStatter) resolveWithLinkFunc(ctx context.Context, dgst digest.Digest, linkPathFn linkPathFunc) (digest.Digest, error) {
-	blobLinkPath, err := linkPathFn(lbs.repository.Name(), dgst)
+	blobLinkPath, err := linkPathFn(lbs.repository.Named().Name(), dgst)
 	if err != nil {
 		return "", err
 	}

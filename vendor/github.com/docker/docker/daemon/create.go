@@ -1,9 +1,10 @@
 package daemon
 
 import (
+	"fmt"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/container"
-	derr "github.com/docker/docker/errors"
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/layer"
 	"github.com/docker/docker/pkg/idtools"
@@ -18,10 +19,10 @@ import (
 // ContainerCreate creates a container.
 func (daemon *Daemon) ContainerCreate(params types.ContainerCreateConfig) (types.ContainerCreateResponse, error) {
 	if params.Config == nil {
-		return types.ContainerCreateResponse{}, derr.ErrorCodeEmptyConfig
+		return types.ContainerCreateResponse{}, fmt.Errorf("Config cannot be empty in order to create a container")
 	}
 
-	warnings, err := daemon.verifyContainerSettings(params.HostConfig, params.Config)
+	warnings, err := daemon.verifyContainerSettings(params.HostConfig, params.Config, false)
 	if err != nil {
 		return types.ContainerCreateResponse{Warnings: warnings}, err
 	}
@@ -166,15 +167,15 @@ func (daemon *Daemon) setRWLayer(container *container.Container) error {
 
 // VolumeCreate creates a volume with the specified name, driver, and opts
 // This is called directly from the remote API
-func (daemon *Daemon) VolumeCreate(name, driverName string, opts map[string]string) (*types.Volume, error) {
+func (daemon *Daemon) VolumeCreate(name, driverName string, opts, labels map[string]string) (*types.Volume, error) {
 	if name == "" {
 		name = stringid.GenerateNonCryptoID()
 	}
 
-	v, err := daemon.volumes.Create(name, driverName, opts)
+	v, err := daemon.volumes.Create(name, driverName, opts, labels)
 	if err != nil {
 		if volumestore.IsNameConflict(err) {
-			return nil, derr.ErrorVolumeNameTaken.WithArgs(name)
+			return nil, fmt.Errorf("A volume named %s already exists. Choose a different volume name.", name)
 		}
 		return nil, err
 	}

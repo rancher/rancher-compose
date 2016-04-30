@@ -3,7 +3,6 @@ package daemon
 import (
 	"os"
 	"runtime"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -20,17 +19,22 @@ import (
 	"github.com/docker/docker/utils"
 	"github.com/docker/docker/volume/drivers"
 	"github.com/docker/engine-api/types"
+	"github.com/docker/go-connections/sockets"
 )
 
 // SystemInfo returns information about the host server the daemon is running on.
 func (daemon *Daemon) SystemInfo() (*types.Info, error) {
 	kernelVersion := "<unknown>"
-	if kv, err := kernel.GetKernelVersion(); err == nil {
+	if kv, err := kernel.GetKernelVersion(); err != nil {
+		logrus.Warnf("Could not get kernel version: %v", err)
+	} else {
 		kernelVersion = kv.String()
 	}
 
 	operatingSystem := "<unknown>"
-	if s, err := operatingsystem.GetOperatingSystem(); err == nil {
+	if s, err := operatingsystem.GetOperatingSystem(); err != nil {
+		logrus.Warnf("Could not get operating system name: %v", err)
+	} else {
 		operatingSystem = s
 	}
 
@@ -74,21 +78,21 @@ func (daemon *Daemon) SystemInfo() (*types.Info, error) {
 		DriverStatus:       daemon.layerStore.DriverStatus(),
 		Plugins:            daemon.showPluginsInfo(),
 		IPv4Forwarding:     !sysInfo.IPv4ForwardingDisabled,
-		BridgeNfIptables:   !sysInfo.BridgeNfCallIptablesDisabled,
-		BridgeNfIP6tables:  !sysInfo.BridgeNfCallIP6tablesDisabled,
+		BridgeNfIptables:   !sysInfo.BridgeNFCallIPTablesDisabled,
+		BridgeNfIP6tables:  !sysInfo.BridgeNFCallIP6TablesDisabled,
 		Debug:              utils.IsDebugEnabled(),
 		NFd:                fileutils.GetTotalUsedFds(),
 		NGoroutines:        runtime.NumGoroutine(),
 		SystemTime:         time.Now().Format(time.RFC3339Nano),
-		ExecutionDriver:    daemon.ExecutionDriver().Name(),
 		LoggingDriver:      daemon.defaultLogConfig.Type,
+		CgroupDriver:       daemon.getCgroupDriver(),
 		NEventsListener:    daemon.EventsService.SubscribersCount(),
 		KernelVersion:      kernelVersion,
 		OperatingSystem:    operatingSystem,
 		IndexServerAddress: registry.IndexServer,
 		OSType:             platform.OSType,
 		Architecture:       platform.Architecture,
-		RegistryConfig:     daemon.RegistryService.Config,
+		RegistryConfig:     daemon.RegistryService.ServiceConfig(),
 		NCPU:               runtime.NumCPU(),
 		MemTotal:           meminfo.MemTotal,
 		DockerRootDir:      daemon.configStore.Root,
@@ -97,9 +101,9 @@ func (daemon *Daemon) SystemInfo() (*types.Info, error) {
 		ServerVersion:      dockerversion.Version,
 		ClusterStore:       daemon.configStore.ClusterStore,
 		ClusterAdvertise:   daemon.configStore.ClusterAdvertise,
-		HTTPProxy:          getProxyEnv("http_proxy"),
-		HTTPSProxy:         getProxyEnv("https_proxy"),
-		NoProxy:            getProxyEnv("no_proxy"),
+		HTTPProxy:          sockets.GetProxyEnv("http_proxy"),
+		HTTPSProxy:         sockets.GetProxyEnv("https_proxy"),
+		NoProxy:            sockets.GetProxyEnv("no_proxy"),
 	}
 
 	// TODO Windows. Refactor this more once sysinfo is refactored into
@@ -109,6 +113,7 @@ func (daemon *Daemon) SystemInfo() (*types.Info, error) {
 	if runtime.GOOS != "windows" {
 		v.MemoryLimit = sysInfo.MemoryLimit
 		v.SwapLimit = sysInfo.SwapLimit
+		v.KernelMemory = sysInfo.KernelMemory
 		v.OomKillDisable = sysInfo.OomKillDisable
 		v.CPUCfsPeriod = sysInfo.CPUCfsPeriod
 		v.CPUCfsQuota = sysInfo.CPUCfsQuota
@@ -135,9 +140,13 @@ func (daemon *Daemon) SystemVersion() types.Version {
 		Experimental: utils.ExperimentalBuild(),
 	}
 
-	if kernelVersion, err := kernel.GetKernelVersion(); err == nil {
-		v.KernelVersion = kernelVersion.String()
+	kernelVersion := "<unknown>"
+	if kv, err := kernel.GetKernelVersion(); err != nil {
+		logrus.Warnf("Could not get kernel version: %v", err)
+	} else {
+		kernelVersion = kv.String()
 	}
+	v.KernelVersion = kernelVersion
 
 	return v
 }
@@ -155,14 +164,4 @@ func (daemon *Daemon) showPluginsInfo() types.PluginsInfo {
 	pluginsInfo.Authorization = daemon.configStore.AuthorizationPlugins
 
 	return pluginsInfo
-}
-
-// The uppercase and the lowercase are available for the proxy settings.
-// See the Go specification for details on these variables. https://golang.org/pkg/net/http/
-func getProxyEnv(key string) string {
-	proxyValue := os.Getenv(strings.ToUpper(key))
-	if proxyValue == "" {
-		return os.Getenv(strings.ToLower(key))
-	}
-	return proxyValue
 }

@@ -24,6 +24,11 @@ func (e *EmptyService) Start() error {
 	return nil
 }
 
+// Stop implements Service.Stop() but does nothing.
+func (e *EmptyService) Stop() error {
+	return nil
+}
+
 // Down implements Service.Down but does nothing.
 func (e *EmptyService) Down() error {
 	return nil
@@ -77,4 +82,9 @@ func (e *EmptyService) Pause() error {
 // Unpause implements Service.Pause but does nothing.
 func (e *EmptyService) Unpause() error {
 	return nil
+}
+
+// Run implements Service.Run but does nothing.
+func (e *EmptyService) Run(commandParts []string) (int, error) {
+	return 0, nil
 }

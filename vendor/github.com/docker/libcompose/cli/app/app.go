@@ -3,8 +3,10 @@ package app
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -30,7 +32,7 @@ func BeforeApp(c *cli.Context) error {
 	return nil
 }
 
-// WithProject is an helper function to create a cli.Command action with a ProjectFactory.
+// WithProject is a helper function to create a cli.Command action with a ProjectFactory.
 func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli.Context) {
 	return func(context *cli.Context) {
 		p, err := factory.Create(context)
@@ -45,7 +47,7 @@ func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli
 func ProjectPs(p *project.Project, c *cli.Context) {
 	allInfo := project.InfoSet{}
 	qFlag := c.Bool("q")
-	for name := range p.Configs {
+	for _, name := range p.Configs.Keys() {
 		service, err := p.CreateService(name)
 		if err != nil {
 			logrus.Fatal(err)
@@ -92,7 +94,15 @@ func ProjectPort(p *project.Project, c *cli.Context) {
 	fmt.Println(output)
 }
 
-// ProjectDown brings all services down.
+// ProjectStop stops all services.
+func ProjectStop(p *project.Project, c *cli.Context) {
+	err := p.Stop(c.Args()...)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
+// ProjectDown brings all services down (stops and clean containers).
 func ProjectDown(p *project.Project, c *cli.Context) {
 	err := p.Down(c.Args()...)
 	if err != nil {
@@ -124,8 +134,29 @@ func ProjectUp(p *project.Project, c *cli.Context) {
 	}
 
 	if !c.Bool("d") {
-		wait()
+		exitOnSignal(p, c)
 	}
+}
+
+// ProjectRun runs a given command within a service's container.
+func ProjectRun(p *project.Project, c *cli.Context) {
+	if len(c.Args()) == 1 {
+		logrus.Fatal("No service specified")
+	}
+
+	serviceName := c.Args()[0]
+	commandParts := c.Args()[1:]
+
+	if !p.Configs.Has(serviceName) {
+		logrus.Fatalf("%s is not defined in the template", serviceName)
+	}
+
+	exitCode, err := p.Run(serviceName, commandParts)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	os.Exit(exitCode)
 }
 
 // ProjectStart starts services.
@@ -150,7 +181,9 @@ func ProjectLog(p *project.Project, c *cli.Context) {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	wait()
+	if c.Bool("follow") {
+		wait()
+	}
 }
 
 // ProjectPull pulls images for services.
@@ -161,7 +194,7 @@ func ProjectPull(p *project.Project, c *cli.Context) {
 	}
 }
 
-// ProjectDelete delete services.
+// ProjectDelete deletes services.
 func ProjectDelete(p *project.Project, c *cli.Context) {
 	if !c.Bool("force") && len(c.Args()) == 0 {
 		logrus.Fatal("Will not remove all services without --force")
@@ -216,7 +249,7 @@ func ProjectScale(p *project.Project, c *cli.Context) {
 			logrus.Fatalf("Invalid scale parameter: %v", err)
 		}
 
-		if _, ok := p.Configs[name]; !ok {
+		if !p.Configs.Has(name) {
 			logrus.Fatalf("%s is not defined in the template", name)
 		}
 
@@ -242,4 +275,19 @@ func ProjectScale(p *project.Project, c *cli.Context) {
 
 func wait() {
 	<-make(chan interface{})
+}
+
+func exitOnSignal(p *project.Project, c *cli.Context) {
+	signalChan := make(chan os.Signal, 1)
+	cleanupDone := make(chan bool)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		for range signalChan {
+			fmt.Printf("\nGracefully stopping...\n")
+			ProjectDown(p, c)
+			cleanupDone <- true
+		}
+	}()
+	<-cleanupDone
 }

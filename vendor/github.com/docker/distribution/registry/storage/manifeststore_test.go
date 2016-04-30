@@ -11,6 +11,7 @@ import (
 	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/manifest"
 	"github.com/docker/distribution/manifest/schema1"
+	"github.com/docker/distribution/reference"
 	"github.com/docker/distribution/registry/storage/cache/memory"
 	"github.com/docker/distribution/registry/storage/driver"
 	"github.com/docker/distribution/registry/storage/driver/inmemory"
@@ -23,15 +24,14 @@ type manifestStoreTestEnv struct {
 	driver     driver.StorageDriver
 	registry   distribution.Namespace
 	repository distribution.Repository
-	name       string
+	name       reference.Named
 	tag        string
 }
 
-func newManifestStoreTestEnv(t *testing.T, name, tag string) *manifestStoreTestEnv {
+func newManifestStoreTestEnv(t *testing.T, name reference.Named, tag string, options ...RegistryOption) *manifestStoreTestEnv {
 	ctx := context.Background()
 	driver := inmemory.New()
-	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(
-		memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
+	registry, err := NewRegistry(ctx, driver, options...)
 	if err != nil {
 		t.Fatalf("error creating registry: %v", err)
 	}
@@ -52,18 +52,32 @@ func newManifestStoreTestEnv(t *testing.T, name, tag string) *manifestStoreTestE
 }
 
 func TestManifestStorage(t *testing.T) {
-	env := newManifestStoreTestEnv(t, "foo/bar", "thetag")
+	testManifestStorage(t, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
+}
+
+func TestManifestStorageDisabledSignatures(t *testing.T) {
+	k, err := libtrust.GenerateECP256PrivateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	testManifestStorage(t, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect, DisableSchema1Signatures, Schema1SigningKey(k))
+}
+
+func testManifestStorage(t *testing.T, options ...RegistryOption) {
+	repoName, _ := reference.ParseNamed("foo/bar")
+	env := newManifestStoreTestEnv(t, repoName, "thetag", options...)
 	ctx := context.Background()
 	ms, err := env.repository.Manifests(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
+	equalSignatures := env.registry.(*registry).schema1SignaturesEnabled
 
 	m := schema1.Manifest{
 		Versioned: manifest.Versioned{
 			SchemaVersion: 1,
 		},
-		Name: env.name,
+		Name: env.name.Name(),
 		Tag:  env.tag,
 	}
 
@@ -157,8 +171,14 @@ func TestManifestStorage(t *testing.T) {
 		t.Fatalf("unexpected manifest type from signedstore")
 	}
 
-	if !reflect.DeepEqual(fetchedManifest, sm) {
-		t.Fatalf("fetched manifest not equal: %#v != %#v", fetchedManifest, sm)
+	if !bytes.Equal(fetchedManifest.Canonical, sm.Canonical) {
+		t.Fatalf("fetched payload does not match original payload: %q != %q", fetchedManifest.Canonical, sm.Canonical)
+	}
+
+	if equalSignatures {
+		if !reflect.DeepEqual(fetchedManifest, sm) {
+			t.Fatalf("fetched manifest not equal: %#v != %#v", fetchedManifest.Manifest, sm.Manifest)
+		}
 	}
 
 	_, pl, err := fetchedManifest.Payload()
@@ -194,8 +214,19 @@ func TestManifestStorage(t *testing.T) {
 		t.Fatalf("unexpected error fetching manifest by digest: %v", err)
 	}
 
-	if !reflect.DeepEqual(fetchedByDigest, fetchedManifest) {
-		t.Fatalf("fetched manifest not equal: %#v != %#v", fetchedByDigest, fetchedManifest)
+	byDigestManifest, ok := fetchedByDigest.(*schema1.SignedManifest)
+	if !ok {
+		t.Fatalf("unexpected manifest type from signedstore")
+	}
+
+	if !bytes.Equal(byDigestManifest.Canonical, fetchedManifest.Canonical) {
+		t.Fatalf("fetched manifest not equal: %q != %q", byDigestManifest.Canonical, fetchedManifest.Canonical)
+	}
+
+	if equalSignatures {
+		if !reflect.DeepEqual(fetchedByDigest, fetchedManifest) {
+			t.Fatalf("fetched manifest not equal: %#v != %#v", fetchedByDigest, fetchedManifest)
+		}
 	}
 
 	sigs, err := fetchedJWS.Signatures()
@@ -284,14 +315,16 @@ func TestManifestStorage(t *testing.T) {
 		t.Fatalf("payloads are not equal")
 	}
 
-	receivedSigs, err := receivedJWS.Signatures()
-	if err != nil {
-		t.Fatalf("error getting signatures: %v", err)
-	}
+	if equalSignatures {
+		receivedSigs, err := receivedJWS.Signatures()
+		if err != nil {
+			t.Fatalf("error getting signatures: %v", err)
+		}
 
-	for i, sig := range receivedSigs {
-		if !bytes.Equal(sig, expectedSigs[i]) {
-			t.Fatalf("mismatched signatures from remote: %v != %v", string(sig), string(expectedSigs[i]))
+		for i, sig := range receivedSigs {
+			if !bytes.Equal(sig, expectedSigs[i]) {
+				t.Fatalf("mismatched signatures from remote: %v != %v", string(sig), string(expectedSigs[i]))
+			}
 		}
 	}
 

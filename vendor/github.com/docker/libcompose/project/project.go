@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/utils"
 )
@@ -35,11 +36,11 @@ type Event struct {
 type wrapperAction func(*serviceWrapper, map[string]*serviceWrapper)
 type serviceAction func(service Service) error
 
-// NewProject create a new project with the specified context.
+// NewProject creates a new project with the specified context.
 func NewProject(context *Context) *Project {
 	p := &Project{
 		context: context,
-		Configs: make(map[string]*ServiceConfig),
+		Configs: config.NewConfigs(),
 	}
 
 	if context.LoggerFactory == nil {
@@ -84,10 +85,10 @@ func (p *Project) Parse() error {
 	return nil
 }
 
-// CreateService creates a service with the specified name based. It there
+// CreateService creates a service with the specified name based. If there
 // is no config in the project for this service, it will return an error.
 func (p *Project) CreateService(name string) (Service, error) {
-	existing, ok := p.Configs[name]
+	existing, ok := p.Configs.Get(name)
 	if !ok {
 		return nil, fmt.Errorf("Failed to find service: %s", name)
 	}
@@ -96,9 +97,9 @@ func (p *Project) CreateService(name string) (Service, error) {
 	config := *existing
 
 	if p.context.EnvironmentLookup != nil {
-		parsedEnv := make([]string, 0, len(config.Environment.Slice()))
+		parsedEnv := make([]string, 0, len(config.Environment))
 
-		for _, env := range config.Environment.Slice() {
+		for _, env := range config.Environment {
 			parts := strings.SplitN(env, "=", 2)
 			if len(parts) > 1 && parts[1] != "" {
 				parsedEnv = append(parsedEnv, env)
@@ -112,17 +113,17 @@ func (p *Project) CreateService(name string) (Service, error) {
 			}
 		}
 
-		config.Environment = NewMaporEqualSlice(parsedEnv)
+		config.Environment = parsedEnv
 	}
 
 	return p.context.ServiceFactory.Create(p, name, &config)
 }
 
 // AddConfig adds the specified service config for the specified name.
-func (p *Project) AddConfig(name string, config *ServiceConfig) error {
+func (p *Project) AddConfig(name string, config *config.ServiceConfig) error {
 	p.Notify(EventServiceAdd, name, nil)
 
-	p.Configs[name] = config
+	p.Configs.Add(name, config)
 	p.reload = append(p.reload, name)
 
 	return nil
@@ -136,8 +137,8 @@ func (p *Project) Load(bytes []byte) error {
 }
 
 func (p *Project) load(file string, bytes []byte) error {
-	configs := make(map[string]*ServiceConfig)
-	configs, err := mergeProject(p, file, bytes)
+	configs := make(map[string]*config.ServiceConfig)
+	configs, err := config.MergeServices(p.Configs, p.context.EnvironmentLookup, p.context.ResourceLookup, file, bytes)
 	if err != nil {
 		log.Errorf("Could not parse config for project %s : %v", p.Name, err)
 		return err
@@ -183,7 +184,16 @@ func (p *Project) Create(services ...string) error {
 	}), nil)
 }
 
-// Down stops the specified services (like docker stop).
+// Stop stops the specified services (like docker stop).
+func (p *Project) Stop(services ...string) error {
+	return p.perform(EventProjectStopStart, EventProjectStopDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(nil, EventServiceStopStart, EventServiceStop, func(service Service) error {
+			return service.Stop()
+		})
+	}), nil)
+}
+
+// Down stops the specified services and clean related containers (like docker stop + docker rm).
 func (p *Project) Down(services ...string) error {
 	return p.perform(EventProjectDownStart, EventProjectDownDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, EventServiceDownStart, EventServiceDown, func(service Service) error {
@@ -210,7 +220,25 @@ func (p *Project) Start(services ...string) error {
 	}), nil)
 }
 
-// Up create and start the specified services (kinda like docker run).
+// Run executes a one off command (like `docker run image command`).
+func (p *Project) Run(serviceName string, commandParts []string) (int, error) {
+	var exitCode int
+	err := p.forEach([]string{}, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
+		wrapper.Do(wrappers, EventServiceRunStart, EventServiceRun, func(service Service) error {
+			if service.Name() == serviceName {
+				code, err := service.Run(commandParts)
+				exitCode = code
+				return err
+			}
+			return nil
+		})
+	}), func(service Service) error {
+		return service.Create()
+	})
+	return exitCode, err
+}
+
+// Up creates and starts the specified services (kinda like docker run).
 func (p *Project) Up(services ...string) error {
 	return p.perform(EventProjectUpStart, EventProjectUpDone, services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(wrappers, EventServiceUpStart, EventServiceUp, func(service Service) error {
@@ -221,7 +249,7 @@ func (p *Project) Up(services ...string) error {
 	})
 }
 
-// Log aggregate and prints out the logs for the specified services.
+// Log aggregates and prints out the logs for the specified services.
 func (p *Project) Log(services ...string) error {
 	return p.forEach(services, wrapperAction(func(wrapper *serviceWrapper, wrappers map[string]*serviceWrapper) {
 		wrapper.Do(nil, NoEvent, NoEvent, func(service Service) error {
@@ -355,7 +383,7 @@ func (p *Project) traverse(start bool, selected map[string]bool, wrappers map[st
 	wrapperList := []string{}
 
 	if start {
-		for name := range p.Configs {
+		for _, name := range p.Configs.Keys() {
 			wrapperList = append(wrapperList, name)
 		}
 	} else {

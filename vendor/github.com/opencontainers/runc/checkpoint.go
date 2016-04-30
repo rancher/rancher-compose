@@ -14,6 +14,11 @@ import (
 var checkpointCommand = cli.Command{
 	Name:  "checkpoint",
 	Usage: "checkpoint a running container",
+	ArgsUsage: `<container-id>
+
+Where "<container-id>" is the name for the instance of the container to be
+checkpointed.`,
+	Description: `The checkpoint command saves the state of the container instance.`,
 	Flags: []cli.Flag{
 		cli.StringFlag{Name: "image-path", Value: "", Usage: "path for saving criu image files"},
 		cli.StringFlag{Name: "work-path", Value: "", Usage: "path for saving work files and logs"},
@@ -23,15 +28,18 @@ var checkpointCommand = cli.Command{
 		cli.BoolFlag{Name: "shell-job", Usage: "allow shell jobs"},
 		cli.StringFlag{Name: "page-server", Value: "", Usage: "ADDRESS:PORT of the page server"},
 		cli.BoolFlag{Name: "file-locks", Usage: "handle file locks, for safety"},
+		cli.StringFlag{Name: "manage-cgroups-mode", Value: "", Usage: "cgroups mode: 'soft' (default), 'full' and 'strict'."},
 	},
 	Action: func(context *cli.Context) {
 		container, err := getContainer(context)
 		if err != nil {
 			fatal(err)
 		}
+		defer destroy(container)
 		options := criuOptions(context)
 		// these are the mandatory criu options for a container
 		setPageServer(context, options)
+		setManageCgroupsMode(context, options)
 		if err := container.Checkpoint(options); err != nil {
 			fatal(err)
 		}
@@ -54,13 +62,28 @@ func setPageServer(context *cli.Context, options *libcontainer.CriuOpts) {
 		if len(addressPort) != 2 {
 			fatal(fmt.Errorf("Use --page-server ADDRESS:PORT to specify page server"))
 		}
-		port_int, err := strconv.Atoi(addressPort[1])
+		portInt, err := strconv.Atoi(addressPort[1])
 		if err != nil {
 			fatal(fmt.Errorf("Invalid port number"))
 		}
 		options.PageServer = libcontainer.CriuPageServerInfo{
 			Address: addressPort[0],
-			Port:    int32(port_int),
+			Port:    int32(portInt),
+		}
+	}
+}
+
+func setManageCgroupsMode(context *cli.Context, options *libcontainer.CriuOpts) {
+	if cgOpt := context.String("manage-cgroups-mode"); cgOpt != "" {
+		switch cgOpt {
+		case "soft":
+			options.ManageCgroupsMode = libcontainer.CRIU_CG_MODE_SOFT
+		case "full":
+			options.ManageCgroupsMode = libcontainer.CRIU_CG_MODE_FULL
+		case "strict":
+			options.ManageCgroupsMode = libcontainer.CRIU_CG_MODE_STRICT
+		default:
+			fatal(fmt.Errorf("Invalid manage cgroups mode"))
 		}
 	}
 }

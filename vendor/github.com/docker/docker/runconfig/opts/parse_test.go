@@ -385,30 +385,51 @@ func TestParseWithMemorySwap(t *testing.T) {
 }
 
 func TestParseHostname(t *testing.T) {
-	hostname := "--hostname=hostname"
+	validHostnames := map[string]string{
+		"hostname":    "hostname",
+		"host-name":   "host-name",
+		"hostname123": "hostname123",
+		"123hostname": "123hostname",
+		"hostname-of-64-bytes-long-should-be-valid-and-without-any-errors": "hostname-of-64-bytes-long-should-be-valid-and-without-any-errors",
+	}
+	invalidHostnames := map[string]string{
+		"^hostname": "invalid hostname format for --hostname: ^hostname",
+		"hostname%": "invalid hostname format for --hostname: hostname%",
+		"host&name": "invalid hostname format for --hostname: host&name",
+		"-hostname": "invalid hostname format for --hostname: -hostname",
+		"host_name": "invalid hostname format for --hostname: host_name",
+		"hostname-of-65-bytes-long-should-be-invalid-and-be-given-an-error": "invalid hostname format for --hostname: hostname-of-65-bytes-long-should-be-invalid-and-be-given-an-error",
+	}
 	hostnameWithDomain := "--hostname=hostname.domainname"
 	hostnameWithDomainTld := "--hostname=hostname.domainname.tld"
-	if config, _ := mustParse(t, hostname); config.Hostname != "hostname" && config.Domainname != "" {
-		t.Fatalf("Expected the config to have 'hostname' as hostname, got '%v'", config.Hostname)
+	for hostname, expectedHostname := range validHostnames {
+		if config, _ := mustParse(t, fmt.Sprintf("--hostname=%s", hostname)); config.Hostname != expectedHostname {
+			t.Fatalf("Expected the config to have 'hostname' as hostname, got '%v'", config.Hostname)
+		}
 	}
-	if config, _ := mustParse(t, hostnameWithDomain); config.Hostname != "hostname" && config.Domainname != "domainname" {
-		t.Fatalf("Expected the config to have 'hostname' as hostname, got '%v'", config.Hostname)
+	for hostname, expectedError := range invalidHostnames {
+		if _, _, err := parse(t, fmt.Sprintf("--hostname=%s", hostname)); err == nil || err.Error() != expectedError {
+			t.Fatalf("Expected error '%v' with '--hostname=%s', got '%s'", expectedError, hostname, err)
+		}
 	}
-	if config, _ := mustParse(t, hostnameWithDomainTld); config.Hostname != "hostname" && config.Domainname != "domainname.tld" {
-		t.Fatalf("Expected the config to have 'hostname' as hostname, got '%v'", config.Hostname)
+	if config, _ := mustParse(t, hostnameWithDomain); config.Hostname != "hostname.domainname" && config.Domainname != "" {
+		t.Fatalf("Expected the config to have 'hostname' as hostname.domainname, got '%v'", config.Hostname)
+	}
+	if config, _ := mustParse(t, hostnameWithDomainTld); config.Hostname != "hostname.domainname.tld" && config.Domainname != "" {
+		t.Fatalf("Expected the config to have 'hostname' as hostname.domainname.tld, got '%v'", config.Hostname)
 	}
 }
 
 func TestParseWithExpose(t *testing.T) {
 	invalids := map[string]string{
-		":":                   "Invalid port format for --expose: :",
-		"8080:9090":           "Invalid port format for --expose: 8080:9090",
-		"/tcp":                "Invalid range format for --expose: /tcp, error: Empty string specified for ports.",
-		"/udp":                "Invalid range format for --expose: /udp, error: Empty string specified for ports.",
-		"NaN/tcp":             `Invalid range format for --expose: NaN/tcp, error: strconv.ParseUint: parsing "NaN": invalid syntax`,
-		"NaN-NaN/tcp":         `Invalid range format for --expose: NaN-NaN/tcp, error: strconv.ParseUint: parsing "NaN": invalid syntax`,
-		"8080-NaN/tcp":        `Invalid range format for --expose: 8080-NaN/tcp, error: strconv.ParseUint: parsing "NaN": invalid syntax`,
-		"1234567890-8080/tcp": `Invalid range format for --expose: 1234567890-8080/tcp, error: strconv.ParseUint: parsing "1234567890": value out of range`,
+		":":                   "invalid port format for --expose: :",
+		"8080:9090":           "invalid port format for --expose: 8080:9090",
+		"/tcp":                "invalid range format for --expose: /tcp, error: Empty string specified for ports.",
+		"/udp":                "invalid range format for --expose: /udp, error: Empty string specified for ports.",
+		"NaN/tcp":             `invalid range format for --expose: NaN/tcp, error: strconv.ParseUint: parsing "NaN": invalid syntax`,
+		"NaN-NaN/tcp":         `invalid range format for --expose: NaN-NaN/tcp, error: strconv.ParseUint: parsing "NaN": invalid syntax`,
+		"8080-NaN/tcp":        `invalid range format for --expose: 8080-NaN/tcp, error: strconv.ParseUint: parsing "NaN": invalid syntax`,
+		"1234567890-8080/tcp": `invalid range format for --expose: 1234567890-8080/tcp, error: strconv.ParseUint: parsing "1234567890": value out of range`,
 	}
 	valids := map[string][]nat.Port{
 		"8080/tcp":      {"8080/tcp"},
@@ -578,8 +599,8 @@ func TestParseRestartPolicy(t *testing.T) {
 
 func TestParseLoggingOpts(t *testing.T) {
 	// logging opts ko
-	if _, _, _, _, err := parseRun([]string{"--log-driver=none", "--log-opt=anything", "img", "cmd"}); err == nil || err.Error() != "Invalid logging opts for driver none" {
-		t.Fatalf("Expected an error with message 'Invalid logging opts for driver none', got %v", err)
+	if _, _, _, _, err := parseRun([]string{"--log-driver=none", "--log-opt=anything", "img", "cmd"}); err == nil || err.Error() != "invalid logging opts for driver none" {
+		t.Fatalf("Expected an error with message 'invalid logging opts for driver none', got %v", err)
 	}
 	// logging opts ok
 	_, hostconfig, _, _, err := parseRun([]string{"--log-driver=syslog", "--log-opt=something", "img", "cmd"})
@@ -648,7 +669,7 @@ func TestParseEntryPoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if config.Entrypoint.Len() != 1 && config.Entrypoint.Slice()[0] != "anything" {
+	if len(config.Entrypoint) != 1 && config.Entrypoint[0] != "anything" {
 		t.Fatalf("Expected entrypoint 'anything', got %v", config.Entrypoint)
 	}
 }
@@ -801,6 +822,9 @@ func TestVolumeSplitN(t *testing.T) {
 		{`..\`, -1, []string{`..\`}},
 		{`c:\:..\`, -1, []string{`c:\`, `..\`}},
 		{`c:\:d:\:xyzzy`, -1, []string{`c:\`, `d:\`, `xyzzy`}},
+
+		// Cover directories with one-character name
+		{`/tmp/x/y:/foo/x/y`, -1, []string{`/tmp/x/y`, `/foo/x/y`}},
 	} {
 		res := volumeSplitN(x.input, x.n)
 		if len(res) < len(x.expected) {

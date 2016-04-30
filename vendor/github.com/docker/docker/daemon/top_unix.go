@@ -3,11 +3,11 @@
 package daemon
 
 import (
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
 
-	derr "github.com/docker/docker/errors"
 	"github.com/docker/engine-api/types"
 )
 
@@ -27,20 +27,21 @@ func (daemon *Daemon) ContainerTop(name string, psArgs string) (*types.Container
 	}
 
 	if !container.IsRunning() {
-		return nil, derr.ErrorCodeNotRunning.WithArgs(name)
+		return nil, errNotRunning{container.ID}
 	}
 
 	if container.IsRestarting() {
-		return nil, derr.ErrorCodeContainerRestarting.WithArgs(name)
+		return nil, errContainerIsRestarting(container.ID)
 	}
-	pids, err := daemon.ExecutionDriver().GetPidsForContainer(container.ID)
+
+	pids, err := daemon.containerd.GetPidsForContainer(container.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	output, err := exec.Command("ps", strings.Split(psArgs, " ")...).Output()
 	if err != nil {
-		return nil, derr.ErrorCodePSError.WithArgs(err)
+		return nil, fmt.Errorf("Error running ps: %v", err)
 	}
 
 	procList := &types.ContainerProcessList{}
@@ -55,7 +56,7 @@ func (daemon *Daemon) ContainerTop(name string, psArgs string) (*types.Container
 		}
 	}
 	if pidIndex == -1 {
-		return nil, derr.ErrorCodeNoPID
+		return nil, fmt.Errorf("Couldn't find PID field in ps output")
 	}
 
 	// loop through the output and extract the PID from each line
@@ -66,7 +67,7 @@ func (daemon *Daemon) ContainerTop(name string, psArgs string) (*types.Container
 		fields := strings.Fields(line)
 		p, err := strconv.Atoi(fields[pidIndex])
 		if err != nil {
-			return nil, derr.ErrorCodeBadPID.WithArgs(fields[pidIndex], err)
+			return nil, fmt.Errorf("Unexpected pid '%s': %s", fields[pidIndex], err)
 		}
 
 		for _, pid := range pids {

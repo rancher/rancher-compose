@@ -12,6 +12,12 @@ import (
 	"github.com/docker/docker/reference"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
+	"golang.org/x/net/context"
+)
+
+const (
+	// DefaultDockerfileName is the Default filename with Docker commands, read by docker build
+	DefaultDockerfileName string = "Dockerfile"
 )
 
 // Context represents a file system tree.
@@ -104,7 +110,7 @@ type Backend interface {
 	// Tag an image with newTag
 	TagImage(newTag reference.Named, imageName string) error
 	// Pull tells Docker to pull image referenced by `name`.
-	PullOnBuild(name string, authConfigs map[string]types.AuthConfig, output io.Writer) (Image, error)
+	PullOnBuild(ctx context.Context, name string, authConfigs map[string]types.AuthConfig, output io.Writer) (Image, error)
 	// ContainerAttach attaches to container.
 	ContainerAttachRaw(cID string, stdin io.ReadCloser, stdout, stderr io.Writer, stream bool) error
 	// ContainerCreate creates a new Docker container and returns potential warnings
@@ -141,7 +147,7 @@ type Image interface {
 // ImageCache abstracts an image cache store.
 // (parent image, child runconfig) -> child image
 type ImageCache interface {
-	// GetCachedImage returns a reference to a cached image whose parent equals `parent`
+	// GetCachedImageOnBuild returns a reference to a cached image whose parent equals `parent`
 	// and runconfig equals `cfg`. A cache miss is expected to return an empty ID and a nil error.
 	GetCachedImageOnBuild(parentID string, cfg *container.Config) (imageID string, err error)
 }

@@ -3,10 +3,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
+	"syscall"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/opencontainers/runc/libcontainer"
 	"github.com/opencontainers/runc/libcontainer/configs"
@@ -15,6 +20,8 @@ import (
 
 const wildcard = -1
 
+var errEmptyID = errors.New("container id cannot be empty")
+
 var allowedDevices = []*configs.Device{
 	// allow mknod for any device
 	{
@@ -22,12 +29,62 @@ var allowedDevices = []*configs.Device{
 		Major:       wildcard,
 		Minor:       wildcard,
 		Permissions: "m",
+		Allow:       true,
 	},
 	{
 		Type:        'b',
 		Major:       wildcard,
 		Minor:       wildcard,
 		Permissions: "m",
+		Allow:       true,
+	},
+	{
+		Type:        'c',
+		Path:        "/dev/null",
+		Major:       1,
+		Minor:       3,
+		Permissions: "rwm",
+		Allow:       true,
+	},
+	{
+		Type:        'c',
+		Path:        "/dev/random",
+		Major:       1,
+		Minor:       8,
+		Permissions: "rwm",
+		Allow:       true,
+	},
+	{
+		Type:        'c',
+		Path:        "/dev/full",
+		Major:       1,
+		Minor:       7,
+		Permissions: "rwm",
+		Allow:       true,
+	},
+	{
+		Type:        'c',
+		Path:        "/dev/tty",
+		Major:       5,
+		Minor:       0,
+		Permissions: "rwm",
+		Allow:       true,
+	},
+	{
+		Type:        'c',
+		Path:        "/dev/zero",
+		Major:       1,
+		Minor:       5,
+		Permissions: "rwm",
+		Allow:       true,
+	},
+	{
+		Type:        'c',
+		Path:        "/dev/urandom",
+		Major:       1,
+		Minor:       9,
+		Permissions: "rwm",
+		Allow:       true,
 	},
 	{
 		Path:        "/dev/console",
@@ -35,20 +92,7 @@ var allowedDevices = []*configs.Device{
 		Major:       5,
 		Minor:       1,
 		Permissions: "rwm",
-	},
-	{
-		Path:        "/dev/tty0",
-		Type:        'c',
-		Major:       4,
-		Minor:       0,
-		Permissions: "rwm",
-	},
-	{
-		Path:        "/dev/tty1",
-		Type:        'c',
-		Major:       4,
-		Minor:       1,
-		Permissions: "rwm",
+		Allow:       true,
 	},
 	// /dev/pts/ - pts namespaces are "coming soon"
 	{
@@ -57,6 +101,7 @@ var allowedDevices = []*configs.Device{
 		Major:       136,
 		Minor:       wildcard,
 		Permissions: "rwm",
+		Allow:       true,
 	},
 	{
 		Path:        "",
@@ -64,6 +109,7 @@ var allowedDevices = []*configs.Device{
 		Major:       5,
 		Minor:       2,
 		Permissions: "rwm",
+		Allow:       true,
 	},
 	// tuntap
 	{
@@ -72,8 +118,26 @@ var allowedDevices = []*configs.Device{
 		Major:       10,
 		Minor:       200,
 		Permissions: "rwm",
+		Allow:       true,
 	},
 }
+
+var (
+	maskedPaths = []string{
+		"/proc/kcore",
+		"/proc/latency_stats",
+		"/proc/timer_stats",
+		"/proc/sched_debug",
+	}
+	readonlyPaths = []string{
+		"/proc/asound",
+		"/proc/bus",
+		"/proc/fs",
+		"/proc/irq",
+		"/proc/sys",
+		"/proc/sysrq-trigger",
+	}
+)
 
 var container libcontainer.Container
 
@@ -83,17 +147,6 @@ func containerPreload(context *cli.Context) error {
 		return err
 	}
 	container = c
-	return nil
-}
-
-var factory libcontainer.Factory
-
-func factoryPreload(context *cli.Context) error {
-	f, err := loadFactory(context)
-	if err != nil {
-		return err
-	}
-	factory = f
 	return nil
 }
 
@@ -113,44 +166,42 @@ func loadFactory(context *cli.Context) (libcontainer.Factory, error) {
 // getContainer returns the specified container instance by loading it from state
 // with the default factory.
 func getContainer(context *cli.Context) (libcontainer.Container, error) {
+	id := context.Args().First()
+	if id == "" {
+		return nil, errEmptyID
+	}
 	factory, err := loadFactory(context)
 	if err != nil {
 		return nil, err
 	}
-	container, err := factory.Load(context.GlobalString("id"))
-	if err != nil {
-		return nil, err
-	}
-	return container, nil
+	return factory.Load(id)
 }
 
 // fatal prints the error's details if it is a libcontainer specific error type
 // then exits the program with an exit status of 1.
 func fatal(err error) {
+	// return proper unix error codes
+	if exerr, ok := err.(*exec.Error); ok {
+		switch exerr.Err {
+		case os.ErrPermission:
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(126)
+		case exec.ErrNotFound:
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(127)
+		default:
+			if os.IsNotExist(exerr.Err) {
+				fmt.Fprintf(os.Stderr, "exec: %s: %v\n", strconv.Quote(exerr.Name), os.ErrNotExist)
+				os.Exit(127)
+			}
+		}
+	}
 	if lerr, ok := err.(libcontainer.Error); ok {
 		lerr.Detail(os.Stderr)
 		os.Exit(1)
 	}
 	fmt.Fprintln(os.Stderr, err)
 	os.Exit(1)
-}
-
-// fatalf formats the errror string with the specified template then exits the
-// program with an exit status of 1.
-func fatalf(t string, v ...interface{}) {
-	fmt.Fprintf(os.Stderr, t, v...)
-	os.Exit(1)
-}
-
-// getDefaultID returns a string to be used as the container id based on the
-// current working directory of the runc process.  This function panics
-// if the cwd is unable to be found based on a system error.
-func getDefaultID() string {
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	return filepath.Base(cwd)
 }
 
 func getDefaultImagePath(context *cli.Context) string {
@@ -168,10 +219,136 @@ func newProcess(p specs.Process) *libcontainer.Process {
 		Args: p.Args,
 		Env:  p.Env,
 		// TODO: fix libcontainer's API to better support uid/gid in a typesafe way.
-		User:   fmt.Sprintf("%d:%d", p.User.Uid, p.User.Gid),
-		Cwd:    p.Cwd,
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		User:            fmt.Sprintf("%d:%d", p.User.UID, p.User.GID),
+		Cwd:             p.Cwd,
+		Capabilities:    p.Capabilities,
+		Label:           p.SelinuxLabel,
+		NoNewPrivileges: &p.NoNewPrivileges,
+		AppArmorProfile: p.ApparmorProfile,
 	}
+}
+
+func dupStdio(process *libcontainer.Process, rootuid int) error {
+	process.Stdin = os.Stdin
+	process.Stdout = os.Stdout
+	process.Stderr = os.Stderr
+	for _, fd := range []uintptr{
+		os.Stdin.Fd(),
+		os.Stdout.Fd(),
+		os.Stderr.Fd(),
+	} {
+		if err := syscall.Fchown(int(fd), rootuid, rootuid); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// If systemd is supporting sd_notify protocol, this function will add support
+// for sd_notify protocol from within the container.
+func setupSdNotify(spec *specs.LinuxSpec, notifySocket string) {
+	spec.Mounts = append(spec.Mounts, specs.Mount{Destination: notifySocket, Type: "bind", Source: notifySocket, Options: []string{"bind"}})
+	spec.Process.Env = append(spec.Process.Env, fmt.Sprintf("NOTIFY_SOCKET=%s", notifySocket))
+}
+
+func destroy(container libcontainer.Container) {
+	if err := container.Destroy(); err != nil {
+		logrus.Error(err)
+	}
+}
+
+// setupIO sets the proper IO on the process depending on the configuration
+// If there is a nil error then there must be a non nil tty returned
+func setupIO(process *libcontainer.Process, rootuid int, console string, createTTY, detach bool) (*tty, error) {
+	// detach and createTty will not work unless a console path is passed
+	// so error out here before changing any terminal settings
+	if createTTY && detach && console == "" {
+		return nil, fmt.Errorf("cannot allocate tty if runc will detach")
+	}
+	if createTTY {
+		return createTty(process, rootuid, console)
+	}
+	if detach {
+		if err := dupStdio(process, rootuid); err != nil {
+			return nil, err
+		}
+		return &tty{}, nil
+	}
+	return createStdioPipes(process, rootuid)
+}
+
+func createPidFile(path string, process *libcontainer.Process) error {
+	pid, err := process.Pid()
+	if err != nil {
+		return err
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = fmt.Fprintf(f, "%d", pid)
+	return err
+}
+
+func createContainer(context *cli.Context, id string, spec *specs.LinuxSpec) (libcontainer.Container, error) {
+	config, err := createLibcontainerConfig(id, spec)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := os.Stat(config.Rootfs); err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("rootfs (%q) does not exist", config.Rootfs)
+		}
+		return nil, err
+	}
+
+	factory, err := loadFactory(context)
+	if err != nil {
+		return nil, err
+	}
+	return factory.Create(id, config)
+}
+
+// runProcess will create a new process in the specified container
+// by executing the process specified in the 'config'.
+func runProcess(container libcontainer.Container, config *specs.Process, listenFDs []*os.File, console string, pidFile string, detach bool) (int, error) {
+	process := newProcess(*config)
+
+	// Add extra file descriptors if needed
+	if len(listenFDs) > 0 {
+		process.Env = append(process.Env, fmt.Sprintf("LISTEN_FDS=%d", len(listenFDs)), "LISTEN_PID=1")
+		process.ExtraFiles = append(process.ExtraFiles, listenFDs...)
+	}
+
+	rootuid, err := container.Config().HostUID()
+	if err != nil {
+		return -1, err
+	}
+
+	tty, err := setupIO(process, rootuid, console, config.Terminal, detach)
+	if err != nil {
+		return -1, err
+	}
+	defer tty.Close()
+	handler := newSignalHandler(tty)
+	defer handler.Close()
+	if err := container.Start(process); err != nil {
+		return -1, err
+	}
+	if err := tty.ClosePostStart(); err != nil {
+		return -1, err
+	}
+	if pidFile != "" {
+		if err := createPidFile(pidFile, process); err != nil {
+			process.Signal(syscall.SIGKILL)
+			process.Wait()
+			return -1, err
+		}
+	}
+	if detach {
+		return 0, nil
+	}
+	return handler.forward(process)
 }

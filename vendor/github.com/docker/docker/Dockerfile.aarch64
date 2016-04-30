@@ -11,19 +11,11 @@
 # # Run the test suite:
 # docker run --privileged docker hack/make.sh test
 #
-# # Publish a release:
-# docker run --privileged \
-#  -e AWS_S3_BUCKET=baz \
-#  -e AWS_ACCESS_KEY=foo \
-#  -e AWS_SECRET_KEY=bar \
-#  -e GPG_PASSPHRASE=gloubiboulga \
-#  docker hack/release.sh
-#
 # Note: AppArmor used to mess with privileged mode, but this is no longer
 # the case. Therefore, you don't have to disable it anymore.
 #
 
-FROM aarch64/ubuntu:trusty
+FROM aarch64/ubuntu:wily
 
 # Packaged dependencies
 RUN apt-get update && apt-get install -y \
@@ -45,15 +37,16 @@ RUN apt-get update && apt-get install -y \
 	libc6-dev \
 	libcap-dev \
 	libsqlite3-dev \
-	libsystemd-journal-dev \
+	libsystemd-dev \
 	mercurial \
+	net-tools \
 	parallel \
 	pkg-config \
 	python-dev \
 	python-mock \
 	python-pip \
 	python-websocket \
-	s3cmd=1.1.0* \
+	gccgo \
 	--no-install-recommends
 
 # Install armhf loader to use armv6 binaries on armv8
@@ -85,7 +78,7 @@ RUN cd /usr/local/lvm2 \
 # see https://git.fedorahosted.org/cgit/lvm2.git/tree/INSTALL
 
 # install seccomp: the version shipped in trusty is too old
-ENV SECCOMP_VERSION 2.2.3
+ENV SECCOMP_VERSION 2.3.0
 RUN set -x \
 	&& export SECCOMP_PATH="$(mktemp -d)" \
 	&& curl -fsSL "https://github.com/seccomp/libseccomp/releases/download/v${SECCOMP_VERSION}/libseccomp-${SECCOMP_VERSION}.tar.gz" \
@@ -103,14 +96,11 @@ RUN set -x \
 # We don't have official binary tarballs for ARM64, eigher for Go or bootstrap,
 # so we use the official armv6 released binaries as a GOROOT_BOOTSTRAP, and
 # build Go from source code.
-ENV BOOT_STRAP_VERSION 1.6beta1
-ENV GO_VERSION 1.5.3
-RUN mkdir -p /usr/src/go-bootstrap \
-	&& curl -fsSL https://storage.googleapis.com/golang/go${BOOT_STRAP_VERSION}.linux-arm6.tar.gz | tar -v -C /usr/src/go-bootstrap -xz --strip-components=1 \
-	&& mkdir /usr/src/go \
-	&& curl -fsSL https://storage.googleapis.com/golang/go${GO_VERSION}.src.tar.gz | tar -v -C /usr/src/go -xz --strip-components=1 \
+ENV GO_VERSION 1.5.4
+RUN mkdir /usr/src/go && curl -fsSL https://storage.googleapis.com/golang/go${GO_VERSION}.src.tar.gz | tar -v -C /usr/src/go -xz --strip-components=1 \
 	&& cd /usr/src/go/src \
-	&& GOOS=linux GOARCH=arm64 GOROOT_BOOTSTRAP=/usr/src/go-bootstrap ./make.bash
+	&& GOOS=linux GOARCH=arm64 GOROOT_BOOTSTRAP="$(go env GOROOT)" ./make.bash
+
 ENV PATH /usr/src/go/bin:$PATH
 ENV GOPATH /go:/go/src/github.com/docker/docker/vendor
 
@@ -127,14 +117,15 @@ RUN set -x \
 	&& rm -rf "$GOPATH"
 
 # Install notary server
-ENV NOTARY_VERSION docker-v1.10-5
+ENV NOTARY_VERSION docker-v1.11-3
 RUN set -x \
+	&& export GO15VENDOREXPERIMENT=1 \
 	&& export GOPATH="$(mktemp -d)" \
 	&& git clone https://github.com/docker/notary.git "$GOPATH/src/github.com/docker/notary" \
 	&& (cd "$GOPATH/src/github.com/docker/notary" && git checkout -q "$NOTARY_VERSION") \
-	&& GOPATH="$GOPATH/src/github.com/docker/notary/Godeps/_workspace:$GOPATH" \
+	&& GOPATH="$GOPATH/src/github.com/docker/notary/vendor:$GOPATH" \
 		go build -o /usr/local/bin/notary-server github.com/docker/notary/cmd/notary-server \
-	&& GOPATH="$GOPATH/src/github.com/docker/notary/Godeps/_workspace:$GOPATH" \
+	&& GOPATH="$GOPATH/src/github.com/docker/notary/vendor:$GOPATH" \
 		go build -o /usr/local/bin/notary github.com/docker/notary/cmd/notary \
 	&& rm -rf "$GOPATH"
 
@@ -145,13 +136,6 @@ RUN git clone https://github.com/docker/docker-py.git /docker-py \
 	&& git checkout -q $DOCKER_PY_COMMIT \
 	&& pip install -r test-requirements.txt
 
-# Setup s3cmd config
-RUN { \
-		echo '[default]'; \
-		echo 'access_key=$AWS_ACCESS_KEY'; \
-		echo 'secret_key=$AWS_SECRET_KEY'; \
-	} > ~/.s3cfg
-
 # Set user.email so crosbymichael's in-container merge commits go smoothly
 RUN git config --global user.email 'docker-dummy@example.com'
 
@@ -161,7 +145,7 @@ RUN useradd --create-home --gid docker unprivilegeduser
 
 VOLUME /var/lib/docker
 WORKDIR /go/src/github.com/docker/docker
-ENV DOCKER_BUILDTAGS apparmor seccomp selinux
+ENV DOCKER_BUILDTAGS apparmor pkcs11 seccomp selinux
 
 # Let us use a .bashrc file
 RUN ln -sfv $PWD/.bashrc ~/.bashrc
@@ -195,6 +179,28 @@ RUN set -x \
 	&& (cd "$GOPATH/src/github.com/BurntSushi/toml" && git checkout -q "$TOMLV_COMMIT") \
 	&& go build -v -o /usr/local/bin/tomlv github.com/BurntSushi/toml/cmd/tomlv \
 	&& rm -rf "$GOPATH"
+
+# Install runc
+ENV RUNC_COMMIT e87436998478d222be209707503c27f6f91be0c5
+RUN set -x \
+	&& export GOPATH="$(mktemp -d)" \
+	&& git clone git://github.com/opencontainers/runc.git "$GOPATH/src/github.com/opencontainers/runc" \
+	&& cd "$GOPATH/src/github.com/opencontainers/runc" \
+	&& git checkout -q "$RUNC_COMMIT" \
+	&& make static BUILDTAGS="seccomp apparmor selinux" \
+	&& cp runc /usr/local/bin/docker-runc
+
+# Install containerd
+ENV CONTAINERD_COMMIT d2f03861c91edaafdcb3961461bf82ae83785ed7
+RUN set -x \
+	&& export GOPATH="$(mktemp -d)" \
+	&& git clone git://github.com/docker/containerd.git "$GOPATH/src/github.com/docker/containerd" \
+	&& cd "$GOPATH/src/github.com/docker/containerd" \
+	&& git checkout -q "$CONTAINERD_COMMIT" \
+	&& make static \
+	&& cp bin/containerd /usr/local/bin/docker-containerd \
+	&& cp bin/containerd-shim /usr/local/bin/docker-containerd-shim \
+	&& cp bin/ctr /usr/local/bin/docker-containerd-ctr
 
 # Wrap all commands in the "docker-in-docker" script to allow nested containers
 ENTRYPOINT ["hack/dind"]

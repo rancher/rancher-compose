@@ -69,5 +69,5 @@ func constructProject(logger *logrus.Entry, env *client.Environment, url, access
 	}
 
 	p.AddListener(NewListenLogger(logger, p))
-	return &context, p, p.Parse()
+	return &context, p, nil
 }

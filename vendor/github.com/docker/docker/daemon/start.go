@@ -2,11 +2,15 @@ package daemon
 
 import (
 	"fmt"
+	"net/http"
 	"runtime"
+	"strings"
+	"syscall"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/container"
-	derr "github.com/docker/docker/errors"
+	"github.com/docker/docker/errors"
+	"github.com/docker/docker/libcontainerd"
 	"github.com/docker/docker/runconfig"
 	containertypes "github.com/docker/engine-api/types/container"
 )
@@ -19,11 +23,12 @@ func (daemon *Daemon) ContainerStart(name string, hostConfig *containertypes.Hos
 	}
 
 	if container.IsPaused() {
-		return derr.ErrorCodeStartPaused
+		return fmt.Errorf("Cannot start a paused container, try unpause instead.")
 	}
 
 	if container.IsRunning() {
-		return derr.ErrorCodeAlreadyStarted
+		err := fmt.Errorf("Container already started")
+		return errors.NewErrorWithStatusCode(err, http.StatusNotModified)
 	}
 
 	// Windows does not have the backwards compatibility issue here.
@@ -52,13 +57,13 @@ func (daemon *Daemon) ContainerStart(name string, hostConfig *containertypes.Hos
 		}
 	} else {
 		if hostConfig != nil {
-			return derr.ErrorCodeHostConfigStart
+			return fmt.Errorf("Supplying a hostconfig on start is not supported. It should be supplied on create")
 		}
 	}
 
 	// check if hostConfig is in line with the current system settings.
 	// It may happen cgroups are umounted or the like.
-	if _, err = daemon.verifyContainerSettings(container.HostConfig, nil); err != nil {
+	if _, err = daemon.verifyContainerSettings(container.HostConfig, nil, false); err != nil {
 		return err
 	}
 	// Adapt for old containers in case we have updates in this function and
@@ -88,7 +93,7 @@ func (daemon *Daemon) containerStart(container *container.Container) (err error)
 	}
 
 	if container.RemovalInProgress || container.Dead {
-		return derr.ErrorCodeContainerBeingRemoved
+		return fmt.Errorf("Container is marked for removal and cannot be started.")
 	}
 
 	// if we encounter an error during start we need to ensure that any other
@@ -120,41 +125,36 @@ func (daemon *Daemon) containerStart(container *container.Container) (err error)
 	if err := daemon.initializeNetworking(container); err != nil {
 		return err
 	}
-	linkedEnv, err := daemon.setupLinkedContainers(container)
+
+	spec, err := daemon.createSpec(container)
 	if err != nil {
 		return err
 	}
-	if err := container.SetupWorkingDirectory(); err != nil {
-		return err
-	}
-	env := container.CreateDaemonEnvironment(linkedEnv)
-	if err := daemon.populateCommand(container, env); err != nil {
-		return err
-	}
 
-	if !container.HostConfig.IpcMode.IsContainer() && !container.HostConfig.IpcMode.IsHost() {
-		if err := daemon.setupIpcDirs(container); err != nil {
-			return err
+	if err := daemon.containerd.Create(container.ID, *spec, libcontainerd.WithRestartManager(container.RestartManager(true))); err != nil {
+		// if we receive an internal error from the initial start of a container then lets
+		// return it instead of entering the restart loop
+		// set to 127 for container cmd not found/does not exist)
+		if strings.Contains(err.Error(), "executable file not found") ||
+			strings.Contains(err.Error(), "no such file or directory") ||
+			strings.Contains(err.Error(), "system cannot find the file specified") {
+			container.ExitCode = 127
+			err = fmt.Errorf("Container command '%s' not found or does not exist.", container.Path)
 		}
-	}
+		// set to 126 for container cmd can't be invoked errors
+		if strings.Contains(err.Error(), syscall.EACCES.Error()) {
+			container.ExitCode = 126
+			err = fmt.Errorf("Container command '%s' could not be invoked.", container.Path)
+		}
 
-	mounts, err := daemon.setupMounts(container)
-	if err != nil {
+		container.Reset(false)
+
+		// start event is logged even on error
+		daemon.LogContainerEvent(container, "start")
 		return err
 	}
-	mounts = append(mounts, container.IpcMounts()...)
-	mounts = append(mounts, container.TmpfsMounts()...)
 
-	container.Command.Mounts = mounts
-	if err := daemon.waitForStart(container); err != nil {
-		return err
-	}
-	container.HasBeenStartedBefore = true
 	return nil
-}
-
-func (daemon *Daemon) waitForStart(container *container.Container) error {
-	return container.StartMonitor(daemon, container.HostConfig.RestartPolicy)
 }
 
 // Cleanup releases any network resources allocated to the container along with any rules
@@ -164,13 +164,22 @@ func (daemon *Daemon) Cleanup(container *container.Container) {
 
 	container.UnmountIpcMounts(detachMounted)
 
-	daemon.conditionalUnmountOnCleanup(container)
+	if err := daemon.conditionalUnmountOnCleanup(container); err != nil {
+		// FIXME: remove once reference counting for graphdrivers has been refactored
+		// Ensure that all the mounts are gone
+		if mountid, err := daemon.layerStore.GetMountID(container.ID); err == nil {
+			daemon.cleanupMountsByID(mountid)
+		}
+	}
 
 	for _, eConfig := range container.ExecCommands.Commands() {
 		daemon.unregisterExecCommand(container, eConfig)
 	}
 
-	if err := container.UnmountVolumes(false, daemon.LogVolumeEvent); err != nil {
-		logrus.Warnf("%s cleanup: Failed to umount volumes: %v", container.ID, err)
+	if container.BaseFS != "" {
+		if err := container.UnmountVolumes(false, daemon.LogVolumeEvent); err != nil {
+			logrus.Warnf("%s cleanup: Failed to umount volumes: %v", container.ID, err)
+		}
 	}
+	container.CancelAttachContext()
 }

@@ -118,10 +118,14 @@ func TestGetContainer(t *testing.T) {
 }
 
 func initDaemonWithVolumeStore(tmp string) (*Daemon, error) {
+	var err error
 	daemon := &Daemon{
 		repository: tmp,
 		root:       tmp,
-		volumes:    store.New(),
+	}
+	daemon.volumes, err = store.New(tmp)
+	if err != nil {
+		return nil, err
 	}
 
 	volumesDriver, err := local.New(tmp, 0, 0)
@@ -315,9 +319,12 @@ func TestDaemonReloadLabels(t *testing.T) {
 		},
 	}
 
+	valuesSets := make(map[string]interface{})
+	valuesSets["label"] = "foo:baz"
 	newConfig := &Config{
 		CommonConfig: CommonConfig{
-			Labels: []string{"foo:baz"},
+			Labels:    []string{"foo:baz"},
+			valuesSet: valuesSets,
 		},
 	}
 
@@ -325,6 +332,35 @@ func TestDaemonReloadLabels(t *testing.T) {
 	label := daemon.configStore.Labels[0]
 	if label != "foo:baz" {
 		t.Fatalf("Expected daemon label `foo:baz`, got %s", label)
+	}
+}
+
+func TestDaemonReloadNotAffectOthers(t *testing.T) {
+	daemon := &Daemon{}
+	daemon.configStore = &Config{
+		CommonConfig: CommonConfig{
+			Labels: []string{"foo:bar"},
+			Debug:  true,
+		},
+	}
+
+	valuesSets := make(map[string]interface{})
+	valuesSets["label"] = "foo:baz"
+	newConfig := &Config{
+		CommonConfig: CommonConfig{
+			Labels:    []string{"foo:baz"},
+			valuesSet: valuesSets,
+		},
+	}
+
+	daemon.Reload(newConfig)
+	label := daemon.configStore.Labels[0]
+	if label != "foo:baz" {
+		t.Fatalf("Expected daemon label `foo:baz`, got %s", label)
+	}
+	debug := daemon.configStore.Debug
+	if !debug {
+		t.Fatalf("Expected debug 'enabled', got 'disabled'")
 	}
 }
 
@@ -360,10 +396,14 @@ func TestDaemonDiscoveryReload(t *testing.T) {
 		t.Fatal(e)
 	}
 
+	valuesSets := make(map[string]interface{})
+	valuesSets["cluster-store"] = "memory://127.0.0.1:2222"
+	valuesSets["cluster-advertise"] = "127.0.0.1:5555"
 	newConfig := &Config{
 		CommonConfig: CommonConfig{
 			ClusterStore:     "memory://127.0.0.1:2222",
 			ClusterAdvertise: "127.0.0.1:5555",
+			valuesSet:        valuesSets,
 		},
 	}
 
@@ -371,7 +411,7 @@ func TestDaemonDiscoveryReload(t *testing.T) {
 		&discovery.Entry{Host: "127.0.0.1", Port: "5555"},
 	}
 
-	if err := daemon.reloadClusterDiscovery(newConfig); err != nil {
+	if err := daemon.Reload(newConfig); err != nil {
 		t.Fatal(err)
 	}
 	ch, errCh = daemon.discoveryWatcher.Watch(stopCh)
@@ -392,10 +432,14 @@ func TestDaemonDiscoveryReloadFromEmptyDiscovery(t *testing.T) {
 	daemon := &Daemon{}
 	daemon.configStore = &Config{}
 
+	valuesSet := make(map[string]interface{})
+	valuesSet["cluster-store"] = "memory://127.0.0.1:2222"
+	valuesSet["cluster-advertise"] = "127.0.0.1:5555"
 	newConfig := &Config{
 		CommonConfig: CommonConfig{
 			ClusterStore:     "memory://127.0.0.1:2222",
 			ClusterAdvertise: "127.0.0.1:5555",
+			valuesSet:        valuesSet,
 		},
 	}
 
@@ -403,7 +447,7 @@ func TestDaemonDiscoveryReloadFromEmptyDiscovery(t *testing.T) {
 		&discovery.Entry{Host: "127.0.0.1", Port: "5555"},
 	}
 
-	if err := daemon.reloadClusterDiscovery(newConfig); err != nil {
+	if err := daemon.Reload(newConfig); err != nil {
 		t.Fatal(err)
 	}
 	stopCh := make(chan struct{})
@@ -420,4 +464,43 @@ func TestDaemonDiscoveryReloadFromEmptyDiscovery(t *testing.T) {
 	case e := <-errCh:
 		t.Fatal(e)
 	}
+}
+
+func TestDaemonDiscoveryReloadOnlyClusterAdvertise(t *testing.T) {
+	daemon := &Daemon{}
+	daemon.configStore = &Config{
+		CommonConfig: CommonConfig{
+			ClusterStore: "memory://127.0.0.1",
+		},
+	}
+	valuesSets := make(map[string]interface{})
+	valuesSets["cluster-advertise"] = "127.0.0.1:5555"
+	newConfig := &Config{
+		CommonConfig: CommonConfig{
+			ClusterAdvertise: "127.0.0.1:5555",
+			valuesSet:        valuesSets,
+		},
+	}
+	expected := discovery.Entries{
+		&discovery.Entry{Host: "127.0.0.1", Port: "5555"},
+	}
+
+	if err := daemon.Reload(newConfig); err != nil {
+		t.Fatal(err)
+	}
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+	ch, errCh := daemon.discoveryWatcher.Watch(stopCh)
+
+	select {
+	case <-time.After(1 * time.Second):
+		t.Fatal("failed to get discovery advertisements in time")
+	case e := <-ch:
+		if !reflect.DeepEqual(e, expected) {
+			t.Fatalf("expected %v, got %v\n", expected, e)
+		}
+	case e := <-errCh:
+		t.Fatal(e)
+	}
+
 }

@@ -18,6 +18,36 @@ import (
 	"github.com/docker/distribution/testutil"
 )
 
+// TestWriteSeek tests that the current file size can be
+// obtained using Seek
+func TestWriteSeek(t *testing.T) {
+	ctx := context.Background()
+	imageName, _ := reference.ParseNamed("foo/bar")
+	driver := inmemory.New()
+	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
+	if err != nil {
+		t.Fatalf("error creating registry: %v", err)
+	}
+	repository, err := registry.Repository(ctx, imageName)
+	if err != nil {
+		t.Fatalf("unexpected error getting repo: %v", err)
+	}
+	bs := repository.Blobs(ctx)
+
+	blobUpload, err := bs.Create(ctx)
+
+	if err != nil {
+		t.Fatalf("unexpected error starting layer upload: %s", err)
+	}
+	contents := []byte{1, 2, 3}
+	blobUpload.Write(contents)
+	offset := blobUpload.Size()
+	if offset != int64(len(contents)) {
+		t.Fatalf("unexpected value for blobUpload offset:  %v != %v", offset, len(contents))
+	}
+
+}
+
 // TestSimpleBlobUpload covers the blob upload process, exercising common
 // error paths that might be seen during an upload.
 func TestSimpleBlobUpload(t *testing.T) {
@@ -27,7 +57,7 @@ func TestSimpleBlobUpload(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	imageName := "foo/bar"
+	imageName, _ := reference.ParseNamed("foo/bar")
 	driver := inmemory.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
 	if err != nil {
@@ -80,11 +110,7 @@ func TestSimpleBlobUpload(t *testing.T) {
 		t.Fatalf("layer data write incomplete")
 	}
 
-	offset, err := blobUpload.Seek(0, os.SEEK_CUR)
-	if err != nil {
-		t.Fatalf("unexpected error seeking layer upload: %v", err)
-	}
-
+	offset := blobUpload.Size()
 	if offset != nn {
 		t.Fatalf("blobUpload not updated with correct offset: %v != %v", offset, nn)
 	}
@@ -209,7 +235,7 @@ func TestSimpleBlobUpload(t *testing.T) {
 // other tests.
 func TestSimpleBlobRead(t *testing.T) {
 	ctx := context.Background()
-	imageName := "foo/bar"
+	imageName, _ := reference.ParseNamed("foo/bar")
 	driver := inmemory.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
 	if err != nil {
@@ -320,8 +346,8 @@ func TestBlobMount(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	imageName := "foo/bar"
-	sourceImageName := "foo/source"
+	imageName, _ := reference.ParseNamed("foo/bar")
+	sourceImageName, _ := reference.ParseNamed("foo/source")
 	driver := inmemory.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
 	if err != nil {
@@ -378,11 +404,7 @@ func TestBlobMount(t *testing.T) {
 		t.Fatalf("unexpected non-error stating unmounted blob: %v", desc)
 	}
 
-	namedRef, err := reference.ParseNamed(sourceRepository.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	canonicalRef, err := reference.WithDigest(namedRef, desc.Digest)
+	canonicalRef, err := reference.WithDigest(sourceRepository.Named(), desc.Digest)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -476,7 +498,7 @@ func TestBlobMount(t *testing.T) {
 // TestLayerUploadZeroLength uploads zero-length
 func TestLayerUploadZeroLength(t *testing.T) {
 	ctx := context.Background()
-	imageName := "foo/bar"
+	imageName, _ := reference.ParseNamed("foo/bar")
 	driver := inmemory.New()
 	registry, err := NewRegistry(ctx, driver, BlobDescriptorCacheProvider(memory.NewInMemoryBlobDescriptorCacheProvider()), EnableDelete, EnableRedirect)
 	if err != nil {

@@ -9,19 +9,19 @@ import:
   version:  6086d7927ec35315964d9fea46df6c04e6d697c1
 
 - package:  github.com/docker/distribution
-  version:  c301f8ab27f4913c968b8d73a38e5dda79b9d3d7
+  version:  d06d6d3b093302c02a93153ac7b06ebc0ffd1793
 
 - package:  github.com/docker/docker
-  version:  e18eb6ef394522fa44bce7a3b9bb244d45ce9b56
+  version:  v1.11.0
 
 - package:  github.com/docker/engine-api
-  version:  9a940e4ead265e18d4feb9e3c515428966a08278
+  version:  a6dca654f28f26b648115649f6382252ada81119
 
 - package:  github.com/docker/go-connections
-  version:  f549a9393d05688dff0992ef3efd8bbe6c628aeb
+  version:  v0.2.0
 
 - package:  github.com/docker/libcompose
-  version:  0998d44ccc95e1f28be09a9c07dc09a91d75378f
+  version:  6b7a8510451c5f294842efbb180d0915e2f47e74
   repo:     https://github.com/rancher/libcompose
 
 - package:  github.com/docker/libtrust
@@ -31,10 +31,10 @@ import:
   version:  3f9db97f856818214da2e1057f8ad84803971cff
 
 - package:  github.com/gorilla/context
-  version:  215affda49addc4c8ef7e2534915df2c8c35c6cd
+  version:  14f550f51a
 
 - package:  github.com/gorilla/mux
-  version:  f15e0c49460fd49eebe2bcc8486b05d1bef68d3a
+  version:  e444e69cbd
 
 - package:  github.com/gorilla/websocket
   version:  1551221275a7bd42978745a376b2531f791d88f3
@@ -43,7 +43,7 @@ import:
   version:  2b9865f60ce11e527bd1255ba82036d465570aa3
 
 - package:  github.com/opencontainers/runc
-  version:  b40c7901845dcec5950ecb37cb9de178fc2c0604
+  version:  7b6c4c418d5090f4f11eee949fdf49afd15838c9
 
 - package:  github.com/rancher/go-machine-service
   version:  ecc762f6877af82d7c6f56cae2a50045951f8af1
@@ -67,19 +67,19 @@ import:
   version:  49c95bdc21843256fb6c4e0d370a05f24a0bf213
 
 - package:  github.com/docker/go-units
-  version: 5d2041e26a699eaca682e2ea41c8f891e1060444
+  version:  651fc226e7441360384da338d0fd37f2440ffbe3
 
 - package: github.com/cloudfoundry-incubator/candiedyaml
   version: 5cef21e2e4f0fd147973b558d4db7395176bcd95
 
 - package: github.com/vbatts/tar-split
-  version: e2a62d6b0d98fd7f1a57646812c74564fda999b4
+  version: v0.9.11
 
 - package: github.com/Azure/go-ansiterm
   version: 70b2c90b260171e829f1ebd7c17f600c11858dbe
 
 - package: github.com/Microsoft/go-winio
-  version: eb176a9831c54b88eaf9eb4fbc24b94080d910ad
+  version: v0.1.0
 
 - package: github.com/xeipuuv/gojsonschema
   version: 3988ac14d6f66842abf574a0615d2935ef5dab9d

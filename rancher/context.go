@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 	rancherClient "github.com/rancher/go-rancher/client"
@@ -108,7 +109,7 @@ func (c *Context) readRancherConfig() error {
 }
 
 func (c *Context) unmarshalBytes(composeBytes, bytes []byte) error {
-	rawServiceMap := project.RawServiceMap{}
+	rawServiceMap := config.RawServiceMap{}
 	if composeBytes != nil {
 		if err := yaml.Unmarshal(composeBytes, &rawServiceMap); err != nil {
 			return err
@@ -123,7 +124,7 @@ func (c *Context) unmarshalBytes(composeBytes, bytes []byte) error {
 			return err
 		}
 	}
-	if err := project.Interpolate(c.EnvironmentLookup, &rawServiceMap); err != nil {
+	if err := config.Interpolate(c.EnvironmentLookup, &rawServiceMap); err != nil {
 		return err
 	}
 	if err := utils.Convert(rawServiceMap, &c.RancherConfig); err != nil {

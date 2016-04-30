@@ -1,6 +1,9 @@
 package project
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/docker/libcompose/config"
+)
 
 // EventType defines a type of libcompose event.
 type EventType int
@@ -36,6 +39,10 @@ const (
 	EventServicePause        = EventType(iota)
 	EventServiceUnpauseStart = EventType(iota)
 	EventServiceUnpause      = EventType(iota)
+	EventServiceStopStart    = EventType(iota)
+	EventServiceStop         = EventType(iota)
+	EventServiceRunStart     = EventType(iota)
+	EventServiceRun          = EventType(iota)
 
 	EventProjectDownStart     = EventType(iota)
 	EventProjectDownDone      = EventType(iota)
@@ -59,6 +66,8 @@ const (
 	EventProjectPauseDone     = EventType(iota)
 	EventProjectUnpauseStart  = EventType(iota)
 	EventProjectUnpauseDone   = EventType(iota)
+	EventProjectStopStart     = EventType(iota)
+	EventProjectStopDone      = EventType(iota)
 )
 
 func (e EventType) String() string {
@@ -85,6 +94,10 @@ func (e EventType) String() string {
 		m = "Deleting"
 	case EventServiceDelete:
 		m = "Deleted"
+	case EventServiceStopStart:
+		m = "Stopping"
+	case EventServiceStop:
+		m = "Stopped"
 	case EventServiceDownStart:
 		m = "Stopping"
 	case EventServiceDown:
@@ -109,10 +122,18 @@ func (e EventType) String() string {
 		m = "Building"
 	case EventServiceBuild:
 		m = "Built"
+	case EventServiceRunStart:
+		m = "Executing"
+	case EventServiceRun:
+		m = "Executed"
 
 	case EventProjectDownStart:
 		m = "Stopping project"
 	case EventProjectDownDone:
+		m = "Project stopped"
+	case EventProjectStopStart:
+		m = "Stopping project"
+	case EventProjectStopDone:
 		m = "Project stopped"
 	case EventProjectCreateStart:
 		m = "Creating project"
@@ -166,72 +187,10 @@ type InfoSet []Info
 // Info holds a list of InfoPart.
 type Info []InfoPart
 
-// ServiceConfig holds libcompose service configuration
-type ServiceConfig struct {
-	Build         string            `yaml:"build,omitempty"`
-	CapAdd        []string          `yaml:"cap_add,omitempty"`
-	CapDrop       []string          `yaml:"cap_drop,omitempty"`
-	CgroupParent  string            `yaml:"cgroup_parent,omitempty"`
-	CPUQuota      int64             `yaml:"cpu_quota,omitempty"`
-	CPUSet        string            `yaml:"cpuset,omitempty"`
-	CPUShares     int64             `yaml:"cpu_shares,omitempty"`
-	Command       Command           `yaml:"command,flow,omitempty"`
-	ContainerName string            `yaml:"container_name,omitempty"`
-	Devices       []string          `yaml:"devices,omitempty"`
-	DNS           Stringorslice     `yaml:"dns,omitempty"`
-	DNSSearch     Stringorslice     `yaml:"dns_search,omitempty"`
-	Dockerfile    string            `yaml:"dockerfile,omitempty"`
-	DomainName    string            `yaml:"domainname,omitempty"`
-	Entrypoint    Command           `yaml:"entrypoint,flow,omitempty"`
-	EnvFile       Stringorslice     `yaml:"env_file,omitempty"`
-	Environment   MaporEqualSlice   `yaml:"environment,omitempty"`
-	Hostname      string            `yaml:"hostname,omitempty"`
-	Image         string            `yaml:"image,omitempty"`
-	Labels        SliceorMap        `yaml:"labels,omitempty"`
-	Links         MaporColonSlice   `yaml:"links,omitempty"`
-	LogDriver     string            `yaml:"log_driver,omitempty"`
-	MacAddress    string            `yaml:"mac_address,omitempty"`
-	MemLimit      int64             `yaml:"mem_limit,omitempty"`
-	MemSwapLimit  int64             `yaml:"memswap_limit,omitempty"`
-	Name          string            `yaml:"name,omitempty"`
-	Net           string            `yaml:"net,omitempty"`
-	Pid           string            `yaml:"pid,omitempty"`
-	Uts           string            `yaml:"uts,omitempty"`
-	Ipc           string            `yaml:"ipc,omitempty"`
-	Ports         []string          `yaml:"ports,omitempty"`
-	Privileged    bool              `yaml:"privileged,omitempty"`
-	Restart       string            `yaml:"restart,omitempty"`
-	ReadOnly      bool              `yaml:"read_only,omitempty"`
-	StdinOpen     bool              `yaml:"stdin_open,omitempty"`
-	SecurityOpt   []string          `yaml:"security_opt,omitempty"`
-	Tty           bool              `yaml:"tty,omitempty"`
-	User          string            `yaml:"user,omitempty"`
-	VolumeDriver  string            `yaml:"volume_driver,omitempty"`
-	Volumes       []string          `yaml:"volumes,omitempty"`
-	VolumesFrom   []string          `yaml:"volumes_from,omitempty"`
-	WorkingDir    string            `yaml:"working_dir,omitempty"`
-	Expose        []string          `yaml:"expose,omitempty"`
-	ExternalLinks []string          `yaml:"external_links,omitempty"`
-	LogOpt        map[string]string `yaml:"log_opt,omitempty"`
-	ExtraHosts    []string          `yaml:"extra_hosts,omitempty"`
-	Ulimits       Ulimits           `yaml:"ulimits,omitemty"`
-}
-
-// EnvironmentLookup defines methods to provides environment variable loading.
-type EnvironmentLookup interface {
-	Lookup(key, serviceName string, config *ServiceConfig) []string
-}
-
-// ResourceLookup defines methods to provides file loading.
-type ResourceLookup interface {
-	Lookup(file, relativeTo string) ([]byte, string, error)
-	ResolvePath(path, inFile string) string
-}
-
 // Project holds libcompose project information.
 type Project struct {
 	Name           string
-	Configs        map[string]*ServiceConfig
+	Configs        *config.Configs
 	Files          []string
 	ReloadCallback func() error
 	context        *Context
@@ -249,18 +208,20 @@ type Service interface {
 	Create() error
 	Up() error
 	Start() error
+	Stop() error
 	Down() error
 	Delete() error
 	Restart() error
 	Log() error
 	Pull() error
 	Kill() error
-	Config() *ServiceConfig
+	Config() *config.ServiceConfig
 	DependentServices() []ServiceRelationship
 	Containers() ([]Container, error)
 	Scale(count int) error
 	Pause() error
 	Unpause() error
+	Run(commandParts []string) (int, error)
 }
 
 // Container defines what a libcompose container provides.
@@ -273,7 +234,7 @@ type Container interface {
 // ServiceFactory is an interface factory to create Service object for the specified
 // project, with the specified name and service configuration.
 type ServiceFactory interface {
-	Create(project *Project, name string, serviceConfig *ServiceConfig) (Service, error)
+	Create(project *Project, name string, serviceConfig *config.ServiceConfig) (Service, error)
 }
 
 // ServiceRelationshipType defines the type of service relationship.

@@ -15,7 +15,7 @@ func DefaultDependentServices(p *Project, s Service) []ServiceRelationship {
 	}
 
 	result := []ServiceRelationship{}
-	for _, link := range config.Links.Slice() {
+	for _, link := range config.Links {
 		result = append(result, NewServiceRelationship(link, RelTypeLink))
 	}
 
@@ -61,7 +61,7 @@ func GetContainerFromIpcLikeConfig(p *Project, conf string) string {
 		return ""
 	}
 
-	if _, ok := p.Configs[name]; ok {
+	if p.Configs.Has(name) {
 		return name
 	}
 	return ""

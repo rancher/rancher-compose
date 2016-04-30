@@ -5,9 +5,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -15,13 +17,23 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/opencontainers/runc/libcontainer/cgroups"
 	"github.com/opencontainers/runc/libcontainer/configs"
-	"github.com/opencontainers/runc/libcontainer/devices"
+	"github.com/opencontainers/runc/libcontainer/seccomp"
+	libcontainerUtils "github.com/opencontainers/runc/libcontainer/utils"
 	"github.com/opencontainers/specs"
 )
 
 var specCommand = cli.Command{
-	Name:  "spec",
-	Usage: "create a new specification file",
+	Name:        "spec",
+	Usage:       "create a new specification file",
+	ArgsUsage:   "",
+	Description: `The spec command creates the new specification file named "` + specConfig + `" for the bundle." `,
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "bundle, b",
+			Value: "",
+			Usage: "path to the root of the bundle directory",
+		},
+	},
 	Action: func(context *cli.Context) {
 		spec := specs.LinuxSpec{
 			Spec: specs.Spec{
@@ -44,57 +56,72 @@ var specCommand = cli.Command{
 						"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
 						"TERM=xterm",
 					},
+					Cwd:             "/",
+					NoNewPrivileges: true,
+					Capabilities: []string{
+						"CAP_AUDIT_WRITE",
+						"CAP_KILL",
+						"CAP_NET_BIND_SERVICE",
+					},
 				},
 				Hostname: "shell",
 				Mounts: []specs.Mount{
 					{
+						Destination: "/proc",
 						Type:        "proc",
 						Source:      "proc",
-						Destination: "/proc",
-						Options:     "",
+						Options:     nil,
 					},
 					{
+						Destination: "/dev",
 						Type:        "tmpfs",
 						Source:      "tmpfs",
-						Destination: "/dev",
-						Options:     "nosuid,strictatime,mode=755,size=65536k",
+						Options:     []string{"nosuid", "strictatime", "mode=755", "size=65536k"},
 					},
 					{
+						Destination: "/dev/pts",
 						Type:        "devpts",
 						Source:      "devpts",
-						Destination: "/dev/pts",
-						Options:     "nosuid,noexec,newinstance,ptmxmode=0666,mode=0620,gid=5",
+						Options:     []string{"nosuid", "noexec", "newinstance", "ptmxmode=0666", "mode=0620", "gid=5"},
 					},
 					{
+						Destination: "/dev/shm",
 						Type:        "tmpfs",
 						Source:      "shm",
-						Destination: "/dev/shm",
-						Options:     "nosuid,noexec,nodev,mode=1777,size=65536k",
+						Options:     []string{"nosuid", "noexec", "nodev", "mode=1777", "size=65536k"},
 					},
 					{
+						Destination: "/dev/mqueue",
 						Type:        "mqueue",
 						Source:      "mqueue",
-						Destination: "/dev/mqueue",
-						Options:     "nosuid,noexec,nodev",
+						Options:     []string{"nosuid", "noexec", "nodev"},
 					},
 					{
+						Destination: "/sys",
 						Type:        "sysfs",
 						Source:      "sysfs",
-						Destination: "/sys",
-						Options:     "nosuid,noexec,nodev",
+						Options:     []string{"nosuid", "noexec", "nodev", "ro"},
 					},
 					{
+						Destination: "/sys/fs/cgroup",
 						Type:        "cgroup",
 						Source:      "cgroup",
-						Destination: "/sys/fs/cgroup",
-						Options:     "nosuid,noexec,nodev,relatime,ro",
+						Options:     []string{"nosuid", "noexec", "nodev", "relatime", "ro"},
 					},
 				},
 			},
 			Linux: specs.Linux{
+				Resources: &specs.Resources{
+					Devices: []specs.DeviceCgroup{
+						{
+							Allow:  false,
+							Access: sPtr("rwm"),
+						},
+					},
+				},
 				Namespaces: []specs.Namespace{
 					{
-						Type: "process",
+						Type: "pid",
 					},
 					{
 						Type: "network",
@@ -109,75 +136,107 @@ var specCommand = cli.Command{
 						Type: "mount",
 					},
 				},
-				Capabilities: []string{
-					"AUDIT_WRITE",
-					"KILL",
-					"NET_BIND_SERVICE",
-				},
-				Devices: []string{
-					"null",
-					"random",
-					"full",
-					"tty",
-					"zero",
-					"urandom",
-				},
-				Resources: specs.Resources{
-					Memory: specs.Memory{
-						Swappiness: -1,
+				Rlimits: []specs.Rlimit{
+					{
+						Type: "RLIMIT_NOFILE",
+						Hard: uint64(1024),
+						Soft: uint64(1024),
 					},
 				},
 			},
+		}
+
+		checkNoFile := func(name string) error {
+			_, err := os.Stat(name)
+			if err == nil {
+				return fmt.Errorf("File %s exists. Remove it first", name)
+			}
+			if !os.IsNotExist(err) {
+				return err
+			}
+			return nil
+		}
+		bundle := context.String("bundle")
+		if bundle != "" {
+			if err := os.Chdir(bundle); err != nil {
+				fatal(err)
+			}
+		}
+		if err := checkNoFile(specConfig); err != nil {
+			logrus.Fatal(err)
 		}
 		data, err := json.MarshalIndent(&spec, "", "\t")
 		if err != nil {
 			logrus.Fatal(err)
 		}
-		fmt.Printf("%s", data)
+		if err := ioutil.WriteFile(specConfig, data, 0666); err != nil {
+			logrus.Fatal(err)
+		}
 	},
 }
 
-var namespaceMapping = map[string]configs.NamespaceType{
-	"process": configs.NEWPID,
-	"network": configs.NEWNET,
-	"mount":   configs.NEWNS,
-	"user":    configs.NEWUSER,
-	"ipc":     configs.NEWIPC,
-	"uts":     configs.NEWUTS,
+func sPtr(s string) *string      { return &s }
+func rPtr(r rune) *rune          { return &r }
+func iPtr(i int64) *int64        { return &i }
+func u32Ptr(i int64) *uint32     { u := uint32(i); return &u }
+func fmPtr(i int64) *os.FileMode { fm := os.FileMode(i); return &fm }
+
+var namespaceMapping = map[specs.NamespaceType]configs.NamespaceType{
+	specs.PIDNamespace:     configs.NEWPID,
+	specs.NetworkNamespace: configs.NEWNET,
+	specs.MountNamespace:   configs.NEWNS,
+	specs.UserNamespace:    configs.NEWUSER,
+	specs.IPCNamespace:     configs.NEWIPC,
+	specs.UTSNamespace:     configs.NEWUTS,
 }
 
-// loadSpec loads the specification from the provided path.
-// If the path is empty then the default path will be "config.json"
-func loadSpec(path string) (*specs.LinuxSpec, error) {
-	if path == "" {
-		path = "config.json"
-	}
-	f, err := os.Open(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("JSON specification file for %s not found", path)
-		}
-		return nil, err
-	}
-	defer f.Close()
-	var s *specs.LinuxSpec
-	if err := json.NewDecoder(f).Decode(&s); err != nil {
-		return nil, err
-	}
-	return s, checkSpecVersion(s)
+var mountPropagationMapping = map[string]int{
+	"rprivate": syscall.MS_PRIVATE | syscall.MS_REC,
+	"private":  syscall.MS_PRIVATE,
+	"rslave":   syscall.MS_SLAVE | syscall.MS_REC,
+	"slave":    syscall.MS_SLAVE,
+	"rshared":  syscall.MS_SHARED | syscall.MS_REC,
+	"shared":   syscall.MS_SHARED,
+	"":         syscall.MS_PRIVATE | syscall.MS_REC,
 }
 
-// checkSpecVersion makes sure that the spec version matches runc's while we are in the initial
-// development period.  It is better to hard fail than have missing fields or options in the spec.
-func checkSpecVersion(s *specs.LinuxSpec) error {
-	if s.Version != specs.Version {
-		return fmt.Errorf("spec version is not compatible with implemented version %q: spec %q", specs.Version, s.Version)
+// validateSpec validates the fields in the spec
+// TODO: Add validation for other fields where applicable
+func validateSpec(spec *specs.LinuxSpec) error {
+	if spec.Process.Cwd == "" {
+		return fmt.Errorf("Cwd property must not be empty")
+	}
+	if !filepath.IsAbs(spec.Process.Cwd) {
+		return fmt.Errorf("Cwd must be an absolute path")
 	}
 	return nil
 }
 
-func createLibcontainerConfig(spec *specs.LinuxSpec) (*configs.Config, error) {
-	cwd, err := os.Getwd()
+// loadSpec loads the specification from the provided path.
+// If the path is empty then the default path will be "config.json"
+func loadSpec(cPath string) (spec *specs.LinuxSpec, err error) {
+	cf, err := os.Open(cPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("JSON specification file %s not found", cPath)
+		}
+		return spec, err
+	}
+	defer cf.Close()
+
+	if err = json.NewDecoder(cf).Decode(&spec); err != nil {
+		return spec, err
+	}
+	return spec, validateSpec(spec)
+}
+
+func createLibcontainerConfig(cgroupName string, spec *specs.LinuxSpec) (*configs.Config, error) {
+	// runc's cwd will always be the bundle path
+	rcwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	cwd, err := filepath.Abs(rcwd)
 	if err != nil {
 		return nil, err
 	}
@@ -186,12 +245,19 @@ func createLibcontainerConfig(spec *specs.LinuxSpec) (*configs.Config, error) {
 		rootfsPath = filepath.Join(cwd, rootfsPath)
 	}
 	config := &configs.Config{
-		Rootfs:       rootfsPath,
-		Capabilities: spec.Linux.Capabilities,
-		Readonlyfs:   spec.Root.Readonly,
-		Hostname:     spec.Hostname,
-		Privatefs:    true,
+		Rootfs:     rootfsPath,
+		Readonlyfs: spec.Root.Readonly,
+		Hostname:   spec.Hostname,
+		Labels: []string{
+			"bundle=" + cwd,
+		},
 	}
+
+	exists := false
+	if config.RootPropagation, exists = mountPropagationMapping[spec.Linux.RootfsPropagation]; !exists {
+		return nil, fmt.Errorf("rootfsPropagation=%v is not supported", spec.Linux.RootfsPropagation)
+	}
+
 	for _, ns := range spec.Linux.Namespaces {
 		t, exists := namespaceMapping[ns.Type]
 		if !exists {
@@ -215,26 +281,40 @@ func createLibcontainerConfig(spec *specs.LinuxSpec) (*configs.Config, error) {
 	if err := setupUserNamespace(spec, config); err != nil {
 		return nil, err
 	}
-	c, err := createCgroupConfig(spec, config.Devices)
+	for _, rlimit := range spec.Linux.Rlimits {
+		rl, err := createLibContainerRlimit(rlimit)
+		if err != nil {
+			return nil, err
+		}
+		config.Rlimits = append(config.Rlimits, rl)
+	}
+	c, err := createCgroupConfig(cgroupName, spec)
 	if err != nil {
 		return nil, err
 	}
 	config.Cgroups = c
-	if config.Readonlyfs {
-		setReadonly(config)
-		config.MaskPaths = []string{
-			"/proc/kcore",
-		}
-		config.ReadonlyPaths = []string{
-			"/proc/sys", "/proc/sysrq-trigger", "/proc/irq", "/proc/bus",
-		}
+	// set extra path masking for libcontainer for the various unsafe places in proc
+	config.MaskPaths = maskedPaths
+	config.ReadonlyPaths = readonlyPaths
+	seccomp, err := setupSeccomp(&spec.Linux.Seccomp)
+	if err != nil {
+		return nil, err
 	}
+	config.Seccomp = seccomp
 	config.Sysctl = spec.Linux.Sysctl
+	if oomScoreAdj := spec.Linux.Resources.OOMScoreAdj; oomScoreAdj != nil {
+		config.OomScoreAdj = *oomScoreAdj
+	}
+	for _, g := range spec.Process.User.AdditionalGids {
+		config.AdditionalGroups = append(config.AdditionalGroups, strconv.FormatUint(uint64(g), 10))
+	}
+	createHooks(spec, config)
+	config.Version = specs.Version
 	return config, nil
 }
 
 func createLibcontainerMount(cwd string, m specs.Mount) *configs.Mount {
-	flags, data := parseMountOptions(m.Options)
+	flags, pgflags, data := parseMountOptions(m.Options)
 	source := m.Source
 	if m.Type == "bind" {
 		if !filepath.IsAbs(source) {
@@ -242,84 +322,284 @@ func createLibcontainerMount(cwd string, m specs.Mount) *configs.Mount {
 		}
 	}
 	return &configs.Mount{
-		Device:      m.Type,
-		Source:      source,
-		Destination: m.Destination,
-		Data:        data,
-		Flags:       flags,
+		Device:           m.Type,
+		Source:           source,
+		Destination:      m.Destination,
+		Data:             data,
+		Flags:            flags,
+		PropagationFlags: pgflags,
 	}
 }
 
-func createCgroupConfig(spec *specs.LinuxSpec, devices []*configs.Device) (*configs.Cgroup, error) {
-	myCgroupPath, err := cgroups.GetThisCgroupDir("devices")
-	if err != nil {
-		return nil, err
+func createCgroupConfig(name string, spec *specs.LinuxSpec) (*configs.Cgroup, error) {
+	var (
+		err          error
+		myCgroupPath string
+	)
+
+	if spec.Linux.CgroupsPath != nil {
+		myCgroupPath = libcontainerUtils.CleanPath(*spec.Linux.CgroupsPath)
+	} else {
+		myCgroupPath, err = cgroups.GetThisCgroupDir("devices")
+		if err != nil {
+			return nil, err
+		}
+		myCgroupPath = filepath.Join(myCgroupPath, name)
 	}
+
 	c := &configs.Cgroup{
-		Name:           getDefaultID(),
-		Parent:         myCgroupPath,
-		AllowedDevices: append(devices, allowedDevices...),
+		Path:      myCgroupPath,
+		Resources: &configs.Resources{},
 	}
+	c.Resources.AllowedDevices = allowedDevices
 	r := spec.Linux.Resources
-	c.Memory = r.Memory.Limit
-	c.MemoryReservation = r.Memory.Reservation
-	c.MemorySwap = r.Memory.Swap
-	c.KernelMemory = r.Memory.Kernel
-	c.MemorySwappiness = r.Memory.Swappiness
-	c.CpuShares = r.CPU.Shares
-	c.CpuQuota = r.CPU.Quota
-	c.CpuPeriod = r.CPU.Period
-	c.CpuRtRuntime = r.CPU.RealtimeRuntime
-	c.CpuRtPeriod = r.CPU.RealtimePeriod
-	c.CpusetCpus = r.CPU.Cpus
-	c.CpusetMems = r.CPU.Mems
-	c.BlkioThrottleReadBpsDevice = r.BlockIO.ThrottleReadBpsDevice
-	c.BlkioThrottleWriteBpsDevice = r.BlockIO.ThrottleWriteBpsDevice
-	c.BlkioThrottleReadIOpsDevice = r.BlockIO.ThrottleReadIOpsDevice
-	c.BlkioThrottleWriteIOpsDevice = r.BlockIO.ThrottleWriteIOpsDevice
-	c.BlkioWeight = r.BlockIO.Weight
-	c.BlkioWeightDevice = r.BlockIO.WeightDevice
+	if r == nil {
+		return c, nil
+	}
+	for i, d := range spec.Linux.Resources.Devices {
+		var (
+			t     = "a"
+			major = int64(-1)
+			minor = int64(-1)
+		)
+		if d.Type != nil {
+			t = *d.Type
+		}
+		if d.Major != nil {
+			major = *d.Major
+		}
+		if d.Minor != nil {
+			minor = *d.Minor
+		}
+		if d.Access == nil || *d.Access == "" {
+			return nil, fmt.Errorf("device access at %d field canot be empty", i)
+		}
+		dt, err := stringToDeviceRune(t)
+		if err != nil {
+			return nil, err
+		}
+		dd := &configs.Device{
+			Type:        dt,
+			Major:       major,
+			Minor:       minor,
+			Permissions: *d.Access,
+			Allow:       d.Allow,
+		}
+		c.Resources.Devices = append(c.Resources.Devices, dd)
+	}
+	// append the default allowed devices to the end of the list
+	c.Resources.Devices = append(c.Resources.Devices, allowedDevices...)
+	if r.Memory != nil {
+		if r.Memory.Limit != nil {
+			c.Resources.Memory = int64(*r.Memory.Limit)
+		}
+		if r.Memory.Reservation != nil {
+			c.Resources.MemoryReservation = int64(*r.Memory.Reservation)
+		}
+		if r.Memory.Swap != nil {
+			c.Resources.MemorySwap = int64(*r.Memory.Swap)
+		}
+		if r.Memory.Kernel != nil {
+			c.Resources.KernelMemory = int64(*r.Memory.Kernel)
+		}
+		if r.Memory.Swappiness != nil {
+			swappiness := int64(*r.Memory.Swappiness)
+			c.Resources.MemorySwappiness = &swappiness
+		}
+	}
+	if r.CPU != nil {
+		if r.CPU.Shares != nil {
+			c.Resources.CpuShares = int64(*r.CPU.Shares)
+		}
+		if r.CPU.Quota != nil {
+			c.Resources.CpuQuota = int64(*r.CPU.Quota)
+		}
+		if r.CPU.Period != nil {
+			c.Resources.CpuPeriod = int64(*r.CPU.Period)
+		}
+		if r.CPU.RealtimeRuntime != nil {
+			c.Resources.CpuRtRuntime = int64(*r.CPU.RealtimeRuntime)
+		}
+		if r.CPU.RealtimePeriod != nil {
+			c.Resources.CpuRtPeriod = int64(*r.CPU.RealtimePeriod)
+		}
+		if r.CPU.Cpus != nil {
+			c.Resources.CpusetCpus = *r.CPU.Cpus
+		}
+		if r.CPU.Mems != nil {
+			c.Resources.CpusetMems = *r.CPU.Mems
+		}
+	}
+	if r.Pids != nil {
+		c.Resources.PidsLimit = *r.Pids.Limit
+	}
+	if r.BlockIO != nil {
+		if r.BlockIO.Weight != nil {
+			c.Resources.BlkioWeight = *r.BlockIO.Weight
+		}
+		if r.BlockIO.LeafWeight != nil {
+			c.Resources.BlkioLeafWeight = *r.BlockIO.LeafWeight
+		}
+		if r.BlockIO.WeightDevice != nil {
+			for _, wd := range r.BlockIO.WeightDevice {
+				weightDevice := configs.NewWeightDevice(wd.Major, wd.Minor, *wd.Weight, *wd.LeafWeight)
+				c.Resources.BlkioWeightDevice = append(c.Resources.BlkioWeightDevice, weightDevice)
+			}
+		}
+		if r.BlockIO.ThrottleReadBpsDevice != nil {
+			for _, td := range r.BlockIO.ThrottleReadBpsDevice {
+				throttleDevice := configs.NewThrottleDevice(td.Major, td.Minor, *td.Rate)
+				c.Resources.BlkioThrottleReadBpsDevice = append(c.Resources.BlkioThrottleReadBpsDevice, throttleDevice)
+			}
+		}
+		if r.BlockIO.ThrottleWriteBpsDevice != nil {
+			for _, td := range r.BlockIO.ThrottleWriteBpsDevice {
+				throttleDevice := configs.NewThrottleDevice(td.Major, td.Minor, *td.Rate)
+				c.Resources.BlkioThrottleWriteBpsDevice = append(c.Resources.BlkioThrottleWriteBpsDevice, throttleDevice)
+			}
+		}
+		if r.BlockIO.ThrottleReadIOPSDevice != nil {
+			for _, td := range r.BlockIO.ThrottleReadIOPSDevice {
+				throttleDevice := configs.NewThrottleDevice(td.Major, td.Minor, *td.Rate)
+				c.Resources.BlkioThrottleReadIOPSDevice = append(c.Resources.BlkioThrottleReadIOPSDevice, throttleDevice)
+			}
+		}
+		if r.BlockIO.ThrottleWriteIOPSDevice != nil {
+			for _, td := range r.BlockIO.ThrottleWriteIOPSDevice {
+				throttleDevice := configs.NewThrottleDevice(td.Major, td.Minor, *td.Rate)
+				c.Resources.BlkioThrottleWriteIOPSDevice = append(c.Resources.BlkioThrottleWriteIOPSDevice, throttleDevice)
+			}
+		}
+	}
 	for _, l := range r.HugepageLimits {
-		c.HugetlbLimit = append(c.HugetlbLimit, &configs.HugepageLimit{
-			Pagesize: l.Pagesize,
-			Limit:    l.Limit,
+		c.Resources.HugetlbLimit = append(c.Resources.HugetlbLimit, &configs.HugepageLimit{
+			Pagesize: *l.Pagesize,
+			Limit:    *l.Limit,
 		})
 	}
-	c.OomKillDisable = r.DisableOOMKiller
-	c.NetClsClassid = r.Network.ClassID
-	for _, m := range r.Network.Priorities {
-		c.NetPrioIfpriomap = append(c.NetPrioIfpriomap, &configs.IfPrioMap{
-			Interface: m.Name,
-			Priority:  m.Priority,
-		})
+	if r.DisableOOMKiller != nil {
+		c.Resources.OomKillDisable = *r.DisableOOMKiller
+	}
+	if r.Network != nil {
+		if r.Network.ClassID != nil {
+			c.Resources.NetClsClassid = string(*r.Network.ClassID)
+		}
+		for _, m := range r.Network.Priorities {
+			c.Resources.NetPrioIfpriomap = append(c.Resources.NetPrioIfpriomap, &configs.IfPrioMap{
+				Interface: m.Name,
+				Priority:  int64(m.Priority),
+			})
+		}
 	}
 	return c, nil
 }
 
+func stringToDeviceRune(s string) (rune, error) {
+	switch s {
+	case "a":
+		return 'a', nil
+	case "b":
+		return 'b', nil
+	case "c":
+		return 'c', nil
+	default:
+		return 0, fmt.Errorf("invalid device type %q", s)
+	}
+}
+
 func createDevices(spec *specs.LinuxSpec, config *configs.Config) error {
-	for _, name := range spec.Linux.Devices {
-		d, err := devices.DeviceFromPath(filepath.Join("/dev", name), "rwm")
+	// add whitelisted devices
+	config.Devices = []*configs.Device{
+		{
+			Type:     'c',
+			Path:     "/dev/null",
+			Major:    1,
+			Minor:    3,
+			FileMode: 0666,
+			Uid:      0,
+			Gid:      0,
+		},
+		{
+			Type:     'c',
+			Path:     "/dev/random",
+			Major:    1,
+			Minor:    8,
+			FileMode: 0666,
+			Uid:      0,
+			Gid:      0,
+		},
+		{
+			Type:     'c',
+			Path:     "/dev/full",
+			Major:    1,
+			Minor:    7,
+			FileMode: 0666,
+			Uid:      0,
+			Gid:      0,
+		},
+		{
+			Type:     'c',
+			Path:     "/dev/tty",
+			Major:    5,
+			Minor:    0,
+			FileMode: 0666,
+			Uid:      0,
+			Gid:      0,
+		},
+		{
+			Type:     'c',
+			Path:     "/dev/zero",
+			Major:    1,
+			Minor:    5,
+			FileMode: 0666,
+			Uid:      0,
+			Gid:      0,
+		},
+		{
+			Type:     'c',
+			Path:     "/dev/urandom",
+			Major:    1,
+			Minor:    9,
+			FileMode: 0666,
+			Uid:      0,
+			Gid:      0,
+		},
+	}
+	// merge in additional devices from the spec
+	for _, d := range spec.Linux.Devices {
+		var uid, gid uint32
+		if d.UID != nil {
+			uid = *d.UID
+		}
+		if d.GID != nil {
+			gid = *d.GID
+		}
+		dt, err := stringToDeviceRune(d.Type)
 		if err != nil {
 			return err
 		}
-		config.Devices = append(config.Devices, d)
+		device := &configs.Device{
+			Type:     dt,
+			Path:     d.Path,
+			Major:    d.Major,
+			Minor:    d.Minor,
+			FileMode: *d.FileMode,
+			Uid:      uid,
+			Gid:      gid,
+		}
+		config.Devices = append(config.Devices, device)
 	}
 	return nil
 }
 
-func setReadonly(config *configs.Config) {
-	for _, m := range config.Mounts {
-		if m.Device == "sysfs" {
-			m.Flags |= syscall.MS_RDONLY
-		}
-	}
-}
-
 func setupUserNamespace(spec *specs.LinuxSpec, config *configs.Config) error {
-	if len(spec.Linux.UidMappings) == 0 {
+	if len(spec.Linux.UIDMappings) == 0 {
 		return nil
 	}
-	config.Namespaces.Add(configs.NEWUSER, "")
+	// do not override the specified user namespace path
+	if config.Namespaces.PathOf(configs.NEWUSER) == "" {
+		config.Namespaces.Add(configs.NEWUSER, "")
+	}
 	create := func(m specs.IDMapping) configs.IDMap {
 		return configs.IDMap{
 			HostID:      int(m.HostID),
@@ -327,33 +607,46 @@ func setupUserNamespace(spec *specs.LinuxSpec, config *configs.Config) error {
 			Size:        int(m.Size),
 		}
 	}
-	for _, m := range spec.Linux.UidMappings {
+	for _, m := range spec.Linux.UIDMappings {
 		config.UidMappings = append(config.UidMappings, create(m))
 	}
-	for _, m := range spec.Linux.GidMappings {
+	for _, m := range spec.Linux.GIDMappings {
 		config.GidMappings = append(config.GidMappings, create(m))
 	}
-	rootUid, err := config.HostUID()
+	rootUID, err := config.HostUID()
 	if err != nil {
 		return err
 	}
-	rootGid, err := config.HostGID()
+	rootGID, err := config.HostGID()
 	if err != nil {
 		return err
 	}
 	for _, node := range config.Devices {
-		node.Uid = uint32(rootUid)
-		node.Gid = uint32(rootGid)
+		node.Uid = uint32(rootUID)
+		node.Gid = uint32(rootGID)
 	}
 	return nil
 }
 
-// parseMountOptions parses the string and returns the flags and any mount data that
-// it contains.
-func parseMountOptions(options string) (int, string) {
+func createLibContainerRlimit(rlimit specs.Rlimit) (configs.Rlimit, error) {
+	rl, err := strToRlimit(rlimit.Type)
+	if err != nil {
+		return configs.Rlimit{}, err
+	}
+	return configs.Rlimit{
+		Type: rl,
+		Hard: uint64(rlimit.Hard),
+		Soft: uint64(rlimit.Soft),
+	}, nil
+}
+
+// parseMountOptions parses the string and returns the flags, propagation
+// flags and any mount data that it contains.
+func parseMountOptions(options []string) (int, []int, string) {
 	var (
-		flag int
-		data []string
+		flag   int
+		pgflag []int
+		data   []string
 	)
 	flags := map[string]struct {
 		clear bool
@@ -376,24 +669,29 @@ func parseMountOptions(options string) (int, string) {
 		"norelatime":    {true, syscall.MS_RELATIME},
 		"nostrictatime": {true, syscall.MS_STRICTATIME},
 		"nosuid":        {false, syscall.MS_NOSUID},
-		"private":       {false, syscall.MS_PRIVATE},
 		"rbind":         {false, syscall.MS_BIND | syscall.MS_REC},
 		"relatime":      {false, syscall.MS_RELATIME},
 		"remount":       {false, syscall.MS_REMOUNT},
 		"ro":            {false, syscall.MS_RDONLY},
-		"rprivate":      {false, syscall.MS_PRIVATE | syscall.MS_REC},
-		"rshared":       {false, syscall.MS_SHARED | syscall.MS_REC},
-		"rslave":        {false, syscall.MS_SLAVE | syscall.MS_REC},
-		"runbindable":   {false, syscall.MS_UNBINDABLE | syscall.MS_REC},
 		"rw":            {true, syscall.MS_RDONLY},
-		"shared":        {false, syscall.MS_SHARED},
-		"slave":         {false, syscall.MS_SLAVE},
 		"strictatime":   {false, syscall.MS_STRICTATIME},
 		"suid":          {true, syscall.MS_NOSUID},
 		"sync":          {false, syscall.MS_SYNCHRONOUS},
-		"unbindable":    {false, syscall.MS_UNBINDABLE},
 	}
-	for _, o := range strings.Split(options, ",") {
+	propagationFlags := map[string]struct {
+		clear bool
+		flag  int
+	}{
+		"private":     {false, syscall.MS_PRIVATE},
+		"shared":      {false, syscall.MS_SHARED},
+		"slave":       {false, syscall.MS_SLAVE},
+		"unbindable":  {false, syscall.MS_UNBINDABLE},
+		"rprivate":    {false, syscall.MS_PRIVATE | syscall.MS_REC},
+		"rshared":     {false, syscall.MS_SHARED | syscall.MS_REC},
+		"rslave":      {false, syscall.MS_SLAVE | syscall.MS_REC},
+		"runbindable": {false, syscall.MS_UNBINDABLE | syscall.MS_REC},
+	}
+	for _, o := range options {
 		// If the option does not exist in the flags table or the flag
 		// is not supported on the platform,
 		// then it is a data value for a specific fs type
@@ -403,9 +701,106 @@ func parseMountOptions(options string) (int, string) {
 			} else {
 				flag |= f.flag
 			}
+		} else if f, exists := propagationFlags[o]; exists && f.flag != 0 {
+			pgflag = append(pgflag, f.flag)
 		} else {
 			data = append(data, o)
 		}
 	}
-	return flag, strings.Join(data, ",")
+	return flag, pgflag, strings.Join(data, ",")
+}
+
+func setupSeccomp(config *specs.Seccomp) (*configs.Seccomp, error) {
+	if config == nil {
+		return nil, nil
+	}
+
+	// No default action specified, no syscalls listed, assume seccomp disabled
+	if config.DefaultAction == "" && len(config.Syscalls) == 0 {
+		return nil, nil
+	}
+
+	newConfig := new(configs.Seccomp)
+	newConfig.Syscalls = []*configs.Syscall{}
+
+	if len(config.Architectures) > 0 {
+		newConfig.Architectures = []string{}
+		for _, arch := range config.Architectures {
+			newArch, err := seccomp.ConvertStringToArch(string(arch))
+			if err != nil {
+				return nil, err
+			}
+			newConfig.Architectures = append(newConfig.Architectures, newArch)
+		}
+	}
+
+	// Convert default action from string representation
+	newDefaultAction, err := seccomp.ConvertStringToAction(string(config.DefaultAction))
+	if err != nil {
+		return nil, err
+	}
+	newConfig.DefaultAction = newDefaultAction
+
+	// Loop through all syscall blocks and convert them to libcontainer format
+	for _, call := range config.Syscalls {
+		newAction, err := seccomp.ConvertStringToAction(string(call.Action))
+		if err != nil {
+			return nil, err
+		}
+
+		newCall := configs.Syscall{
+			Name:   call.Name,
+			Action: newAction,
+			Args:   []*configs.Arg{},
+		}
+
+		// Loop through all the arguments of the syscall and convert them
+		for _, arg := range call.Args {
+			newOp, err := seccomp.ConvertStringToOperator(string(arg.Op))
+			if err != nil {
+				return nil, err
+			}
+
+			newArg := configs.Arg{
+				Index:    arg.Index,
+				Value:    arg.Value,
+				ValueTwo: arg.ValueTwo,
+				Op:       newOp,
+			}
+
+			newCall.Args = append(newCall.Args, &newArg)
+		}
+
+		newConfig.Syscalls = append(newConfig.Syscalls, &newCall)
+	}
+
+	return newConfig, nil
+}
+
+func createHooks(rspec *specs.LinuxSpec, config *configs.Config) {
+	config.Hooks = &configs.Hooks{}
+	for _, h := range rspec.Hooks.Prestart {
+		cmd := configs.Command{
+			Path: h.Path,
+			Args: h.Args,
+			Env:  h.Env,
+		}
+		config.Hooks.Prestart = append(config.Hooks.Prestart, configs.NewCommandHook(cmd))
+	}
+	for _, h := range rspec.Hooks.Poststart {
+		cmd := configs.Command{
+			Path: h.Path,
+			Args: h.Args,
+			Env:  h.Env,
+		}
+		config.Hooks.Poststart = append(config.Hooks.Poststart, configs.NewCommandHook(cmd))
+	}
+	for _, h := range rspec.Hooks.Poststop {
+		cmd := configs.Command{
+			Path: h.Path,
+			Args: h.Args,
+			Env:  h.Env,
+		}
+		config.Hooks.Poststop = append(config.Hooks.Poststop, configs.NewCommandHook(cmd))
+	}
 }

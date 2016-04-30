@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/docker/docker/runconfig/opts"
@@ -9,6 +10,7 @@ import (
 	"github.com/docker/engine-api/types/strslice"
 	"github.com/docker/go-connections/nat"
 	"github.com/docker/go-units"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 )
@@ -53,20 +55,22 @@ func ConvertToAPI(s *Service) (*ConfigWrapper, error) {
 	return &result, nil
 }
 
-func volumes(c *project.ServiceConfig, ctx project.Context) map[string]struct{} {
+func volumes(c *config.ServiceConfig, ctx project.Context) map[string]struct{} {
 	volumes := make(map[string]struct{}, len(c.Volumes))
 	for k, v := range c.Volumes {
-		vol := ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFiles[0])
+		if len(ctx.ComposeFiles) > 0 {
+			v = ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFiles[0])
+		}
 
-		c.Volumes[k] = vol
-		if isVolume(vol) {
-			volumes[vol] = struct{}{}
+		c.Volumes[k] = v
+		if isVolume(v) {
+			volumes[v] = struct{}{}
 		}
 	}
 	return volumes
 }
 
-func restartPolicy(c *project.ServiceConfig) (*container.RestartPolicy, error) {
+func restartPolicy(c *config.ServiceConfig) (*container.RestartPolicy, error) {
 	restart, err := opts.ParseRestartPolicy(c.Restart)
 	if err != nil {
 		return nil, err
@@ -74,7 +78,7 @@ func restartPolicy(c *project.ServiceConfig) (*container.RestartPolicy, error) {
 	return &container.RestartPolicy{Name: restart.Name, MaximumRetryCount: restart.MaximumRetryCount}, nil
 }
 
-func ports(c *project.ServiceConfig) (map[nat.Port]struct{}, nat.PortMap, error) {
+func ports(c *config.ServiceConfig) (map[nat.Port]struct{}, nat.PortMap, error) {
 	ports, binding, err := nat.ParsePortSpecs(c.Ports)
 	if err != nil {
 		return nil, nil, err
@@ -106,7 +110,7 @@ func ports(c *project.ServiceConfig) (map[nat.Port]struct{}, nat.PortMap, error)
 }
 
 // Convert converts a service configuration to an docker API structures (Config and HostConfig)
-func Convert(c *project.ServiceConfig, ctx project.Context) (*container.Config, *container.HostConfig, error) {
+func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *container.HostConfig, error) {
 	restartPolicy, err := restartPolicy(c)
 	if err != nil {
 		return nil, nil, err
@@ -122,15 +126,23 @@ func Convert(c *project.ServiceConfig, ctx project.Context) (*container.Config, 
 		return nil, nil, err
 	}
 
+	var volumesFrom []string
+	if c.VolumesFrom != nil {
+		volumesFrom, err = getVolumesFrom(c.VolumesFrom, ctx.Project.Configs, ctx.ProjectName)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	config := &container.Config{
-		Entrypoint:   strslice.New(utils.CopySlice(c.Entrypoint.Slice())...),
+		Entrypoint:   strslice.StrSlice(utils.CopySlice(c.Entrypoint)),
 		Hostname:     c.Hostname,
 		Domainname:   c.DomainName,
 		User:         c.User,
-		Env:          utils.CopySlice(c.Environment.Slice()),
-		Cmd:          strslice.New(utils.CopySlice(c.Command.Slice())...),
+		Env:          utils.CopySlice(c.Environment),
+		Cmd:          strslice.StrSlice(utils.CopySlice(c.Command)),
 		Image:        c.Image,
-		Labels:       utils.CopyMap(c.Labels.MapParts()),
+		Labels:       utils.CopyMap(c.Labels),
 		ExposedPorts: exposedPorts,
 		Tty:          c.Tty,
 		OpenStdin:    c.StdinOpen,
@@ -162,14 +174,14 @@ func Convert(c *project.ServiceConfig, ctx project.Context) (*container.Config, 
 	}
 
 	hostConfig := &container.HostConfig{
-		VolumesFrom: utils.CopySlice(c.VolumesFrom),
-		CapAdd:      strslice.New(utils.CopySlice(c.CapAdd)...),
-		CapDrop:     strslice.New(utils.CopySlice(c.CapDrop)...),
+		VolumesFrom: volumesFrom,
+		CapAdd:      strslice.StrSlice(utils.CopySlice(c.CapAdd)),
+		CapDrop:     strslice.StrSlice(utils.CopySlice(c.CapDrop)),
 		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
 		Privileged:  c.Privileged,
 		Binds:       Filter(c.Volumes, isBind),
-		DNS:         utils.CopySlice(c.DNS.Slice()),
-		DNSSearch:   utils.CopySlice(c.DNSSearch.Slice()),
+		DNS:         utils.CopySlice(c.DNS),
+		DNSSearch:   utils.CopySlice(c.DNSSearch),
 		LogConfig: container.LogConfig{
 			Type:   c.LogDriver,
 			Config: utils.CopyMap(c.LogOpt),
@@ -187,6 +199,20 @@ func Convert(c *project.ServiceConfig, ctx project.Context) (*container.Config, 
 	}
 
 	return config, hostConfig, nil
+}
+
+func getVolumesFrom(volumesFrom []string, serviceConfigs *config.Configs, projectName string) ([]string, error) {
+	volumes := []string{}
+	for _, volumeFrom := range volumesFrom {
+		if serviceConfigs.Has(volumeFrom) {
+			// It's a service - Use the first one
+			name := fmt.Sprintf("%s_%s_1", projectName, volumeFrom)
+			volumes = append(volumes, name)
+		} else {
+			volumes = append(volumes, volumeFrom)
+		}
+	}
+	return volumes, nil
 }
 
 func parseDevices(devices []string) ([]container.DeviceMapping, error) {

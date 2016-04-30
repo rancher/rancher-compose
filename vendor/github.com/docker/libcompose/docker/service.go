@@ -2,10 +2,14 @@ package docker
 
 import (
 	"fmt"
+	"strings"
+
+	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 )
@@ -13,12 +17,12 @@ import (
 // Service is a project.Service implementations.
 type Service struct {
 	name          string
-	serviceConfig *project.ServiceConfig
+	serviceConfig *config.ServiceConfig
 	context       *Context
 }
 
 // NewService creates a service
-func NewService(name string, serviceConfig *project.ServiceConfig, context *Context) *Service {
+func NewService(name string, serviceConfig *config.ServiceConfig, context *Context) *Service {
 	return &Service{
 		name:          name,
 		serviceConfig: serviceConfig,
@@ -31,8 +35,8 @@ func (s *Service) Name() string {
 	return s.name
 }
 
-// Config returns the configuration of the service (project.ServiceConfig).
-func (s *Service) Config() *project.ServiceConfig {
+// Config returns the configuration of the service (config.ServiceConfig).
+func (s *Service) Config() *config.ServiceConfig {
 	return s.serviceConfig
 }
 
@@ -74,8 +78,9 @@ func (s *Service) collectContainers() ([]*Container, error) {
 	result := []*Container{}
 
 	for _, container := range containers {
-		name := container.Labels[NAME.Str()]
-		result = append(result, NewContainer(client, name, s))
+		// Compose add "/" before name, so Name[1] will store actaul name.
+		name := strings.SplitAfter(container.Names[0], "/")
+		result = append(result, NewContainer(client, name[1], s))
 	}
 
 	return result, nil
@@ -114,7 +119,7 @@ func (s *Service) ensureImageExists() (string, error) {
 func (s *Service) imageExists() error {
 	client := s.context.ClientFactory.Create(s)
 
-	_, _, err := client.ImageInspectWithRaw(s.imageName(), false)
+	_, _, err := client.ImageInspectWithRaw(context.Background(), s.imageName(), false)
 	return err
 }
 
@@ -199,6 +204,25 @@ func (s *Service) Up() error {
 	}
 
 	return s.up(imageName, true)
+}
+
+// Run implements Service.Run. It runs a one of command within the service container.
+func (s *Service) Run(commandParts []string) (int, error) {
+	imageName, err := s.ensureImageExists()
+	if err != nil {
+		return -1, err
+	}
+
+	client := s.context.ClientFactory.Create(s)
+
+	namer := NewNamer(client, s.context.Project.Name, s.name+"_run")
+	defer namer.Close()
+
+	containerName := namer.Next()
+
+	c := NewContainer(client, containerName, s)
+
+	return c.Run(imageName, &config.ServiceConfig{Command: commandParts, Tty: true, StdinOpen: true})
 }
 
 // Info implements Service.Info. It returns an project.InfoSet with the containers
@@ -297,7 +321,14 @@ func (s *Service) eachContainer(action func(*Container) error) error {
 	return tasks.Wait()
 }
 
-// Down implements Service.Down. It stops any containers related to the service.
+// Stop implements Service.Stop. It stops any containers related to the service.
+func (s *Service) Stop() error {
+	return s.eachContainer(func(c *Container) error {
+		return c.Stop()
+	})
+}
+
+// Down implements Service.Down. It stops any containers related to the service and removes them.
 func (s *Service) Down() error {
 	return s.eachContainer(func(c *Container) error {
 		return c.Down()

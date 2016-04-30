@@ -8,7 +8,7 @@ import (
 
 func main() {
 	t, err := template.New("schema_template.go").Parse(`
-package project
+package config
 
 var schemaString = ` + "`{{.schemaString}}`")
 
@@ -18,7 +18,7 @@ var schemaString = ` + "`{{.schemaString}}`")
 
 	schema, err := ioutil.ReadFile("./scripts/config_schema_v1.json")
 
-	inlinedFile, err := os.Create("vendor/github.com/docker/libcompose/project/schema.go")
+	inlinedFile, err := os.Create("vendor/github.com/docker/libcompose/config/schema.go")
 
 	if err != nil {
 		panic(err)

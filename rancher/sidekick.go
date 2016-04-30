@@ -1,16 +1,19 @@
 package rancher
 
-import "github.com/docker/libcompose/project"
+import (
+	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/project"
+)
 
 type Sidekick struct {
 	project.EmptyService
 
 	name          string
-	serviceConfig *project.ServiceConfig
+	serviceConfig *config.ServiceConfig
 	context       *Context
 }
 
-func NewSidekick(name string, serviceConfig *project.ServiceConfig, context *Context) *Sidekick {
+func NewSidekick(name string, serviceConfig *config.ServiceConfig, context *Context) *Sidekick {
 	return &Sidekick{
 		name:          name,
 		serviceConfig: serviceConfig,
@@ -26,7 +29,7 @@ func (s *Sidekick) primaries() []string {
 	return s.context.SidekickInfo.sidekickToPrimaries[s.name]
 }
 
-func (s *Sidekick) Config() *project.ServiceConfig {
+func (s *Sidekick) Config() *config.ServiceConfig {
 	links := []string{}
 
 	for _, primary := range s.primaries() {
@@ -34,7 +37,7 @@ func (s *Sidekick) Config() *project.ServiceConfig {
 	}
 
 	config := *s.serviceConfig
-	config.Links = project.NewMaporColonSlice(links)
+	config.Links = links
 	config.VolumesFrom = []string{}
 
 	return &config

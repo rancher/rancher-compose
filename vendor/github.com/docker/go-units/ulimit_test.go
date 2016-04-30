@@ -2,7 +2,6 @@ package units
 
 import (
 	"fmt"
-	"strconv"
 	"testing"
 )
 
@@ -47,22 +46,14 @@ func TestParseUlimitBadFormat(t *testing.T) {
 }
 
 func TestParseUlimitHardLessThanSoft(t *testing.T) {
-	if _, err := ParseUlimit("nofile=1024:1"); err == nil {
+	if _, err := ParseUlimit("nofile:1024:1"); err == nil {
 		t.Fatal("expected error on hard limit less than soft limit")
 	}
 }
 
 func TestParseUlimitInvalidValueType(t *testing.T) {
-	if _, err := ParseUlimit("nofile=asdf"); err == nil {
-		t.Fatal("expected error on bad value type, but got no error")
-	} else if _, ok := err.(*strconv.NumError); !ok {
-		t.Fatalf("expected error on bad value type, but got `%s`", err)
-	}
-
-	if _, err := ParseUlimit("nofile=1024:asdf"); err == nil {
-		t.Fatal("expected error on bad value type, but got no error")
-	} else if _, ok := err.(*strconv.NumError); !ok {
-		t.Fatalf("expected error on bad value type, but got `%s`", err)
+	if _, err := ParseUlimit("nofile:asdf"); err == nil {
+		t.Fatal("expected error on bad value type")
 	}
 }
 

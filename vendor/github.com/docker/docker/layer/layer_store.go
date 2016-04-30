@@ -334,7 +334,10 @@ func (ls *layerStore) get(l ChainID) *roLayer {
 }
 
 func (ls *layerStore) Get(l ChainID) (Layer, error) {
-	layer := ls.get(l)
+	ls.layerL.Lock()
+	defer ls.layerL.Unlock()
+
+	layer := ls.getWithoutLock(l)
 	if layer == nil {
 		return nil, ErrLayerDoesNotExist
 	}
@@ -480,6 +483,37 @@ func (ls *layerStore) GetRWLayer(id string) (RWLayer, error) {
 	return mount.getReference(), nil
 }
 
+func (ls *layerStore) GetMountID(id string) (string, error) {
+	ls.mountL.Lock()
+	defer ls.mountL.Unlock()
+	mount, ok := ls.mounts[id]
+	if !ok {
+		return "", ErrMountDoesNotExist
+	}
+	logrus.Debugf("GetMountID id: %s -> mountID: %s", id, mount.mountID)
+
+	return mount.mountID, nil
+}
+
+// ReinitRWLayer reinitializes a given mount to the layerstore, specifically
+// initializing the usage count. It should strictly only be used in the
+// daemon's restore path to restore state of live containers.
+func (ls *layerStore) ReinitRWLayer(l RWLayer) error {
+	ls.mountL.Lock()
+	defer ls.mountL.Unlock()
+
+	m, ok := ls.mounts[l.Name()]
+	if !ok {
+		return ErrMountDoesNotExist
+	}
+
+	if err := m.incActivityCount(l); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (ls *layerStore) ReleaseRWLayer(l RWLayer) ([]Metadata, error) {
 	ls.mountL.Lock()
 	defer ls.mountL.Unlock()
@@ -498,18 +532,21 @@ func (ls *layerStore) ReleaseRWLayer(l RWLayer) ([]Metadata, error) {
 
 	if err := ls.driver.Remove(m.mountID); err != nil {
 		logrus.Errorf("Error removing mounted layer %s: %s", m.name, err)
+		m.retakeReference(l)
 		return nil, err
 	}
 
 	if m.initID != "" {
 		if err := ls.driver.Remove(m.initID); err != nil {
 			logrus.Errorf("Error removing init layer %s: %s", m.name, err)
+			m.retakeReference(l)
 			return nil, err
 		}
 	}
 
 	if err := ls.store.RemoveMount(m.name); err != nil {
 		logrus.Errorf("Error removing mount metadata: %s: %s", m.name, err)
+		m.retakeReference(l)
 		return nil, err
 	}
 
@@ -574,11 +611,7 @@ func (ls *layerStore) initMount(graphID, parent, mountLabel string, initFunc Mou
 }
 
 func (ls *layerStore) assembleTarTo(graphID string, metadata io.ReadCloser, size *int64, w io.Writer) error {
-	type diffPathDriver interface {
-		DiffPath(string) (string, func() error, error)
-	}
-
-	diffDriver, ok := ls.driver.(diffPathDriver)
+	diffDriver, ok := ls.driver.(graphdriver.DiffGetterDriver)
 	if !ok {
 		diffDriver = &naiveDiffPathDriver{ls.driver}
 	}
@@ -586,17 +619,16 @@ func (ls *layerStore) assembleTarTo(graphID string, metadata io.ReadCloser, size
 	defer metadata.Close()
 
 	// get our relative path to the container
-	fsPath, releasePath, err := diffDriver.DiffPath(graphID)
+	fileGetCloser, err := diffDriver.DiffGetter(graphID)
 	if err != nil {
 		return err
 	}
-	defer releasePath()
+	defer fileGetCloser.Close()
 
 	metaUnpacker := storage.NewJSONUnpacker(metadata)
 	upackerCounter := &unpackSizeCounter{metaUnpacker, size}
-	fileGetter := storage.NewPathFileGetter(fsPath)
-	logrus.Debugf("Assembling tar data for %s from %s", graphID, fsPath)
-	return asm.WriteOutputTarStream(fileGetter, upackerCounter, w)
+	logrus.Debugf("Assembling tar data for %s", graphID)
+	return asm.WriteOutputTarStream(fileGetCloser, upackerCounter, w)
 }
 
 func (ls *layerStore) Cleanup() error {
@@ -615,12 +647,20 @@ type naiveDiffPathDriver struct {
 	graphdriver.Driver
 }
 
-func (n *naiveDiffPathDriver) DiffPath(id string) (string, func() error, error) {
+type fileGetPutter struct {
+	storage.FileGetter
+	driver graphdriver.Driver
+	id     string
+}
+
+func (w *fileGetPutter) Close() error {
+	return w.driver.Put(w.id)
+}
+
+func (n *naiveDiffPathDriver) DiffGetter(id string) (graphdriver.FileGetCloser, error) {
 	p, err := n.Driver.Get(id, "")
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
-	return p, func() error {
-		return n.Driver.Put(id)
-	}, nil
+	return &fileGetPutter{storage.NewPathFileGetter(p), n.Driver, id}, nil
 }

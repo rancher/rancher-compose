@@ -3,14 +3,15 @@
 package libcontainer
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/docker/docker/pkg/mount"
 	"github.com/opencontainers/runc/libcontainer/configs"
+	"github.com/opencontainers/runc/libcontainer/utils"
 )
 
 func newTestRoot() (string, error) {
@@ -97,6 +98,7 @@ func TestFactoryNewTmpfs(t *testing.T) {
 	if !found {
 		t.Fatalf("Factory Root is not listed in mounts list")
 	}
+	defer syscall.Unmount(root, syscall.MNT_DETACH)
 }
 
 func TestFactoryLoadNotExists(t *testing.T) {
@@ -135,8 +137,10 @@ func TestFactoryLoadContainer(t *testing.T) {
 			Rootfs: "/mycontainer/root",
 		}
 		expectedState = &State{
-			InitProcessPid: 1024,
-			Config:         *expectedConfig,
+			BaseState: BaseState{
+				InitProcessPid: 1024,
+				Config:         *expectedConfig,
+			},
 		}
 	)
 	if err := os.Mkdir(filepath.Join(root, id), 0700); err != nil {
@@ -175,5 +179,5 @@ func marshal(path string, v interface{}) error {
 		return err
 	}
 	defer f.Close()
-	return json.NewEncoder(f).Encode(v)
+	return utils.WriteJSON(f, v)
 }

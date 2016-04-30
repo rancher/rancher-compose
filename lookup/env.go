@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/config"
 )
 
 type FileEnvLookup struct {
-	parent    project.EnvironmentLookup
+	parent    config.EnvironmentLookup
 	variables map[string]string
 }
 
-func NewFileEnvLookup(file string, parent project.EnvironmentLookup) (*FileEnvLookup, error) {
+func NewFileEnvLookup(file string, parent config.EnvironmentLookup) (*FileEnvLookup, error) {
 	variables := map[string]string{}
 
 	if file != "" {
@@ -46,7 +46,7 @@ func NewFileEnvLookup(file string, parent project.EnvironmentLookup) (*FileEnvLo
 	}, nil
 }
 
-func (f *FileEnvLookup) Lookup(key, serviceName string, config *project.ServiceConfig) []string {
+func (f *FileEnvLookup) Lookup(key, serviceName string, config *config.ServiceConfig) []string {
 	if v, ok := f.variables[key]; ok {
 		return []string{fmt.Sprintf("%s=%s", key, v)}
 	}

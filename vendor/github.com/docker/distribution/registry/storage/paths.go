@@ -48,7 +48,7 @@ const (
 // The storage backend layout is broken up into a content-addressable blob
 // store and repositories. The content-addressable blob store holds most data
 // throughout the backend, keyed by algorithm and digests of the underlying
-// content. Access to the blob store is controled through links from the
+// content. Access to the blob store is controlled through links from the
 // repository to blobstore.
 //
 // A repository is made up of layers, manifests and tags. The layers component
@@ -74,6 +74,7 @@ const (
 //
 //	Manifests:
 //
+// 	manifestRevisionsPathSpec:      <root>/v2/repositories/<name>/_manifests/revisions/
 // 	manifestRevisionPathSpec:      <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/
 // 	manifestRevisionLinkPathSpec:  <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/link
 // 	manifestSignaturesPathSpec:    <root>/v2/repositories/<name>/_manifests/revisions/<algorithm>/<hex digest>/signatures/
@@ -100,6 +101,7 @@ const (
 //
 //	Blob Store:
 //
+//	blobsPathSpec:                  <root>/v2/blobs/
 // 	blobPathSpec:                   <root>/v2/blobs/<algorithm>/<first two hex bytes of digest>/<hex digest>
 // 	blobDataPathSpec:               <root>/v2/blobs/<algorithm>/<first two hex bytes of digest>/<hex digest>/data
 // 	blobMediaTypePathSpec:               <root>/v2/blobs/<algorithm>/<first two hex bytes of digest>/<hex digest>/data
@@ -124,6 +126,9 @@ func pathFor(spec pathSpec) (string, error) {
 	repoPrefix := append(rootPrefix, "repositories")
 
 	switch v := spec.(type) {
+
+	case manifestRevisionsPathSpec:
+		return path.Join(append(repoPrefix, v.name, "_manifests", "revisions")...), nil
 
 	case manifestRevisionPathSpec:
 		components, err := digestPathComponents(v.revision, false)
@@ -246,6 +251,17 @@ func pathFor(spec pathSpec) (string, error) {
 		blobLinkPathComponents := append(repoPrefix, v.name, "_layers")
 
 		return path.Join(path.Join(append(blobLinkPathComponents, components...)...), "link"), nil
+	case blobsPathSpec:
+		blobsPathPrefix := append(rootPrefix, "blobs")
+		return path.Join(blobsPathPrefix...), nil
+	case blobPathSpec:
+		components, err := digestPathComponents(v.digest, true)
+		if err != nil {
+			return "", err
+		}
+
+		blobPathPrefix := append(rootPrefix, "blobs")
+		return path.Join(append(blobPathPrefix, components...)...), nil
 	case blobDataPathSpec:
 		components, err := digestPathComponents(v.digest, true)
 		if err != nil {
@@ -281,6 +297,14 @@ type pathSpec interface {
 	pathSpec()
 }
 
+// manifestRevisionsPathSpec describes the directory path for
+// a manifest revision.
+type manifestRevisionsPathSpec struct {
+	name string
+}
+
+func (manifestRevisionsPathSpec) pathSpec() {}
+
 // manifestRevisionPathSpec describes the components of the directory path for
 // a manifest revision.
 type manifestRevisionPathSpec struct {
@@ -301,7 +325,7 @@ type manifestRevisionLinkPathSpec struct {
 
 func (manifestRevisionLinkPathSpec) pathSpec() {}
 
-// manifestSignaturesPathSpec decribes the path components for the directory
+// manifestSignaturesPathSpec describes the path components for the directory
 // containing all the signatures for the target blob. Entries are named with
 // the underlying key id.
 type manifestSignaturesPathSpec struct {
@@ -311,7 +335,7 @@ type manifestSignaturesPathSpec struct {
 
 func (manifestSignaturesPathSpec) pathSpec() {}
 
-// manifestSignatureLinkPathSpec decribes the path components used to look up
+// manifestSignatureLinkPathSpec describes the path components used to look up
 // a signature file by the hash of its blob.
 type manifestSignatureLinkPathSpec struct {
 	name      string
@@ -404,12 +428,17 @@ var blobAlgorithmReplacer = strings.NewReplacer(
 	";", "/",
 )
 
-// // blobPathSpec contains the path for the registry global blob store.
-// type blobPathSpec struct {
-// 	digest digest.Digest
-// }
+// blobsPathSpec contains the path for the blobs directory
+type blobsPathSpec struct{}
 
-// func (blobPathSpec) pathSpec() {}
+func (blobsPathSpec) pathSpec() {}
+
+// blobPathSpec contains the path for the registry global blob store.
+type blobPathSpec struct {
+	digest digest.Digest
+}
+
+func (blobPathSpec) pathSpec() {}
 
 // blobDataPathSpec contains the path for the registry global blob store. For
 // now, this contains layer data, exclusively.
@@ -490,4 +519,24 @@ func digestPathComponents(dgst digest.Digest, multilevel bool) ([]string, error)
 	suffix = append(suffix, hex)
 
 	return append(prefix, suffix...), nil
+}
+
+// Reconstructs a digest from a path
+func digestFromPath(digestPath string) (digest.Digest, error) {
+
+	digestPath = strings.TrimSuffix(digestPath, "/data")
+	dir, hex := path.Split(digestPath)
+	dir = path.Dir(dir)
+	dir, next := path.Split(dir)
+
+	// next is either the algorithm OR the first two characters in the hex string
+	var algo string
+	if next == hex[:2] {
+		algo = path.Base(dir)
+	} else {
+		algo = next
+	}
+
+	dgst := digest.NewDigestFromHex(algo, hex)
+	return dgst, dgst.Validate()
 }

@@ -7,12 +7,14 @@ import (
 	"io"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/pkg/jsonmessage"
+	"github.com/docker/docker/pkg/promise"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/pkg/term"
 	"github.com/docker/docker/reference"
@@ -21,6 +23,7 @@ import (
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
 	"github.com/docker/go-connections/nat"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/logger"
 	"github.com/docker/libcompose/project"
 	util "github.com/docker/libcompose/utils"
@@ -28,6 +31,9 @@ import (
 
 // DefaultTag is the name of the default tag of an image.
 const DefaultTag = "latest"
+
+// ComposeVersion is name of docker-compose.yml file syntax supported version
+const ComposeVersion = "1.5.0"
 
 // Container holds information about a docker container and the service it is tied on.
 // It implements Service interface by encapsulating a EmptyService.
@@ -58,7 +64,7 @@ func (c *Container) findInfo() (types.ContainerJSON, error) {
 		return types.ContainerJSON{}, err
 	}
 
-	return c.client.ContainerInspect(container.ID)
+	return c.client.ContainerInspect(context.Background(), container.ID)
 }
 
 // Info returns info about the container, like name, command, state or ports.
@@ -110,6 +116,16 @@ func name(names []string) string {
 	return current[1:]
 }
 
+func getContainerNumber(c *Container) string {
+	containers, err := c.service.collectContainers()
+	if err != nil {
+		logrus.Errorf("Unable to collect the containers from service")
+		return "1"
+	}
+	// Returns container count + 1
+	return strconv.Itoa(len(containers) + 1)
+}
+
 // Recreate will not refresh the container by means of relaxation and enjoyment,
 // just delete it and create a new one with the current configuration
 func (c *Container) Recreate(imageName string) (*types.Container, error) {
@@ -126,19 +142,18 @@ func (c *Container) Recreate(imageName string) (*types.Container, error) {
 	name := info.Name[1:]
 	newName := fmt.Sprintf("%s_%s", name, info.ID[:12])
 	logrus.Debugf("Renaming %s => %s", name, newName)
-	if err := c.client.ContainerRename(info.ID, newName); err != nil {
+	if err := c.client.ContainerRename(context.Background(), info.ID, newName); err != nil {
 		logrus.Errorf("Failed to rename old container %s", c.name)
 		return nil, err
 	}
 
-	newContainer, err := c.createContainer(imageName, info.ID)
+	newContainer, err := c.createContainer(imageName, info.ID, nil)
 	if err != nil {
 		return nil, err
 	}
 	logrus.Debugf("Created replacement container %s", newContainer.ID)
 
-	if err := c.client.ContainerRemove(types.ContainerRemoveOptions{
-		ContainerID:   info.ID,
+	if err := c.client.ContainerRemove(context.Background(), info.ID, types.ContainerRemoveOptions{
 		Force:         true,
 		RemoveVolumes: false,
 	}); err != nil {
@@ -154,13 +169,20 @@ func (c *Container) Recreate(imageName string) (*types.Container, error) {
 // to notify the container has been created. If the container already exists, does
 // nothing.
 func (c *Container) Create(imageName string) (*types.Container, error) {
+	return c.CreateWithOverride(imageName, nil)
+}
+
+// CreateWithOverride create container and override parts of the config to
+// allow special situations to override the config generated from the compose
+// file
+func (c *Container) CreateWithOverride(imageName string, configOverride *config.ServiceConfig) (*types.Container, error) {
 	container, err := c.findExisting()
 	if err != nil {
 		return nil, err
 	}
 
 	if container == nil {
-		container, err = c.createContainer(imageName, "")
+		container, err = c.createContainer(imageName, "", configOverride)
 		if err != nil {
 			return nil, err
 		}
@@ -172,10 +194,24 @@ func (c *Container) Create(imageName string) (*types.Container, error) {
 	return container, err
 }
 
-// Down stops the container.
-func (c *Container) Down() error {
+// Stop stops the container.
+func (c *Container) Stop() error {
 	return c.withContainer(func(container *types.Container) error {
-		return c.client.ContainerStop(container.ID, int(c.service.context.Timeout))
+		return c.client.ContainerStop(context.Background(), container.ID, int(c.service.context.Timeout))
+	})
+}
+
+// Down stops and remove the container.
+func (c *Container) Down() error {
+	if err := c.Stop(); err != nil {
+		return err
+	}
+
+	return c.withContainer(func(container *types.Container) error {
+		return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
+			Force:         true,
+			RemoveVolumes: c.service.context.Volume,
+		})
 	})
 }
 
@@ -183,7 +219,7 @@ func (c *Container) Down() error {
 func (c *Container) Pause() error {
 	return c.withContainer(func(container *types.Container) error {
 		if !strings.Contains(container.Status, "Paused") {
-			return c.client.ContainerPause(container.ID)
+			return c.client.ContainerPause(context.Background(), container.ID)
 		}
 		return nil
 	})
@@ -193,7 +229,7 @@ func (c *Container) Pause() error {
 func (c *Container) Unpause() error {
 	return c.withContainer(func(container *types.Container) error {
 		if strings.Contains(container.Status, "Paused") {
-			return c.client.ContainerUnpause(container.ID)
+			return c.client.ContainerUnpause(context.Background(), container.ID)
 		}
 		return nil
 	})
@@ -202,7 +238,7 @@ func (c *Container) Unpause() error {
 // Kill kill the container.
 func (c *Container) Kill() error {
 	return c.withContainer(func(container *types.Container) error {
-		return c.client.ContainerKill(container.ID, c.service.context.Signal)
+		return c.client.ContainerKill(context.Background(), container.ID, c.service.context.Signal)
 	})
 }
 
@@ -214,17 +250,140 @@ func (c *Container) Delete() error {
 		return err
 	}
 
-	info, err := c.client.ContainerInspect(container.ID)
+	info, err := c.client.ContainerInspect(context.Background(), container.ID)
 	if err != nil {
 		return err
 	}
 
-	if !info.State.Running {
-		return c.client.ContainerRemove(types.ContainerRemoveOptions{
-			ContainerID:   container.ID,
-			Force:         true,
-			RemoveVolumes: c.service.context.Volume,
-		})
+	if info.State.Running {
+		err := c.client.ContainerStop(context.Background(), container.ID, int(c.service.context.Timeout))
+		if err != nil {
+			return err
+		}
+	}
+
+	return c.client.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{
+		Force:         true,
+		RemoveVolumes: c.service.context.Volume,
+	})
+
+	//return c.client.RemoveContainer(dockerclient.RemoveContainerOptions{ID: container.ID, Force: true, RemoveVolumes: c.service.context.Volume})
+}
+
+// Run creates, start and attach to the container based on the image name,
+// the specified configuration.
+// It will always create a new container.
+func (c *Container) Run(imageName string, configOverride *config.ServiceConfig) (int, error) {
+	var (
+		errCh       chan error
+		out, stderr io.Writer
+		in          io.ReadCloser
+	)
+
+	container, err := c.createContainer(imageName, "", configOverride)
+	if err != nil {
+		return -1, err
+	}
+
+	info, err := c.client.ContainerInspect(context.Background(), container.ID)
+	if err != nil {
+		return -1, err
+	}
+
+	if configOverride.StdinOpen {
+		in = os.Stdin
+	}
+	if configOverride.Tty {
+		out = os.Stdout
+	}
+	if configOverride.Tty {
+		stderr = os.Stderr
+	}
+
+	options := types.ContainerAttachOptions{
+		Stream: true,
+		Stdin:  configOverride.StdinOpen,
+		Stdout: configOverride.Tty,
+		Stderr: configOverride.Tty,
+	}
+
+	resp, err := c.client.ContainerAttach(context.Background(), container.ID, options)
+	if err != nil {
+		return -1, err
+	}
+
+	// set raw terminal
+	inFd, _ := term.GetFdInfo(in)
+	state, err := term.SetRawTerminal(inFd)
+	if err != nil {
+		return -1, err
+	}
+	// restore raw terminal
+	defer term.RestoreTerminal(inFd, state)
+	// holdHijackedConnection (in goroutine)
+	errCh = promise.Go(func() error {
+		return holdHijackedConnection(configOverride.Tty, in, out, stderr, resp)
+	})
+
+	if err := c.client.ContainerStart(context.Background(), container.ID); err != nil {
+		return -1, err
+	}
+
+	if err := <-errCh; err != nil {
+		logrus.Debugf("Error hijack: %s", err)
+		return -1, err
+	}
+
+	info, err = c.client.ContainerInspect(context.Background(), container.ID)
+	if err != nil {
+		return -1, err
+	}
+
+	return info.State.ExitCode, nil
+}
+
+func holdHijackedConnection(tty bool, inputStream io.ReadCloser, outputStream, errorStream io.Writer, resp types.HijackedResponse) error {
+	var err error
+	receiveStdout := make(chan error, 1)
+	if outputStream != nil || errorStream != nil {
+		go func() {
+			// When TTY is ON, use regular copy
+			if tty && outputStream != nil {
+				_, err = io.Copy(outputStream, resp.Reader)
+			} else {
+				_, err = stdcopy.StdCopy(outputStream, errorStream, resp.Reader)
+			}
+			logrus.Debugf("[hijack] End of stdout")
+			receiveStdout <- err
+		}()
+	}
+
+	stdinDone := make(chan struct{})
+	go func() {
+		if inputStream != nil {
+			io.Copy(resp.Conn, inputStream)
+			logrus.Debugf("[hijack] End of stdin")
+		}
+
+		if err := resp.CloseWrite(); err != nil {
+			logrus.Debugf("Couldn't send EOF: %s", err)
+		}
+		close(stdinDone)
+	}()
+
+	select {
+	case err := <-receiveStdout:
+		if err != nil {
+			logrus.Debugf("Error receiveStdout: %s", err)
+			return err
+		}
+	case <-stdinDone:
+		if outputStream != nil || errorStream != nil {
+			if err := <-receiveStdout; err != nil {
+				logrus.Debugf("Error receiveStdout: %s", err)
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -247,23 +406,28 @@ func (c *Container) Up(imageName string) error {
 		return err
 	}
 
-	info, err := c.client.ContainerInspect(container.ID)
+	info, err := c.client.ContainerInspect(context.Background(), container.ID)
 	if err != nil {
 		return err
 	}
 
 	if !info.State.Running {
-		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Starting container")
-		if err = c.client.ContainerStart(container.ID); err != nil {
-			logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
-			return err
-		}
-
-		c.service.context.Project.Notify(project.EventContainerStarted, c.service.Name(), map[string]string{
-			"name": c.Name(),
-		})
+		c.Start(container)
 	}
 
+	return nil
+}
+
+// Start the specified container with the specified host config
+func (c *Container) Start(container *types.Container) error {
+	logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Starting container")
+	if err := c.client.ContainerStart(context.Background(), container.ID); err != nil {
+		logrus.WithFields(logrus.Fields{"container.ID": container.ID, "c.name": c.name}).Debug("Failed to start container")
+		return err
+	}
+	c.service.context.Project.Notify(project.EventContainerStarted, c.service.Name(), map[string]string{
+		"name": c.Name(),
+	})
 	return nil
 }
 
@@ -285,7 +449,7 @@ func (c *Container) OutOfSync(imageName string) (bool, error) {
 		return true, nil
 	}
 
-	image, _, err := c.client.ImageInspectWithRaw(info.Config.Image, false)
+	image, _, err := c.client.ImageInspectWithRaw(context.Background(), info.Config.Image, false)
 	if err != nil {
 		if client.IsErrImageNotFound(err) {
 			logrus.Debugf("Image %s do not exist, do not know if it's out of sync", info.Config.Image)
@@ -299,7 +463,7 @@ func (c *Container) OutOfSync(imageName string) (bool, error) {
 }
 
 func (c *Container) getHash() string {
-	return project.GetServiceHash(c.service.Name(), c.service.Config())
+	return config.GetServiceHash(c.service.Name(), c.service.Config())
 }
 
 func volumeBinds(volumes map[string]struct{}, container *types.ContainerJSON) []string {
@@ -312,7 +476,13 @@ func volumeBinds(volumes map[string]struct{}, container *types.ContainerJSON) []
 	return result
 }
 
-func (c *Container) createContainer(imageName, oldContainer string) (*types.Container, error) {
+func (c *Container) createContainer(imageName, oldContainer string, configOverride *config.ServiceConfig) (*types.Container, error) {
+	serviceConfig := c.service.serviceConfig
+	if configOverride != nil {
+		serviceConfig.Command = configOverride.Command
+		serviceConfig.Tty = configOverride.Tty
+		serviceConfig.StdinOpen = configOverride.StdinOpen
+	}
 	configWrapper, err := ConvertToAPI(c.service)
 	if err != nil {
 		return nil, err
@@ -324,10 +494,13 @@ func (c *Container) createContainer(imageName, oldContainer string) (*types.Cont
 		configWrapper.Config.Labels = map[string]string{}
 	}
 
-	configWrapper.Config.Labels[NAME.Str()] = c.name
 	configWrapper.Config.Labels[SERVICE.Str()] = c.service.name
 	configWrapper.Config.Labels[PROJECT.Str()] = c.service.context.Project.Name
 	configWrapper.Config.Labels[HASH.Str()] = c.getHash()
+	// libcompose run command not yet supported, so always "False"
+	configWrapper.Config.Labels[ONEOFF.Str()] = "False"
+	configWrapper.Config.Labels[NUMBER.Str()] = getContainerNumber(c)
+	configWrapper.Config.Labels[VERSION.Str()] = ComposeVersion
 
 	err = c.populateAdditionalHostConfig(configWrapper.HostConfig)
 	if err != nil {
@@ -335,7 +508,7 @@ func (c *Container) createContainer(imageName, oldContainer string) (*types.Cont
 	}
 
 	if oldContainer != "" {
-		info, err := c.client.ContainerInspect(oldContainer)
+		info, err := c.client.ContainerInspect(context.Background(), oldContainer)
 		if err != nil {
 			return nil, err
 		}
@@ -344,14 +517,14 @@ func (c *Container) createContainer(imageName, oldContainer string) (*types.Cont
 
 	logrus.Debugf("Creating container %s %#v", c.name, configWrapper)
 
-	container, err := c.client.ContainerCreate(configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name)
+	container, err := c.client.ContainerCreate(context.Background(), configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name)
 	if err != nil {
 		if client.IsErrImageNotFound(err) {
 			logrus.Debugf("Not Found, pulling image %s", configWrapper.Config.Image)
 			if err = c.pull(configWrapper.Config.Image); err != nil {
 				return nil, err
 			}
-			if container, err = c.client.ContainerCreate(configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name); err != nil {
+			if container, err = c.client.ContainerCreate(context.Background(), configWrapper.Config, configWrapper.HostConfig, configWrapper.NetworkingConfig, c.name); err != nil {
 				return nil, err
 			}
 		} else {
@@ -367,7 +540,7 @@ func (c *Container) populateAdditionalHostConfig(hostConfig *container.HostConfi
 	links := map[string]string{}
 
 	for _, link := range c.service.DependentServices() {
-		if _, ok := c.service.context.Project.Configs[link.Target]; !ok {
+		if !c.service.context.Project.Configs.Has(link.Target) {
 			continue
 		}
 
@@ -469,7 +642,7 @@ func (c *Container) Restart() error {
 		return err
 	}
 
-	return c.client.ContainerRestart(container.ID, int(c.service.context.Timeout))
+	return c.client.ContainerRestart(context.Background(), container.ID, int(c.service.context.Timeout))
 }
 
 // Log forwards container logs to the project configured logger.
@@ -479,7 +652,7 @@ func (c *Container) Log() error {
 		return err
 	}
 
-	info, err := c.client.ContainerInspect(container.ID)
+	info, err := c.client.ContainerInspect(context.Background(), container.ID)
 	if err != nil {
 		return err
 	}
@@ -487,13 +660,12 @@ func (c *Container) Log() error {
 	l := c.service.context.LoggerFactory.Create(c.name)
 
 	options := types.ContainerLogsOptions{
-		ContainerID: c.name,
-		ShowStdout:  true,
-		ShowStderr:  true,
-		Follow:      true,
-		Tail:        "0",
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     c.service.context.FollowLog,
+		Tail:       "all",
 	}
-	responseBody, err := c.client.ContainerLogs(context.Background(), options)
+	responseBody, err := c.client.ContainerLogs(context.Background(), c.name, options)
 	if err != nil {
 		return err
 	}
@@ -514,14 +686,19 @@ func (c *Container) pull(image string) error {
 }
 
 func pullImage(client client.APIClient, service *Service, image string) error {
-	tag := reference.DefaultTag
 	distributionRef, err := reference.ParseNamed(image)
 	if err != nil {
 		return err
 	}
 
-	if named, ok := distributionRef.(reference.NamedTagged); ok {
-		tag = named.Tag()
+	switch distributionRef.(type) {
+	case reference.Canonical:
+	case reference.NamedTagged:
+	default:
+		distributionRef, err = reference.WithTag(distributionRef, "latest")
+		if err != nil {
+			return err
+		}
 	}
 
 	repoInfo, err := registry.ParseRepositoryInfo(distributionRef)
@@ -540,11 +717,9 @@ func pullImage(client client.APIClient, service *Service, image string) error {
 	}
 
 	options := types.ImagePullOptions{
-		ImageID:      distributionRef.Name(),
-		Tag:          tag,
 		RegistryAuth: encodedAuth,
 	}
-	responseBody, err := client.ImagePull(context.Background(), options, nil)
+	responseBody, err := client.ImagePull(context.Background(), distributionRef.String(), options)
 	if err != nil {
 		logrus.Errorf("Failed to pull image %s: %v", image, err)
 		return err

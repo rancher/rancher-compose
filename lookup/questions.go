@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/utils"
 	"github.com/rancher/rancher-catalog-service/model"
 	"github.com/rancher/rancher-compose/rancher"
@@ -19,13 +19,13 @@ type questionWrapper struct {
 }
 
 type QuestionLookup struct {
-	parent    project.EnvironmentLookup
+	parent    config.EnvironmentLookup
 	questions map[string]model.Question
 	variables map[string]string
 	Context   *rancher.Context
 }
 
-func NewQuestionLookup(file string, parent project.EnvironmentLookup) (*QuestionLookup, error) {
+func NewQuestionLookup(file string, parent config.EnvironmentLookup) (*QuestionLookup, error) {
 	ret := &QuestionLookup{
 		parent:    parent,
 		variables: map[string]string{},
@@ -71,7 +71,7 @@ func join(key, v string) []string {
 	return []string{fmt.Sprintf("%s=%s", key, v)}
 }
 
-func (f *QuestionLookup) Lookup(key, serviceName string, config *project.ServiceConfig) []string {
+func (f *QuestionLookup) Lookup(key, serviceName string, config *config.ServiceConfig) []string {
 	if v, ok := f.variables[key]; ok {
 		return join(key, v)
 	}

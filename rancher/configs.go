@@ -7,8 +7,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types/container"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker"
-	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 	rancherClient "github.com/rancher/go-rancher/client"
 )
@@ -23,7 +23,7 @@ func createLaunchConfigs(r *RancherService) (rancherClient.LaunchConfig, []ranch
 
 	if secondaries, ok := r.Context().SidekickInfo.primariesToSidekicks[r.Name()]; ok {
 		for _, secondaryName := range secondaries {
-			serviceConfig, ok := r.Context().Project.Configs[secondaryName]
+			serviceConfig, ok := r.Context().Project.Configs.Get(secondaryName)
 			if !ok {
 				return launchConfig, nil, fmt.Errorf("Failed to find sidekick: %s", secondaryName)
 			}
@@ -48,7 +48,7 @@ func createLaunchConfigs(r *RancherService) (rancherClient.LaunchConfig, []ranch
 	return launchConfig, secondaryLaunchConfigs, nil
 }
 
-func createLaunchConfig(r *RancherService, name string, serviceConfig *project.ServiceConfig) (rancherClient.LaunchConfig, error) {
+func createLaunchConfig(r *RancherService, name string, serviceConfig *config.ServiceConfig) (rancherClient.LaunchConfig, error) {
 	var result rancherClient.LaunchConfig
 
 	rancherConfig := r.context.RancherConfig[name]
@@ -117,7 +117,7 @@ func setupVolumesFrom(volumesFrom []string, launchConfig *rancherClient.LaunchCo
 	launchConfig.DataVolumesFromLaunchConfigs = volumesFrom
 }
 
-func setupBuild(r *RancherService, name string, result *rancherClient.LaunchConfig, serviceConfig *project.ServiceConfig) error {
+func setupBuild(r *RancherService, name string, result *rancherClient.LaunchConfig, serviceConfig *config.ServiceConfig) error {
 	if serviceConfig.Build != "" {
 		result.Build = &rancherClient.DockerBuild{
 			Remote:     serviceConfig.Build,
@@ -125,7 +125,7 @@ func setupBuild(r *RancherService, name string, result *rancherClient.LaunchConf
 		}
 
 		needBuild := true
-		for _, remote := range project.ValidRemotes {
+		for _, remote := range config.ValidRemotes {
 			if strings.HasPrefix(serviceConfig.Build, remote) {
 				needBuild = false
 				break

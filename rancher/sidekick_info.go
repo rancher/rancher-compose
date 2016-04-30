@@ -19,10 +19,12 @@ func NewSidekickInfo(project *project.Project) *SidekickInfo {
 		sidekickToPrimaries:  map[string][]string{},
 	}
 
-	for name, config := range project.Configs {
+	for _, name := range project.Configs.Keys() {
+		config, _ := project.Configs.Get(name)
+
 		sidekicks := []string{}
 
-		for key, value := range config.Labels.MapParts() {
+		for key, value := range config.Labels {
 			if key != "io.rancher.sidekicks" {
 				continue
 			}

@@ -235,3 +235,20 @@ func Upgrade(p *project.Project, c *cli.Context) {
 		logrus.Fatal(err)
 	}
 }
+
+// StopCommand defines the libcompose stop subcommand.
+func StopCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:      "stop",
+		ShortName: "down",
+		Usage:     "Stop services",
+		Action:    app.WithProject(factory, app.ProjectStop),
+		Flags: []cli.Flag{
+			cli.IntFlag{
+				Name:  "timeout,t",
+				Usage: "Specify a shutdown timeout in seconds.",
+				Value: 10,
+			},
+		},
+	}
+}

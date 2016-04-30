@@ -9,6 +9,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types/container"
+	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/project"
 	"github.com/gorilla/websocket"
@@ -31,7 +32,7 @@ type ContainerInspect struct {
 
 type RancherService struct {
 	name          string
-	serviceConfig *project.ServiceConfig
+	serviceConfig *config.ServiceConfig
 	context       *Context
 }
 
@@ -39,7 +40,7 @@ func (r *RancherService) Name() string {
 	return r.name
 }
 
-func (r *RancherService) Config() *project.ServiceConfig {
+func (r *RancherService) Config() *config.ServiceConfig {
 	return r.serviceConfig
 }
 
@@ -54,7 +55,7 @@ func (r *RancherService) RancherConfig() RancherConfig {
 	return RancherConfig{}
 }
 
-func NewService(name string, config *project.ServiceConfig, context *Context) *RancherService {
+func NewService(name string, config *config.ServiceConfig, context *Context) *RancherService {
 	return &RancherService{
 		name:          name,
 		serviceConfig: config,
@@ -163,7 +164,7 @@ func (r *RancherService) up(create bool) error {
 	return err
 }
 
-func (r *RancherService) Down() error {
+func (r *RancherService) Stop() error {
 	service, err := r.FindExisting(r.name)
 
 	if err == nil && service == nil {
@@ -370,16 +371,16 @@ func (r *RancherService) getLbLinks() ([]interface{}, error) {
 }
 
 func (r *RancherService) SelectorContainer() string {
-	return r.serviceConfig.Labels.MapParts()["io.rancher.service.selector.container"]
+	return r.serviceConfig.Labels["io.rancher.service.selector.container"]
 }
 
 func (r *RancherService) SelectorLink() string {
-	return r.serviceConfig.Labels.MapParts()["io.rancher.service.selector.link"]
+	return r.serviceConfig.Labels["io.rancher.service.selector.link"]
 }
 
 func (r *RancherService) getLbLinkPorts(name string) ([]string, error) {
 	labelName := "io.rancher.loadbalancer.target." + name
-	v := r.serviceConfig.Labels.MapParts()[labelName]
+	v := r.serviceConfig.Labels[labelName]
 	if v == "" {
 		return []string{}, nil
 	}
@@ -407,7 +408,7 @@ func (r *RancherService) getServiceLinks() ([]interface{}, error) {
 func (r *RancherService) getLinks() (map[Link]string, error) {
 	result := map[Link]string{}
 
-	for _, link := range append(r.serviceConfig.Links.Slice(), r.serviceConfig.ExternalLinks...) {
+	for _, link := range append(r.serviceConfig.Links, r.serviceConfig.ExternalLinks...) {
 		parts := strings.SplitN(link, ":", 2)
 		name := parts[0]
 		alias := ""
@@ -424,7 +425,7 @@ func (r *RancherService) getLinks() (map[Link]string, error) {
 		}
 
 		if linkedService == nil {
-			if _, ok := r.context.Project.Configs[name]; !ok {
+			if _, ok := r.context.Project.Configs.Get(name); !ok {
 				logrus.Warnf("Failed to find service %s to link to", name)
 			}
 		} else {
@@ -647,16 +648,16 @@ func (r *RancherService) Pull() (err error) {
 	}
 
 	toPull := map[string]bool{config.Image: true}
-	labels := config.Labels.MapParts()
+	labels := config.Labels
 
 	if secondaries, ok := r.context.SidekickInfo.primariesToSidekicks[r.name]; ok {
 		for _, secondaryName := range secondaries {
-			serviceConfig, ok := r.context.Project.Configs[secondaryName]
+			serviceConfig, ok := r.context.Project.Configs.Get(secondaryName)
 			if !ok {
 				continue
 			}
 
-			labels = rUtils.MapUnion(labels, serviceConfig.Labels.MapParts())
+			labels = rUtils.MapUnion(labels, serviceConfig.Labels)
 			if serviceConfig.Image != "" {
 				toPull[serviceConfig.Image] = true
 			}
@@ -679,12 +680,20 @@ func (r *RancherService) Pull() (err error) {
 	return
 }
 
-func (r *RancherService) Pause() (err error) {
+func (r *RancherService) Pause() error {
 	return project.ErrUnsupported
 }
 
-func (r *RancherService) Unpause() (err error) {
+func (r *RancherService) Unpause() error {
 	return project.ErrUnsupported
+}
+
+func (r *RancherService) Down() error {
+	return project.ErrUnsupported
+}
+
+func (r *RancherService) Run(commandParts []string) (int, error) {
+	return 0, project.ErrUnsupported
 }
 
 func appendHash(service *RancherService, labels map[string]interface{}) (map[string]interface{}, error) {

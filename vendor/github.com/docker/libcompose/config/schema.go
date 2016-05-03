@@ -82,7 +82,7 @@ var schemaString = `{
         "extra_hosts": {"$ref": "#/definitions/list_or_dict"},
         "external_ips": {"$ref": "#/definitions/list_of_strings"},
         "external_links": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "healthcheck": {"type": "object"},
+        "health_check": {"type": "object"},
         "hostname": {"type": "string"},
         "image": {"type": "string"},
         "ipc": {"type": "string"},

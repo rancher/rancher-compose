@@ -4,13 +4,33 @@ cd $(dirname $0)/..
 
 source $(dirname $0)/version
 
+OS_PLATFORM_ARG=(linux windows darwin freebsd)
+OS_ARCH_ARG=(386 amd64 arm)
+
 go generate
 go build -ldflags="-w -X github.com/rancher/rancher-compose/version.VERSION=$VERSION" -o bin/rancher-compose
 
 if [ -n "$CROSS" ]; then
     rm -rf build/bin
     mkdir -p build/bin
-    gox -os="darwin linux windows" -arch="386 amd64 arm" -output="build/bin/rancher-compose_{{.OS}}-{{.Arch}}" -ldflags="-w -X github.com/rancher/rancher-compose/version.VERSION $VERSION"
+    for OS in ${OS_PLATFORM_ARG[@]}; do
+        for ARCH in ${OS_ARCH_ARG[@]}; do
+            OUTPUT_BIN="build/bin/rancher-compose_$OS-$ARCH"
+            if test "$ARCH" = "arm"; then
+                if test "$OS" = "windows" || test "$OS" = "darwin"; then
+                    # windows/arm and darwin/arm does not compile without cgo :-|
+                    continue
+                fi
+            fi
+            if test "$OS" = "windows"; then
+                OUTPUT_BIN="${OUTPUT_BIN}.exe"
+            fi
+            echo "Building binary for $OS/$ARCH..."
+            GOARCH=$ARCH GOOS=$OS CGO_ENABLED=0 go build \
+                  -ldflags="-w -X github.com/rancher/rancher-compose/version.VERSION=$VERSION" \
+                  -o ${OUTPUT_BIN} ./
+        done
+    done
 fi
 
 if [ ! -e bin/rancher-compose-executor ]; then

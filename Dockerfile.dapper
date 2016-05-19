@@ -6,7 +6,6 @@ RUN curl -sL https://get.docker.com/builds/Linux/x86_64/docker-1.9.1 > /usr/bin/
 RUN apt-get update && \
     apt-get install -y --no-install-recommends default-jre python-pip zip xz-utils rsync
 RUN pip install --upgrade pip==6.0.3 tox==1.8.1 virtualenv==12.0.4
-RUN go get github.com/mitchellh/gox
 ENV PATH /go/bin:$PATH
 ENV DAPPER_SOURCE /go/src/github.com/rancher/rancher-compose
 ENV DAPPER_OUTPUT bin dist

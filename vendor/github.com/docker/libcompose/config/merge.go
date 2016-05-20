@@ -33,13 +33,15 @@ func MergeServices(existingServices *Configs, environmentLookup EnvironmentLooku
 	configs := make(map[string]*ServiceConfig)
 
 	datas := make(RawServiceMap)
-	if err := unmarshalAndPreprocess(bytes, &datas); err != nil {
+	if err := yaml.Unmarshal(bytes, &datas); err != nil {
 		return nil, err
 	}
 
 	if err := Interpolate(environmentLookup, &datas); err != nil {
 		return nil, err
 	}
+
+	datas = preprocessServiceMap(datas)
 
 	if err := validate(datas); err != nil {
 		return nil, err

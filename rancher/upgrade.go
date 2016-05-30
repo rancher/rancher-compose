@@ -78,7 +78,7 @@ func (r *RancherService) isOutOfSync(service *rancherClient.Service) bool {
 
 	newHash, err := factory.Hash(r)
 	if err != nil {
-		logrus.Errorf("Failed to calulcate hash for service %s: %v", r.name, err)
+		logrus.Errorf("Failed to calculate hash for service %s: %v", r.name, err)
 		return false
 	}
 

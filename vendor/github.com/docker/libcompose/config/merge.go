@@ -359,6 +359,10 @@ func preprocessServiceMap(serviceMap RawServiceMap) RawServiceMap {
 }
 
 func preprocess(item interface{}, replaceTypes bool) interface{} {
+        if item == nil {
+            return nil
+        }
+
 	switch typedDatas := item.(type) {
 
 	case map[interface{}]interface{}:
@@ -378,7 +382,6 @@ func preprocess(item interface{}, replaceTypes bool) interface{} {
 			newArray = append(newArray, preprocess(value, replaceTypes))
 		}
 		return newArray
-
 	default:
 		if replaceTypes {
 			return fmt.Sprint(item)

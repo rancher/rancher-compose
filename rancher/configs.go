@@ -98,6 +98,10 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *config.Se
 		result.Kind = "virtualMachine"
 	}
 
+	if result.LogConfig.Config == nil {
+		result.LogConfig.Config = map[string]interface{}{}
+	}
+
 	return result, err
 }
 

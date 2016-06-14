@@ -21,7 +21,7 @@ import:
   version:  v0.2.0
 
 - package:  github.com/docker/libcompose
-  version:  7a2b06f189e20687021af410615e81e24a030dd3
+  version:  cb3788b043945b6700a4206c230e892e9c75664f
   repo:     https://github.com/rancher/libcompose
 
 - package:  github.com/docker/libtrust
@@ -49,7 +49,7 @@ import:
   version:  ecc762f6877af82d7c6f56cae2a50045951f8af1
 
 - package:  github.com/rancher/go-rancher
-  version:  121abb93e27120a438c626bc580ddc987577f1e4
+  version:  6f68a5fa617dca7db1a509c2a789c1fffaca7b19
 
 - package:  github.com/rancher/rancher-catalog-service
   version:  a3a8b500adceb82b3a0387b2c7b06a60e7eeee9a

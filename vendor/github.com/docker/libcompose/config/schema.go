@@ -1,4 +1,3 @@
-
 package config
 
 var schemaString = `{
@@ -24,7 +23,6 @@ var schemaString = `{
         "build": {"type": "string"},
         "cap_add": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "cap_drop": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "certs": {"$ref": "#/definitions/list_of_strings"},
         "cgroup_parent": {"type": "string"},
         "command": {
           "oneOf": [
@@ -37,8 +35,6 @@ var schemaString = `{
         "cpu_quota": {"type": ["number", "string"]},
         "cpuset": {"type": "string"},
         "devices": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "default_cert": {"type": "string"},
-        "disks": {"type": "array"},
         "dns": {"$ref": "#/definitions/string_or_list"},
         "dns_search": {"$ref": "#/definitions/string_or_list"},
         "dockerfile": {"type": "string"},
@@ -80,22 +76,17 @@ var schemaString = `{
         },
 
         "extra_hosts": {"$ref": "#/definitions/list_or_dict"},
-        "external_ips": {"$ref": "#/definitions/list_of_strings"},
         "external_links": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "health_check": {"type": "object"},
         "hostname": {"type": "string"},
         "image": {"type": "string"},
         "ipc": {"type": "string"},
         "labels": {"$ref": "#/definitions/list_or_dict"},
         "links": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-        "load_balancer_config": {"type": "object"},
         "log_driver": {"type": "string"},
         "log_opt": {"type": "object"},
         "mac_address": {"type": "string"},
-        "memory": {"type": ["number", "string"]},
         "mem_limit": {"type": ["number", "string"]},
         "memswap_limit": {"type": ["number", "string"]},
-        "metadata": {"type": "object"},
         "net": {"type": "string"},
         "pid": {"type": ["string", "null"]},
 
@@ -111,15 +102,11 @@ var schemaString = `{
         "privileged": {"type": "boolean"},
         "read_only": {"type": "boolean"},
         "restart": {"type": "string"},
-        "retain_ip": {"type": "boolean"},
-        "scale": {"type": "number"},
         "security_opt": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "shm_size": {"type": ["number", "string"]},
         "stdin_open": {"type": "boolean"},
         "stop_signal": {"type": "string"},
         "tty": {"type": "boolean"},
-        "type": {"type": "string"},
-        "update_strategy": {"type": "object"},
         "ulimits": {
           "type": "object",
           "patternProperties": {
@@ -140,8 +127,6 @@ var schemaString = `{
           }
         },
         "user": {"type": "string"},
-        "userdata": {"type": "string"},
-        "vcpu": {"type": ["number", "string"]},
         "volumes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "volume_driver": {"type": "string"},
         "volumes_from": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
@@ -173,7 +158,7 @@ var schemaString = `{
           "type": "object",
           "patternProperties": {
             ".+": {
-              "type": ["string", "number", "null", "boolean"]
+              "type": ["string", "number", "null"]
             }
           },
           "additionalProperties": false

@@ -8,22 +8,24 @@ import (
 
 var (
 	infoEvents = map[EventType]bool{
-		EventProjectDeleteDone:   true,
-		EventProjectDeleteStart:  true,
-		EventProjectDownDone:     true,
-		EventProjectDownStart:    true,
-		EventProjectRestartDone:  true,
-		EventProjectRestartStart: true,
-		EventProjectUpDone:       true,
-		EventProjectUpStart:      true,
 		EventServiceDeleteStart:  true,
 		EventServiceDelete:       true,
 		EventServiceDownStart:    true,
 		EventServiceDown:         true,
+		EventServiceStopStart:    true,
+		EventServiceStop:         true,
+		EventServiceKillStart:    true,
+		EventServiceKill:         true,
+		EventServiceStartStart:   true,
+		EventServiceStart:        true,
 		EventServiceRestartStart: true,
 		EventServiceRestart:      true,
 		EventServiceUpStart:      true,
 		EventServiceUp:           true,
+		EventServicePauseStart:   true,
+		EventServicePause:        true,
+		EventServiceUnpauseStart: true,
+		EventServiceUnpause:      true,
 	}
 )
 

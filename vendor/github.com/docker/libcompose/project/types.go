@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+
 	"github.com/docker/libcompose/config"
 )
 
@@ -126,6 +127,14 @@ func (e EventType) String() string {
 		m = "Executing"
 	case EventServiceRun:
 		m = "Executed"
+	case EventServicePauseStart:
+		m = "Pausing"
+	case EventServicePause:
+		m = "Paused"
+	case EventServiceUnpauseStart:
+		m = "Unpausing"
+	case EventServiceUnpause:
+		m = "Unpaused"
 
 	case EventProjectDownStart:
 		m = "Stopping project"
@@ -167,6 +176,14 @@ func (e EventType) String() string {
 		m = "Building project"
 	case EventProjectBuildDone:
 		m = "Project built"
+	case EventProjectPauseStart:
+		m = "Pausing project"
+	case EventProjectPauseDone:
+		m = "Project paused"
+	case EventProjectUnpauseStart:
+		m = "Unpausing project"
+	case EventProjectUnpauseDone:
+		m = "Project unpaused"
 	}
 
 	if m == "" {

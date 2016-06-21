@@ -7,46 +7,44 @@ Docker compose compatible client that deploys to [Rancher](https://github.com/ra
 Binaries are available for Linux, OS X, and Windows. Refer to the latest [release](https://github.com/rancher/rancher-compose/releases).
 
 ## Building
-Run `./scripts/build` to create `./bin/rancher-compose`
+Run `make build` to create `./bin/rancher-compose`
 
 ## Usage:
 
 ```
-NAME:
-  rancher-compose - Docker-compose to Rancher
+Usage: rancher-compose [OPTIONS] COMMAND [arg...]
 
-USAGE:
-  rancher-compose [global options] command [command options] [arguments...]
+Docker-compose to Rancher
 
-Version: 0.7.2
+Version: v0.8.4
 
 Author:
-  Rancher Labs, Inc.
+Rancher Labs, Inc.
 
 Options:
-  --verbose, --debug
-  --file, -f				Specify an alternate compose file (default: docker-compose.yml) [$COMPOSE_FILE]
-  --project-name, -p 		Specify an alternate project name (default: directory name)
-  --url 					Specify the Rancher API endpoint URL [$RANCHER_URL]
-  --access-key 				Specify Rancher API access key [$RANCHER_ACCESS_KEY]
-  --secret-key 				Specify Rancher API secret key [$RANCHER_SECRET_KEY]
-  --rancher-file, -r 		Specify an alternate Rancher compose file (default: rancher-compose.yml)
-  --env-file, -e 			Specify a file from which to read environment variables
-  --help, -h				show help
-  --version, -v				print the version
+--verbose, --debug				
+--file, -f [--file option --file option]	Specify one or more alternate compose files (default: docker-compose.yml) [$COMPOSE_FILE]
+--project-name, -p 				Specify an alternate project name (default: directory name)
+--url 					Specify the Rancher API endpoint URL [$RANCHER_URL]
+--access-key 					Specify Rancher API access key [$RANCHER_ACCESS_KEY]
+--secret-key 					Specify Rancher API secret key [$RANCHER_SECRET_KEY]
+--rancher-file, -r 				Specify an alternate Rancher compose file (default: rancher-compose.yml)
+--env-file, -e 				Specify a file from which to read environment variables
+--help, -h					show help
+--version, -v					print the version
 
 Commands:
-  create					Create all services but do not start
-  up						Bring all services up
-  start						Start services
-  logs						Get service logs
-  restart					Restart services
-  stop, down				Stop services
-  scale						Scale services
-  rm						Delete services
-  pull						Pulls images for services
-  upgrade					Perform rolling upgrade between services
-  help, h					Shows a list of commands or help for one command
+create	Create all services but do not start
+up		Bring all services up
+start		Start services
+logs		Get service logs
+restart	Restart services
+stop, down	Stop services
+scale		Scale services
+rm		Delete services
+pull		Pulls images for services
+upgrade	Perform rolling upgrade between services
+help, h	Shows a list of commands or help for one command
 ```
 
 # Compose compatibility

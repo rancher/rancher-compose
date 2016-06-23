@@ -44,7 +44,7 @@ func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgr
 	}
 
 	p.AddListener(NewListenLogger(logger, p))
-	return p, variables, p.Parse()
+	return p, variables, nil
 }
 
 func constructProject(logger *logrus.Entry, env *client.Environment, url, accessKey, secretKey string) (*rancher.Context, *project.Project, error) {

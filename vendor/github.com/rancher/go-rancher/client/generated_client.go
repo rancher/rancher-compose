@@ -11,6 +11,7 @@ type RancherClient struct {
 	Agent                                    AgentOperations
 	ApiKey                                   ApiKeyOperations
 	AuditLog                                 AuditLogOperations
+	Azureadconfig                            AzureadconfigOperations
 	Backup                                   BackupOperations
 	BackupTarget                             BackupTargetOperations
 	BaseMachineConfig                        BaseMachineConfigOperations
@@ -107,6 +108,7 @@ type RancherClient struct {
 	RestoreFromBackupInput                   RestoreFromBackupInputOperations
 	RevertToSnapshotInput                    RevertToSnapshotInputOperations
 	RollingRestartStrategy                   RollingRestartStrategyOperations
+	ScalePolicy                              ScalePolicyOperations
 	SecondaryLaunchConfig                    SecondaryLaunchConfigOperations
 	Service                                  ServiceOperations
 	ServiceConsumeMap                        ServiceConsumeMapOperations
@@ -154,6 +156,7 @@ func constructClient() *RancherClient {
 	client.Agent = newAgentClient(client)
 	client.ApiKey = newApiKeyClient(client)
 	client.AuditLog = newAuditLogClient(client)
+	client.Azureadconfig = newAzureadconfigClient(client)
 	client.Backup = newBackupClient(client)
 	client.BackupTarget = newBackupTargetClient(client)
 	client.BaseMachineConfig = newBaseMachineConfigClient(client)
@@ -250,6 +253,7 @@ func constructClient() *RancherClient {
 	client.RestoreFromBackupInput = newRestoreFromBackupInputClient(client)
 	client.RevertToSnapshotInput = newRevertToSnapshotInputClient(client)
 	client.RollingRestartStrategy = newRollingRestartStrategyClient(client)
+	client.ScalePolicy = newScalePolicyClient(client)
 	client.SecondaryLaunchConfig = newSecondaryLaunchConfigClient(client)
 	client.Service = newServiceClient(client)
 	client.ServiceConsumeMap = newServiceConsumeMapClient(client)

@@ -67,6 +67,7 @@ type RancherConfig struct {
 	DefaultCert        string                                 `yaml:"default_cert,omitempty"`
 	Certs              []string                               `yaml:"certs,omitempty"`
 	Metadata           map[string]interface{}                 `yaml:"metadata,omitempty"`
+	ScalePolicy        *rancherClient.ScalePolicy             `yaml:"scale_policy,omitempty"`
 	ServiceSchemas     map[string]rancherClient.Schema        `yaml:"service_schemas,omitempty"`
 	UpgradeStrategy    rancherClient.InServiceUpgradeStrategy `yaml:"upgrade_strategy,omitempty"`
 }

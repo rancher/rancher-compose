@@ -192,8 +192,6 @@ type LaunchConfigOperations interface {
 
 	ActionExecute(*LaunchConfig, *ContainerExec) (*HostAccess, error)
 
-	ActionLogs(*LaunchConfig, *ContainerLogs) (*HostAccess, error)
-
 	ActionMigrate(*LaunchConfig) (*Instance, error)
 
 	ActionProxy(*LaunchConfig, *ContainerProxy) (*HostAccess, error)
@@ -310,15 +308,6 @@ func (c *LaunchConfigClient) ActionExecute(resource *LaunchConfig, input *Contai
 	resp := &HostAccess{}
 
 	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "execute", &resource.Resource, input, resp)
-
-	return resp, err
-}
-
-func (c *LaunchConfigClient) ActionLogs(resource *LaunchConfig, input *ContainerLogs) (*HostAccess, error) {
-
-	resp := &HostAccess{}
-
-	err := c.rancherClient.doAction(LAUNCH_CONFIG_TYPE, "logs", &resource.Resource, input, resp)
 
 	return resp, err
 }

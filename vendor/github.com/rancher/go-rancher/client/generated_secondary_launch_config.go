@@ -194,8 +194,6 @@ type SecondaryLaunchConfigOperations interface {
 
 	ActionExecute(*SecondaryLaunchConfig, *ContainerExec) (*HostAccess, error)
 
-	ActionLogs(*SecondaryLaunchConfig, *ContainerLogs) (*HostAccess, error)
-
 	ActionMigrate(*SecondaryLaunchConfig) (*Instance, error)
 
 	ActionProxy(*SecondaryLaunchConfig, *ContainerProxy) (*HostAccess, error)
@@ -312,15 +310,6 @@ func (c *SecondaryLaunchConfigClient) ActionExecute(resource *SecondaryLaunchCon
 	resp := &HostAccess{}
 
 	err := c.rancherClient.doAction(SECONDARY_LAUNCH_CONFIG_TYPE, "execute", &resource.Resource, input, resp)
-
-	return resp, err
-}
-
-func (c *SecondaryLaunchConfigClient) ActionLogs(resource *SecondaryLaunchConfig, input *ContainerLogs) (*HostAccess, error) {
-
-	resp := &HostAccess{}
-
-	err := c.rancherClient.doAction(SECONDARY_LAUNCH_CONFIG_TYPE, "logs", &resource.Resource, input, resp)
 
 	return resp, err
 }

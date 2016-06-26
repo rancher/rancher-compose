@@ -54,6 +54,7 @@ func (f *NormalFactory) config(r *RancherService) (*CompositeService, *rancherCl
 			Name:              r.name,
 			Metadata:          r.Metadata(),
 			Scale:             int64(r.getConfiguredScale()),
+			ScalePolicy:       rancherConfig.ScalePolicy,
 			RetainIp:          rancherConfig.RetainIp,
 			EnvironmentId:     r.Context().Environment.Id,
 			SelectorContainer: r.SelectorContainer(),

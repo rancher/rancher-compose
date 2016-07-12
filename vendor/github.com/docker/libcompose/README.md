@@ -1,7 +1,7 @@
 # libcompose
 
 [![GoDoc](https://godoc.org/github.com/docker/libcompose?status.png)](https://godoc.org/github.com/docker/libcompose)
-[![Jenkins Build Status](https://jenkins.dockerproject.org/view/Libcompose/job/Libcompose%20Master/badge/icon)](https://jenkins.dockerproject.org/view/Libcompose/job/Libcompose%20Master/)
+[![Build Status](https://jenkins.dockerproject.org/job/docker/job/libcompose/branch/master/badge/icon)](https://jenkins.dockerproject.org/job/docker/job/libcompose/branch/master/)
 
 A Go library for Docker Compose. It does everything the command-line tool does, but from within Go -- read Compose files, start them, scale them, etc.
 
@@ -13,8 +13,11 @@ package main
 import (
 	"log"
 
+	"golang.org/x/net/context"
+
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/options"
 )
 
 func main() {
@@ -23,13 +26,17 @@ func main() {
 			ComposeFiles: []string{"docker-compose.yml"},
 			ProjectName:  "my-compose",
 		},
-	})
+	}, nil)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	project.Up()
+	err = project.Up(context.Background(), options.Up{})
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 ```
 

@@ -776,22 +776,22 @@ func (v *subSchema) validateNumber(currentSubSchema *subSchema, value interface{
 		if currentSubSchema.exclusiveMaximum {
 			if float64Value >= *currentSubSchema.maximum {
 				result.addError(
-					new(NumberLTError),
+					new(NumberLTEError),
 					context,
 					resultErrorFormatJsonNumber(number),
 					ErrorDetails{
-						"max": resultErrorFormatNumber(*currentSubSchema.maximum),
+						"min": resultErrorFormatNumber(*currentSubSchema.maximum),
 					},
 				)
 			}
 		} else {
 			if float64Value > *currentSubSchema.maximum {
 				result.addError(
-					new(NumberLTEError),
+					new(NumberLTError),
 					context,
 					resultErrorFormatJsonNumber(number),
 					ErrorDetails{
-						"max": resultErrorFormatNumber(*currentSubSchema.maximum),
+						"min": resultErrorFormatNumber(*currentSubSchema.maximum),
 					},
 				)
 			}
@@ -803,22 +803,22 @@ func (v *subSchema) validateNumber(currentSubSchema *subSchema, value interface{
 		if currentSubSchema.exclusiveMinimum {
 			if float64Value <= *currentSubSchema.minimum {
 				result.addError(
-					new(NumberGTError),
+					new(NumberGTEError),
 					context,
 					resultErrorFormatJsonNumber(number),
 					ErrorDetails{
-						"min": resultErrorFormatNumber(*currentSubSchema.minimum),
+						"max": resultErrorFormatNumber(*currentSubSchema.minimum),
 					},
 				)
 			}
 		} else {
 			if float64Value < *currentSubSchema.minimum {
 				result.addError(
-					new(NumberGTEError),
+					new(NumberGTError),
 					context,
 					resultErrorFormatJsonNumber(number),
 					ErrorDetails{
-						"min": resultErrorFormatNumber(*currentSubSchema.minimum),
+						"max": resultErrorFormatNumber(*currentSubSchema.minimum),
 					},
 				)
 			}

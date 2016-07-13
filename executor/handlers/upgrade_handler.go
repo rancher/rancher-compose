@@ -7,14 +7,14 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/utils"
-	"github.com/rancher/go-machine-service/events"
+	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 )
 
 func UpgradeEnvironment(event *events.Event, apiClient *client.RancherClient) error {
 	logger := logrus.WithFields(logrus.Fields{
-		"resourceId": event.ResourceId,
-		"eventId":    event.Id,
+		"resourceId": event.ResourceID,
+		"eventId":    event.ID,
 	})
 
 	logger.Info("Upgrade Stack Event Received")
@@ -31,13 +31,13 @@ func UpgradeEnvironment(event *events.Event, apiClient *client.RancherClient) er
 
 func FinishUpgradeEnvironment(event *events.Event, apiClient *client.RancherClient) error {
 	logger := logrus.WithFields(logrus.Fields{
-		"resourceId": event.ResourceId,
-		"eventId":    event.Id,
+		"resourceId": event.ResourceID,
+		"eventId":    event.ID,
 	})
 
 	logger.Info("Finish Upgrade Stack Event Received")
 
-	env, err := apiClient.Environment.ById(event.ResourceId)
+	env, err := apiClient.Environment.ById(event.ResourceID)
 	if err != nil {
 		return err
 	}
@@ -75,13 +75,13 @@ func FinishUpgradeEnvironment(event *events.Event, apiClient *client.RancherClie
 
 func RollbackEnvironment(event *events.Event, apiClient *client.RancherClient) error {
 	logger := logrus.WithFields(logrus.Fields{
-		"resourceId": event.ResourceId,
-		"eventId":    event.Id,
+		"resourceId": event.ResourceID,
+		"eventId":    event.ID,
 	})
 
 	logger.Info("Rollback Stack Event Received")
 
-	env, err := apiClient.Environment.ById(event.ResourceId)
+	env, err := apiClient.Environment.ById(event.ResourceID)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func upgradeEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cl
 		return err
 	}
 
-	env, err := apiClient.Environment.ById(event.ResourceId)
+	env, err := apiClient.Environment.ById(event.ResourceID)
 	if err != nil {
 		return err
 	}

@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/go-machine-service/events"
-	"github.com/rancher/go-machine-service/locks"
+	"github.com/rancher/event-subscriber/events"
+	"github.com/rancher/event-subscriber/locks"
 	"github.com/rancher/go-rancher/client"
 )
 
@@ -35,7 +35,7 @@ func publishTransitioningReply(msg string, event *events.Event, apiClient *clien
 func newReply(event *events.Event) *client.Publish {
 	return &client.Publish{
 		Name:        event.ReplyTo,
-		PreviousIds: []string{event.Id},
+		PreviousIds: []string{event.ID},
 	}
 }
 
@@ -47,7 +47,7 @@ func reply(event *events.Event, apiClient *client.RancherClient, data map[string
 
 func WithLock(f func(event *events.Event, apiClient *client.RancherClient) error) func(event *events.Event, apiClient *client.RancherClient) error {
 	return func(event *events.Event, apiClient *client.RancherClient) error {
-		lockKey := fmt.Sprintf("%s:%s", event.ResourceType, event.ResourceId)
+		lockKey := fmt.Sprintf("%s:%s", event.ResourceType, event.ResourceID)
 		lock := locks.Lock(lockKey)
 		if lock == nil {
 			logrus.Infof("Busying processing %s", lockKey)

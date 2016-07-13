@@ -7,12 +7,12 @@ func init() {
 	go locker()
 }
 
-// Interface for unlocking a key that was provided to Lock()
+// Unlocker Interface for unlocking a key that was provided to Lock()
 type Unlocker interface {
 	Unlock()
 }
 
-// Provides an application-wide lock on the provided key.
+// Lock Provides an application-wide lock on the provided key.
 // If the lock is obtained, it will return an Unlocker.
 // If the lock is not successfully obtained, nil will be returned.
 func Lock(key string) Unlocker {

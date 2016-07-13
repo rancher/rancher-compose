@@ -45,8 +45,8 @@ import:
 - package:  github.com/opencontainers/runc
   version:  7b6c4c418d5090f4f11eee949fdf49afd15838c9
 
-- package:  github.com/rancher/go-machine-service
-  version:  ecc762f6877af82d7c6f56cae2a50045951f8af1
+- package:  github.com/rancher/event-subscriber
+  version:  2e42f210dae2234d08786806100b4ddc4ce87641
 
 - package:  github.com/rancher/go-rancher
   version:  37c17e456a2d6dce279f54ee2f957797d30a20dc

@@ -7,11 +7,15 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types/container"
 	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/docker"
+	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/events"
+	"github.com/docker/libcompose/project/options"
 	"github.com/gorilla/websocket"
 	rancherClient "github.com/rancher/go-rancher/client"
 	"github.com/rancher/go-rancher/hostaccess"
@@ -67,7 +71,7 @@ func (r *RancherService) RancherService() (*rancherClient.Service, error) {
 	return r.FindExisting(r.name)
 }
 
-func (r *RancherService) Create() error {
+func (r *RancherService) Create(ctx context.Context, options options.Create) error {
 	service, err := r.FindExisting(r.name)
 
 	if err == nil && service == nil {
@@ -79,27 +83,19 @@ func (r *RancherService) Create() error {
 	return err
 }
 
-func (r *RancherService) Start() error {
+func (r *RancherService) Start(ctx context.Context) error {
 	return r.up(false)
 }
 
-func (r *RancherService) Up() error {
+func (r *RancherService) Up(ctx context.Context, options options.Up) error {
 	return r.up(true)
 }
 
-func (r *RancherService) Build() error {
+func (r *RancherService) Build(ctx context.Context, buildOptions options.Build) error {
 	return nil
 }
 
 func (r *RancherService) up(create bool) error {
-	var err error
-
-	defer func() {
-		if err == nil && r.context.Log {
-			go r.Log()
-		}
-	}()
-
 	service, err := r.FindExisting(r.name)
 	if err != nil {
 		return err
@@ -116,7 +112,7 @@ func (r *RancherService) up(create bool) error {
 
 	if service != nil && create && r.shouldUpgrade(service) {
 		if r.context.Pull {
-			if err := r.Pull(); err != nil {
+			if err := r.Pull(context.Background()); err != nil {
 				return err
 			}
 		}
@@ -164,7 +160,7 @@ func (r *RancherService) up(create bool) error {
 	return err
 }
 
-func (r *RancherService) Stop() error {
+func (r *RancherService) Stop(ctx context.Context, timeout int) error {
 	service, err := r.FindExisting(r.name)
 
 	if err == nil && service == nil {
@@ -183,7 +179,7 @@ func (r *RancherService) Stop() error {
 	return r.Wait(service)
 }
 
-func (r *RancherService) Delete() error {
+func (r *RancherService) Delete(ctx context.Context, options options.Delete) error {
 	service, err := r.FindExisting(r.name)
 
 	if err == nil && service == nil {
@@ -425,7 +421,7 @@ func (r *RancherService) getLinks() (map[Link]string, error) {
 		}
 
 		if linkedService == nil {
-			if _, ok := r.context.Project.Configs.Get(name); !ok {
+			if _, ok := r.context.Project.ServiceConfigs.Get(name); !ok {
 				logrus.Warnf("Failed to find service %s to link to", name)
 			}
 		} else {
@@ -439,7 +435,7 @@ func (r *RancherService) getLinks() (map[Link]string, error) {
 	return result, nil
 }
 
-func (r *RancherService) Scale(count int) error {
+func (r *RancherService) Scale(ctx context.Context, count int, timeout int) error {
 	service, err := r.FindExisting(r.name)
 	if err != nil {
 		return err
@@ -459,7 +455,7 @@ func (r *RancherService) Scale(count int) error {
 	return r.Wait(service)
 }
 
-func (r *RancherService) Containers() ([]project.Container, error) {
+func (r *RancherService) Containers(ctx context.Context) ([]project.Container, error) {
 	result := []project.Container{}
 
 	containers, err := r.containers()
@@ -494,7 +490,7 @@ func (r *RancherService) containers() ([]rancherClient.Container, error) {
 	return instances.Data, nil
 }
 
-func (r *RancherService) Restart() error {
+func (r *RancherService) Restart(ctx context.Context, timeout int) error {
 	service, err := r.FindExisting(r.name)
 	if err != nil {
 		return err
@@ -515,7 +511,7 @@ func (r *RancherService) Restart() error {
 	return r.Wait(service)
 }
 
-func (r *RancherService) Log() error {
+func (r *RancherService) Log(ctx context.Context, follow bool) error {
 	service, err := r.FindExisting(r.name)
 	if err != nil || service == nil {
 		return err
@@ -594,12 +590,12 @@ func (r *RancherService) Client() *rancherClient.RancherClient {
 	return r.context.Client
 }
 
-func (r *RancherService) Kill() error {
+func (r *RancherService) Kill(ctx context.Context, signal string) error {
 	return project.ErrUnsupported
 }
 
-func (r *RancherService) Info(_ bool) (project.InfoSet, error) {
-	return project.InfoSet{}, nil
+func (r *RancherService) Info(ctx context.Context, qFlag bool) (project.InfoSet, error) {
+	return project.InfoSet{}, project.ErrUnsupported
 }
 
 func (r *RancherService) pullImage(image string, labels map[string]string) error {
@@ -641,7 +637,7 @@ func (r *RancherService) pullImage(image string, labels map[string]string) error
 	return nil
 }
 
-func (r *RancherService) Pull() (err error) {
+func (r *RancherService) Pull(ctx context.Context) (err error) {
 	config := r.Config()
 	if config.Image == "" || FindServiceType(r) != RancherType {
 		return
@@ -652,7 +648,7 @@ func (r *RancherService) Pull() (err error) {
 
 	if secondaries, ok := r.context.SidekickInfo.primariesToSidekicks[r.name]; ok {
 		for _, secondaryName := range secondaries {
-			serviceConfig, ok := r.context.Project.Configs.Get(secondaryName)
+			serviceConfig, ok := r.context.Project.ServiceConfigs.Get(secondaryName)
 			if !ok {
 				continue
 			}
@@ -680,11 +676,11 @@ func (r *RancherService) Pull() (err error) {
 	return
 }
 
-func (r *RancherService) Pause() error {
+func (r *RancherService) Pause(ctx context.Context) error {
 	return project.ErrUnsupported
 }
 
-func (r *RancherService) Unpause() error {
+func (r *RancherService) Unpause(ctx context.Context) error {
 	return project.ErrUnsupported
 }
 
@@ -692,13 +688,21 @@ func (r *RancherService) Down() error {
 	return project.ErrUnsupported
 }
 
-func (r *RancherService) Run(commandParts []string) (int, error) {
+func (r *RancherService) Events(ctx context.Context, messages chan events.ContainerEvent) error {
+	return project.ErrUnsupported
+}
+
+func (r *RancherService) Run(ctx context.Context, commandParts []string, options options.Run) (int, error) {
 	return 0, project.ErrUnsupported
 }
 
-func appendHash(service *RancherService, labels map[string]interface{}) (map[string]interface{}, error) {
+func (r *RancherService) RemoveImage(ctx context.Context, imageType options.ImageType) error {
+	return project.ErrUnsupported
+}
+
+func appendHash(service *RancherService, existingLabels map[string]interface{}) (map[string]interface{}, error) {
 	ret := map[string]interface{}{}
-	for k, v := range labels {
+	for k, v := range existingLabels {
 		ret[k] = v
 	}
 
@@ -707,7 +711,7 @@ func appendHash(service *RancherService, labels map[string]interface{}) (map[str
 	//return nil, err
 	//}
 
-	ret[docker.HASH.Str()] = hashValue
+	ret[labels.HASH.Str()] = hashValue
 	return ret, nil
 }
 

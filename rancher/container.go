@@ -1,5 +1,10 @@
 package rancher
 
+import (
+	"github.com/docker/libcompose/project"
+	"golang.org/x/net/context"
+)
+
 type Container struct {
 	id, name string
 }
@@ -19,7 +24,12 @@ func (c *Container) Name() string {
 	return c.name
 }
 
-func (c *Container) Port(port string) (string, error) {
-	//TODO: implement
-	return "", nil
+// TODO implement
+func (c *Container) Port(ctx context.Context, port string) (string, error) {
+	return "", project.ErrUnsupported
+}
+
+// TODO implement
+func (c *Container) IsRunning(ctx context.Context) (bool, error) {
+	return false, project.ErrUnsupported
 }

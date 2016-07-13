@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/go-machine-service/events"
+	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 	"github.com/rancher/rancher-compose/executor/handlers"
 	"github.com/rancher/rancher-compose/version"
@@ -31,7 +31,7 @@ func Main() {
 		os.Getenv("CATTLE_URL"),
 		os.Getenv("CATTLE_ACCESS_KEY"),
 		os.Getenv("CATTLE_SECRET_KEY"),
-		nil, eventHandlers, "environment", 10)
+		nil, eventHandlers, "environment", 10, events.DefaultPingConfig)
 	if err != nil {
 		logrus.WithField("error", err).Fatal("Unable to create event router")
 	}

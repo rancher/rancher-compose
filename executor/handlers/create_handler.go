@@ -4,14 +4,14 @@ import (
 	"errors"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/rancher/go-machine-service/events"
+	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 )
 
 func CreateEnvironment(event *events.Event, apiClient *client.RancherClient) error {
 	logger := logrus.WithFields(logrus.Fields{
-		"resourceId": event.ResourceId,
-		"eventId":    event.Id,
+		"resourceId": event.ResourceID,
+		"eventId":    event.ID,
 	})
 
 	logger.Info("Stack Create Event Received")
@@ -27,7 +27,7 @@ func CreateEnvironment(event *events.Event, apiClient *client.RancherClient) err
 }
 
 func createEnvironment(logger *logrus.Entry, event *events.Event, apiClient *client.RancherClient) error {
-	env, err := apiClient.Environment.ById(event.ResourceId)
+	env, err := apiClient.Environment.ById(event.ResourceID)
 	if err != nil {
 		return err
 	}

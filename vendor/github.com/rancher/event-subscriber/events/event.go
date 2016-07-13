@@ -2,12 +2,12 @@ package events
 
 type Event struct {
 	Name                         string
-	Id                           string
+	ID                           string
 	PreviousIds                  string
 	PreviousNames                string
 	Publisher                    string
 	ReplyTo                      string
-	ResourceId                   string
+	ResourceID                   string
 	ResourceType                 string
 	Transitioning                string
 	TransitioningInternalMessage string
@@ -22,8 +22,8 @@ type ReplyEvent struct {
 	Data        map[string]interface{} `json:"data"`
 }
 
-func NewReplyEvent(replyTo string, eventId string) *ReplyEvent {
-	return &ReplyEvent{Name: replyTo, PreviousIds: []string{eventId}}
+func NewReplyEvent(replyTo string, eventID string) *ReplyEvent {
+	return &ReplyEvent{Name: replyTo, PreviousIds: []string{eventID}}
 }
 
 /*

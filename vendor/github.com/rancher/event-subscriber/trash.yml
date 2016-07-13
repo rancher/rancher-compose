@@ -1,0 +1,9 @@
+import:
+- package: github.com/Sirupsen/logrus
+  version: 446d1c146faa8ed3f4218f056fcd165f6bcfda81
+
+- package: github.com/rancher/go-rancher
+  version: 37c17e456a2d6dce279f54ee2f957797d30a20dc
+
+- package: github.com/gorilla/websocket
+  version: 3986be78bf859e01f01af631ad76da5b269d270c

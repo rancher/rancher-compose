@@ -5,10 +5,11 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/events"
 )
 
-func NewListenLogger(logger *logrus.Entry, p *project.Project) chan<- project.Event {
-	listenChan := make(chan project.Event)
+func NewListenLogger(logger *logrus.Entry, p *project.Project) chan<- events.Event {
+	listenChan := make(chan events.Event)
 	go func() {
 		for event := range listenChan {
 			buffer := bytes.NewBuffer(nil)

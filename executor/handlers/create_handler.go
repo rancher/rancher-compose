@@ -3,7 +3,10 @@ package handlers
 import (
 	"errors"
 
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/libcompose/project/options"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
 )
@@ -47,7 +50,7 @@ func createEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cli
 
 	publishTransitioningReply("Creating stack", event, apiClient)
 
-	if err := project.Create(); err != nil {
+	if err := project.Create(context.Background(), options.Create{}); err != nil {
 		return err
 	}
 
@@ -59,16 +62,16 @@ func createEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cli
 	}
 
 	if startOnCreate {
-		if err := project.Create(); err != nil {
+		if err := project.Create(context.Background(), options.Create{}); err != nil {
 			return err
 		}
 
-		if err := project.Up(); err != nil {
+		if err := project.Up(context.Background(), options.Up{}); err != nil {
 			return err
 		}
 	} else {
 		// This is to make sure circular links work
-		if err := project.Create(); err != nil {
+		if err := project.Create(context.Background(), options.Create{}); err != nil {
 			return err
 		}
 	}

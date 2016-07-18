@@ -193,12 +193,30 @@ def test_args(client, compose):
         'remote': 'github.com/ibuildthecloud/tiny-build',
     }
 
+    project_name = create_project(compose,
+                                  file='assets/full-with-build-v2.yml')
+    project_with_build_v2 = find_one(client.list_environment,
+                                     name=project_name)
+    service = find_one(project_with_build_v2.services)
+    assert service.launchConfig.build == {
+        'dockerfile': 'something/other',
+        'remote': 'github.com/ibuildthecloud/tiny-build',
+    }
+
     project_name = create_project(compose, file='assets/full-with-image.yml')
     project_with_image = find_one(client.list_environment, name=project_name)
     service = find_one(project_with_image.services)
     assert service.launchConfig.imageUuid == 'docker:nginx'
 
-    for project in (project_with_build, project_with_image):
+    project_name = create_project(compose,
+                                  file='assets/full-with-image-v2.yml')
+    project_with_image_v2 = find_one(client.list_environment,
+                                     name=project_name)
+    service = find_one(project_with_image_v2.services)
+    assert service.launchConfig.imageUuid == 'docker:nginx'
+
+    for project in (project_with_build, project_with_build_v2,
+                    project_with_image, project_with_image_v2):
         service = find_one(project.services)
         assert service.name == 'web'
         launch_config = service.launchConfig
@@ -1878,3 +1896,48 @@ service:
         C: "contains: colon"
         D: 'contains: colon'
 ''')
+
+
+def test_v2_volumes(client, compose):
+    project_name = 'first'
+    template = '''
+version: '2'
+services:
+  with-volume:
+    image: nginx
+    volumes:
+    - vol:/foo
+volumes:
+  vol:
+    driver: local
+    driver_opts:
+      foo: bar
+    '''
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'up', '-d')
+
+    volume = find_one(client.list_volume, name=project_name + '_vol')
+    assert volume.driver == 'local'
+    assert volume.driverOpts == {'foo': 'bar'}
+
+    assert len(client.list_volume(name='vol').data) == 0
+
+    project_name = random_str()
+    template = '''
+version: '2'
+services:
+  with-external-volume:
+    image: nginx
+    volumes:
+    - first_vol:/foo
+volumes:
+  first_vol:
+    external: true
+    '''
+    compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
+                       'up', '-d')
+
+    volume = find_one(client.list_volume, name='first_vol')
+    assert volume.driver == 'local'
+    assert volume.driverOpts == {'foo': 'bar'}
+    assert len(client.list_volume(name='vol').data) == 0

@@ -144,7 +144,7 @@ func (f *NormalFactory) Upgrade(r *RancherService, force bool, selected []string
 				secondaryNames = append(secondaryNames, newSecondary)
 			}
 		} else {
-			return fmt.Errorf("Existing service %s does not have a sidekick named %s", r.Name(), newSecondary)
+			secondaryNames = append(secondaryNames, newSecondary)
 		}
 	}
 

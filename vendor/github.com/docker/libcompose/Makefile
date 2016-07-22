@@ -6,7 +6,6 @@ LIBCOMPOSE_ENVS := \
 	-e DOCKER_TEST_HOST \
 	-e TESTDIRS \
 	-e TESTFLAGS \
-	-e SHOWWARNING \
 	-e TESTVERBOSE
 
 # (default to no bind mount if DOCKER_HOST is set)
@@ -17,8 +16,7 @@ GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
 LIBCOMPOSE_IMAGE := libcompose-dev$(if $(GIT_BRANCH),:$(GIT_BRANCH))
 
 DAEMON_VERSION := $(if $(DAEMON_VERSION),$(DAEMON_VERSION),"default")
-TTY := $(shell [ -t 0 ] && echo "-t")
-DOCKER_RUN_LIBCOMPOSE := docker run --rm -i $(TTY) --privileged -e DAEMON_VERSION="$(DAEMON_VERSION)" $(LIBCOMPOSE_ENVS) $(LIBCOMPOSE_MOUNT) "$(LIBCOMPOSE_IMAGE)"
+DOCKER_RUN_LIBCOMPOSE := docker run --rm -it --privileged -e DAEMON_VERSION="$(DAEMON_VERSION)" $(LIBCOMPOSE_ENVS) $(LIBCOMPOSE_MOUNT) "$(LIBCOMPOSE_IMAGE)"
 
 default: binary
 

@@ -3,11 +3,8 @@ package upgrade
 import (
 	"fmt"
 
-	"golang.org/x/net/context"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/project"
-	"github.com/docker/libcompose/project/options"
 	rancherClient "github.com/rancher/go-rancher/client"
 	"github.com/rancher/rancher-compose/rancher"
 )
@@ -22,7 +19,7 @@ type UpgradeOpts struct {
 	Pull           bool
 }
 
-func Upgrade(p project.APIProject, from, to string, opts UpgradeOpts) error {
+func Upgrade(p *project.Project, from, to string, opts UpgradeOpts) error {
 	fromService, err := p.CreateService(from)
 	if err != nil {
 		return err
@@ -59,18 +56,16 @@ func Upgrade(p project.APIProject, from, to string, opts UpgradeOpts) error {
 	if service, err := rToService.RancherService(); err != nil {
 		return err
 	} else if service == nil {
-		if err := rToService.Create(context.Background(), options.Create{}); err != nil {
+		if err := rToService.Create(); err != nil {
 			return err
 		}
 
-		// TODO timeout shouldn't really be an argument here
-		// it's ignored in our implementation anyways
-		if err := rToService.Scale(context.Background(), 0, -1); err != nil {
+		if err := rToService.Scale(0); err != nil {
 			return err
 		}
 	}
 
-	if err := rToService.Up(context.Background(), options.Up{}); err != nil {
+	if err := rToService.Up(); err != nil {
 		return err
 	}
 
@@ -103,7 +98,7 @@ func Upgrade(p project.APIProject, from, to string, opts UpgradeOpts) error {
 	client := rFromService.Client()
 
 	if opts.Pull {
-		if err := rToService.Pull(context.Background()); err != nil {
+		if err := rToService.Pull(); err != nil {
 			return err
 		}
 	}
@@ -128,7 +123,7 @@ func Upgrade(p project.APIProject, from, to string, opts UpgradeOpts) error {
 		}
 
 		if source.Scale == 0 {
-			if err := rFromService.Delete(context.Background(), options.Delete{}); err != nil {
+			if err := rFromService.Delete(); err != nil {
 				return err
 			}
 		} else {
@@ -139,7 +134,7 @@ func Upgrade(p project.APIProject, from, to string, opts UpgradeOpts) error {
 	return nil
 }
 
-func upgradeInfo(up bool, p project.APIProject, from, to string, opts UpgradeOpts) (*rancherClient.Service, *rancherClient.Service, *rancherClient.RancherClient, error) {
+func upgradeInfo(up bool, p *project.Project, from, to string, opts UpgradeOpts) (*rancherClient.Service, *rancherClient.Service, *rancherClient.RancherClient, error) {
 	fromService, err := p.CreateService(from)
 	if err != nil {
 		return nil, nil, nil, err
@@ -161,7 +156,7 @@ func upgradeInfo(up bool, p project.APIProject, from, to string, opts UpgradeOpt
 	}
 
 	if up {
-		if err := rToService.Up(context.Background(), options.Up{}); err != nil {
+		if err := rToService.Up(); err != nil {
 			return nil, nil, nil, err
 		}
 	}

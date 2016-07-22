@@ -3,11 +3,15 @@
 package windows
 
 import (
+	"io/ioutil"
 	"os"
 
 	ansiterm "github.com/Azure/go-ansiterm"
 	"github.com/Azure/go-ansiterm/winterm"
+	"github.com/Sirupsen/logrus"
 )
+
+var logger *logrus.Logger
 
 // ansiWriter wraps a standard output file (e.g., os.Stdout) providing ANSI sequence translation.
 type ansiWriter struct {
@@ -21,7 +25,18 @@ type ansiWriter struct {
 }
 
 func newAnsiWriter(nFile int) *ansiWriter {
-	initLogger()
+	logFile := ioutil.Discard
+
+	if isDebugEnv := os.Getenv(ansiterm.LogEnv); isDebugEnv == "1" {
+		logFile, _ = os.Create("ansiReaderWriter.log")
+	}
+
+	logger = &logrus.Logger{
+		Out:       logFile,
+		Formatter: new(logrus.TextFormatter),
+		Level:     logrus.DebugLevel,
+	}
+
 	file, fd := winterm.GetStdFile(nFile)
 	info, err := winterm.GetConsoleScreenBufferInfo(fd)
 	if err != nil {

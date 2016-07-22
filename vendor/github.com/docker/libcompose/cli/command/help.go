@@ -1,7 +1,7 @@
 package command
 
 import (
-	"github.com/urfave/cli"
+	"github.com/codegangsta/cli"
 	"os"
 	"path"
 )

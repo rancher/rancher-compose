@@ -5,68 +5,13 @@ information on the list of deprecated flags and APIs please have a look at
 https://docs.docker.com/engine/deprecated/ where target removal dates can also
 be found.
 
-## 1.11.2 (2016-05-31)
-
-### Networking
-
-- Fix a stale endpoint issue on overlay networks during ungraceful restart ([#23015](https://github.com/docker/docker/pull/23015))
-- Fix an issue where the wrong port could be reported by `docker inspect/ps/port` ([#22997](https://github.com/docker/docker/pull/22997))
-
-### Runtime
-
-- Fix a potential panic when running `docker build` ([#23032](https://github.com/docker/docker/pull/23032))
-- Fix interpretation of `--user` parameter ([#22998](https://github.com/docker/docker/pull/22998))
-- Fix a bug preventing container statistics to be correctly reported ([#22955](https://github.com/docker/docker/pull/22955))
-- Fix an issue preventing container to be restarted after daemon restart ([#22947](https://github.com/docker/docker/pull/22947))
-- Fix issues when running 32 bit binaries on Ubuntu 16.04 ([#22922](https://github.com/docker/docker/pull/22922))
-- Fix a possible deadlock on image deletion and container attach ([#22918](https://github.com/docker/docker/pull/22918))
-- Fix an issue where containers fail to start after a daemon restart if they depend on a containerized cluster store ([#22561](https://github.com/docker/docker/pull/22561))
-- Fix an issue causing `docker ps` to hang on CentOS when using devicemapper ([#22168](https://github.com/docker/docker/pull/22168), [#23067](https://github.com/docker/docker/pull/23067))
-- Fix a bug preventing to `docker exec` into a container when using devicemapper ([#22168](https://github.com/docker/docker/pull/22168), [#23067](https://github.com/docker/docker/pull/23067))
-
-
-## 1.11.1 (2016-04-26)
-
-### Distribution
-
-- Fix schema2 manifest media type to be of type `application/vnd.docker.container.image.v1+json` ([#21949](https://github.com/docker/docker/pull/21949))
-
-### Documentation
-
-+ Add missing API documentation for changes introduced with 1.11.0 ([#22048](https://github.com/docker/docker/pull/22048))
-
-### Builder
-
-* Append label passed to `docker build` as arguments as an implicit `LABEL` command at the end of the processed `Dockerfile` ([#22184](https://github.com/docker/docker/pull/22184))
-
-### Networking
-
-- Fix a panic that would occur when forwarding DNS query ([#22261](https://github.com/docker/docker/pull/22261))
-- Fix an issue where OS threads could end up within an incorrect network namespace when using user defined networks ([#22261](https://github.com/docker/docker/pull/22261))
-
-### Runtime
-
-- Fix a bug preventing labels configuration to be reloaded via the config file ([#22299](https://github.com/docker/docker/pull/22299))
-- Fix a regression where container mounting `/var/run` would prevent other containers from being removed ([#22256](https://github.com/docker/docker/pull/22256))
-- Fix an issue where it would be impossible to update both `memory-swap` and `memory` value together ([#22255](https://github.com/docker/docker/pull/22255))
-- Fix a regression from 1.11.0 where the `/auth` endpoint would not initialize `serveraddress` if it is not provided ([#22254](https://github.com/docker/docker/pull/22254))
-- Add missing cleanup of container temporary files when cancelling a schedule restart ([#22237](https://github.com/docker/docker/pull/22237))
-- Remove scary error message when no restart policy is specified ([#21993](https://github.com/docker/docker/pull/21993))
-- Fix a panic that would occur when the plugins were activated via the json spec ([#22191](https://github.com/docker/docker/pull/22191))
-- Fix restart backoff logic to correctly reset delay if container ran for at least 10secs ([#22125](https://github.com/docker/docker/pull/22125))
-- Remove error message when a container restart get cancelled ([#22123](https://github.com/docker/docker/pull/22123))
-- Fix an issue where `docker` would not correctly clean up after `docker exec` ([#22121](https://github.com/docker/docker/pull/22121))
-- Fix a panic that could occur when serving concurrent `docker stats` commands ([#22120](https://github.com/docker/docker/pull/22120))`
-- Revert deprecation of non-existent host directories auto-creation ([#22065](https://github.com/docker/docker/pull/22065))
-- Hide misleading rpc error on daemon shutdown ([#22058](https://github.com/docker/docker/pull/22058))
-
 ## 1.11.0 (2016-04-13)
 
 **IMPORTANT**: With Docker 1.11, a Linux docker installation is now made of 4 binaries (`docker`, [`docker-containerd`](https://github.com/docker/containerd), [`docker-containerd-shim`](https://github.com/docker/containerd) and [`docker-runc`](https://github.com/opencontainers/runc)). If you have scripts relying on docker being a single static binaries, please make sure to update them. Interaction with the daemon stay the same otherwise, the usage of the other binaries should be transparent. A Windows docker installation remains a single binary, `docker.exe`.
 
 ### Builder
 
-- Fix a bug where Docker would not use the correct uid/gid when processing the `WORKDIR` command ([#21033](https://github.com/docker/docker/pull/21033))
+- Fix a bug where Docker would not used the correct uid/gid when processing the `WORKDIR` command ([#21033](https://github.com/docker/docker/pull/21033))
 - Fix a bug where copy operations with userns would not use the proper uid/gid ([#20782](https://github.com/docker/docker/pull/20782), [#21162](https://github.com/docker/docker/pull/21162))
 
 ### Client
@@ -82,16 +27,16 @@ be found.
 + Docker learned how to use a SOCKS proxy ([#20366](https://github.com/docker/docker/pull/20366), [#18373](https://github.com/docker/docker/pull/18373))
 + Docker now supports external credential stores ([#20107](https://github.com/docker/docker/pull/20107))
 * `docker ps` now supports displaying the list of volumes mounted inside a container ([#20017](https://github.com/docker/docker/pull/20017))
-* `docker info` now also reports Docker's root directory location ([#19986](https://github.com/docker/docker/pull/19986))
+* `docker info` now also report Docker's root directory location ([#19986](https://github.com/docker/docker/pull/19986))
 - Docker now prohibits login in with an empty username (spaces are trimmed) ([#19806](https://github.com/docker/docker/pull/19806))
 * Docker events attributes are now sorted by key ([#19761](https://github.com/docker/docker/pull/19761))
-* `docker ps` no longer shows exported port for stopped containers ([#19483](https://github.com/docker/docker/pull/19483))
+* `docker ps` no longer show exported port for stopped containers ([#19483](https://github.com/docker/docker/pull/19483))
 - Docker now cleans after itself if a save/export command fails ([#17849](https://github.com/docker/docker/pull/17849))
 * Docker load learned how to display a progress bar ([#17329](https://github.com/docker/docker/pull/17329), [#120078](https://github.com/docker/docker/pull/20078))
 
 ### Distribution
 
-- Fix a panic that occurred when pulling an image with 0 layers ([#21222](https://github.com/docker/docker/pull/21222))
+- Fix a panic that occurred when pulling an images with 0 layers ([#21222](https://github.com/docker/docker/pull/21222))
 - Fix a panic that could occur on error while pushing to a registry with a misconfigured token service ([#21212](https://github.com/docker/docker/pull/21212))
 + All first-level delegation roles are now signed when doing a trusted push ([#21046](https://github.com/docker/docker/pull/21046))
 + OAuth support for registries was added ([#20970](https://github.com/docker/docker/pull/20970))
@@ -116,14 +61,14 @@ be found.
 
 ### Misc
 
-+ When saving linked images together with `docker save` a subsequent `docker load` will correctly restore their parent/child relationship ([#21385](https://github.com/docker/docker/pull/21385))
++ When saving linked images together with `docker save` a subsequent `docker load` will correctly restore their parent/child relationship ([#21385](https://github.com/docker/docker/pull/c))
 + Support for building the Docker cli for OpenBSD was added ([#21325](https://github.com/docker/docker/pull/21325))
 + Labels can now be applied at network, volume and image creation ([#21270](https://github.com/docker/docker/pull/21270))
 * The `dockremap` is now created as a system user ([#21266](https://github.com/docker/docker/pull/21266))
 - Fix a few response body leaks ([#21258](https://github.com/docker/docker/pull/21258))
 - Docker, when run as a service with systemd, will now properly manage its processes cgroups ([#20633](https://github.com/docker/docker/pull/20633))
-* `docker info` now reports the value of cgroup KernelMemory or emits a warning if it is not supported ([#20863](https://github.com/docker/docker/pull/20863))
-* `docker info` now also reports the cgroup driver in use ([#20388](https://github.com/docker/docker/pull/20388))
+* Docker info now reports the value of cgroup KernelMemory or emits a warning if it is not supported ([#20863](https://github.com/docker/docker/pull/20863))
+* Docker info now also reports the cgroup driver in use ([#20388](https://github.com/docker/docker/pull/20388))
 * Docker completion is now available on PowerShell ([#19894](https://github.com/docker/docker/pull/19894))
 * `dockerinit` is no more ([#19490](https://github.com/docker/docker/pull/19490),[#19851](https://github.com/docker/docker/pull/19851))
 + Support for building Docker on arm64 was added ([#19013](https://github.com/docker/docker/pull/19013))
@@ -134,7 +79,7 @@ be found.
 - Fix panic if a node is forcibly removed from the cluster ([#21671](https://github.com/docker/docker/pull/21671))
 - Fix "error creating vxlan interface" when starting a container in a Swarm cluster ([#21671](https://github.com/docker/docker/pull/21671))
 * `docker network inspect` will now report all endpoints whether they have an active container or not ([#21160](https://github.com/docker/docker/pull/21160))
-+ Experimental support for the MacVlan and IPVlan network drivers has been added ([#21122](https://github.com/docker/docker/pull/21122))
++ Experimental support for the MacVlan and IPVlan network drivers have been added ([#21122](https://github.com/docker/docker/pull/21122))
 * Output of `docker network ls` is now sorted by network name ([#20383](https://github.com/docker/docker/pull/20383))
 - Fix a bug where Docker would allow a network to be created with the reserved `default` name ([#19431](https://github.com/docker/docker/pull/19431))
 * `docker network inspect` returns whether a network is internal or not ([#19357](https://github.com/docker/docker/pull/19357))
@@ -168,7 +113,7 @@ be found.
 - Fix a race with event timers stopping early ([#21692](https://github.com/docker/docker/pull/21692))
 - Fix race conditions in the layer store, potentially corrupting the map and crashing the process ([#21677](https://github.com/docker/docker/pull/21677))
 - Un-deprecate auto-creation of host directories for mounts. This feature was marked deprecated in ([#21666](https://github.com/docker/docker/pull/21666))  
-  Docker 1.9, but was decided to be too much of a backward-incompatible change, so it was decided to keep the feature.
+  Docker 1.9, but was decided to be too much of an backward-incompatible change, so it was decided to keep the feature.
 + It is now possible for containers to share the NET and IPC namespaces when `userns` is enabled ([#21383](https://github.com/docker/docker/pull/21383))
 + `docker inspect <image-id>` will now expose the rootfs layers ([#21370](https://github.com/docker/docker/pull/21370))
 + Docker Windows gained a minimal `top` implementation ([#21354](https://github.com/docker/docker/pull/21354))
@@ -211,9 +156,9 @@ be found.
 ### Volumes
 
 * Output of `docker volume ls` is now sorted by volume name ([#20389](https://github.com/docker/docker/pull/20389))
-* Local volumes can now accept options similar to the unix `mount` tool ([#20262](https://github.com/docker/docker/pull/20262))
+* Local volumes can now accepts options similar to the unix `mount` tool ([#20262](https://github.com/docker/docker/pull/20262))
 - Fix an issue where one letter directory name could not be used as source for volumes ([#21106](https://github.com/docker/docker/pull/21106))
-+ `docker run -v` now accepts a new flag `nocopy`. This tells the runtime not to copy the container path content into the volume (which is the default behavior) ([#21223](https://github.com/docker/docker/pull/21223))
++ `docker run -v` now accepts a new flag `nocopy`. This tell the runtime not to copy the container path content into the volume (which is the default behavior) ([#21223](https://github.com/docker/docker/pull/21223))
 
 ## 1.10.3 (2016-03-10)
 
@@ -1100,7 +1045,7 @@ by another client (#15489)
 
 #### Runtime
 * Support hairpin NAT without going through Docker server.
-- devicemapper: succeed immediately when removing non-existent devices.
+- devicemapper: succeed immediately when removing non-existing devices.
 - devicemapper: improve handling of devicemapper devices (add per device lock, increase sleep time and unlock while sleeping).
 - devicemapper: increase timeout in waitClose to 10 seconds.
 - devicemapper: ensure we shut down thin pool cleanly.
@@ -1221,7 +1166,7 @@ by another client (#15489)
 - Improve deprecation message.
 - Fix attach exit on darwin.
 - devicemapper: improve handling of devicemapper devices (add per device lock, increase sleep time, unlock while sleeping).
-- devicemapper: succeed immediately when removing non-existent devices.
+- devicemapper: succeed immediately when removing non-existing devices.
 - devicemapper: increase timeout in waitClose to 10 seconds.
 - Remove goroutine leak on error.
 - Update parseLxcInfo to comply with new lxc1.0 format.
@@ -1741,7 +1686,7 @@ With the ongoing changes to the networking and execution subsystems of docker te
 + Add -rm to docker run for removing a container on exit
 - Remove error messages which are not actually errors
 - Fix `docker rm` with volumes
-- Fix some error cases where an HTTP body might not be closed
+- Fix some error cases where a HTTP body might not be closed
 - Fix panic with wrong dockercfg file
 - Fix the attach behavior with -i
 * Record termination time in state.

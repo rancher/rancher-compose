@@ -8,13 +8,9 @@ import (
 	"strings"
 	"syscall"
 
-	"golang.org/x/net/context"
-
 	"github.com/Sirupsen/logrus"
+	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/project"
-	"github.com/docker/libcompose/project/options"
-	"github.com/docker/libcompose/version"
-	"github.com/urfave/cli"
 )
 
 // ProjectAction is an adapter to allow the use of ordinary functions as libcompose actions.
@@ -25,155 +21,125 @@ import (
 //		Usage:  "List containers",
 //		Action: app.WithProject(factory, app.ProjectPs),
 //	}
-type ProjectAction func(project project.APIProject, c *cli.Context) error
+type ProjectAction func(project *project.Project, c *cli.Context)
 
 // BeforeApp is an action that is executed before any cli command.
 func BeforeApp(c *cli.Context) error {
 	if c.GlobalBool("verbose") {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
-	if version.ShowWarning() {
-		logrus.Warning("Note: This is an experimental alternate implementation of the Compose CLI (https://github.com/docker/compose)")
-	}
+	logrus.Warning("Note: This is an experimental alternate implementation of the Compose CLI (https://github.com/docker/compose)")
 	return nil
 }
 
 // WithProject is a helper function to create a cli.Command action with a ProjectFactory.
-func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli.Context) error {
-	return func(context *cli.Context) error {
+func WithProject(factory ProjectFactory, action ProjectAction) func(context *cli.Context) {
+	return func(context *cli.Context) {
 		p, err := factory.Create(context)
 		if err != nil {
 			logrus.Fatalf("Failed to read project: %v", err)
 		}
-		return action(p, context)
+		action(p, context)
 	}
 }
 
 // ProjectPs lists the containers.
-func ProjectPs(p project.APIProject, c *cli.Context) error {
+func ProjectPs(p *project.Project, c *cli.Context) {
+	allInfo := project.InfoSet{}
 	qFlag := c.Bool("q")
-	allInfo, err := p.Ps(context.Background(), qFlag, c.Args()...)
-	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+	for _, name := range p.Configs.Keys() {
+		service, err := p.CreateService(name)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
+		info, err := service.Info(qFlag)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
+		allInfo = append(allInfo, info...)
 	}
+
 	os.Stdout.WriteString(allInfo.String(!qFlag))
-	return nil
 }
 
 // ProjectPort prints the public port for a port binding.
-func ProjectPort(p project.APIProject, c *cli.Context) error {
+func ProjectPort(p *project.Project, c *cli.Context) {
 	if len(c.Args()) != 2 {
-		return cli.NewExitError("Please pass arguments in the form: SERVICE PORT", 1)
+		logrus.Fatalf("Please pass arguments in the form: SERVICE PORT")
 	}
 
 	index := c.Int("index")
 	protocol := c.String("protocol")
-	serviceName := c.Args()[0]
-	privatePort := c.Args()[1]
 
-	port, err := p.Port(context.Background(), index, protocol, serviceName, privatePort)
+	service, err := p.CreateService(c.Args()[0])
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	fmt.Println(port)
-	return nil
+
+	containers, err := service.Containers()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	if index < 1 || index > len(containers) {
+		logrus.Fatalf("Invalid index %d", index)
+	}
+
+	output, err := containers[index-1].Port(fmt.Sprintf("%s/%s", c.Args()[1], protocol))
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	fmt.Println(output)
 }
 
 // ProjectStop stops all services.
-func ProjectStop(p project.APIProject, c *cli.Context) error {
-	err := p.Stop(context.Background(), c.Int("timeout"), c.Args()...)
+func ProjectStop(p *project.Project, c *cli.Context) {
+	err := p.Stop(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectDown brings all services down (stops and clean containers).
-func ProjectDown(p project.APIProject, c *cli.Context) error {
-	options := options.Down{
-		RemoveVolume:  c.Bool("volumes"),
-		RemoveImages:  options.ImageType(c.String("rmi")),
-		RemoveOrphans: c.Bool("remove-orphans"),
-	}
-	err := p.Down(context.Background(), options, c.Args()...)
+func ProjectDown(p *project.Project, c *cli.Context) {
+	err := p.Down(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectBuild builds or rebuilds services.
-func ProjectBuild(p project.APIProject, c *cli.Context) error {
-	config := options.Build{
-		NoCache:     c.Bool("no-cache"),
-		ForceRemove: c.Bool("force-rm"),
-		Pull:        c.Bool("pull"),
-	}
-	err := p.Build(context.Background(), config, c.Args()...)
+func ProjectBuild(p *project.Project, c *cli.Context) {
+	err := p.Build(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectCreate creates all services but do not start them.
-func ProjectCreate(p project.APIProject, c *cli.Context) error {
-	options := options.Create{
-		NoRecreate:    c.Bool("no-recreate"),
-		ForceRecreate: c.Bool("force-recreate"),
-		NoBuild:       c.Bool("no-build"),
-	}
-	err := p.Create(context.Background(), options, c.Args()...)
+func ProjectCreate(p *project.Project, c *cli.Context) {
+	err := p.Create(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectUp brings all services up.
-func ProjectUp(p project.APIProject, c *cli.Context) error {
-	options := options.Up{
-		Create: options.Create{
-			NoRecreate:    c.Bool("no-recreate"),
-			ForceRecreate: c.Bool("force-recreate"),
-			NoBuild:       c.Bool("no-build"),
-		},
-	}
-	ctx, cancelFun := context.WithCancel(context.Background())
-	err := p.Up(ctx, options, c.Args()...)
+func ProjectUp(p *project.Project, c *cli.Context) {
+	err := p.Up(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
+
 	if !c.Bool("d") {
-		signalChan := make(chan os.Signal, 1)
-		cleanupDone := make(chan bool)
-		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
-		errChan := make(chan error)
-		go func() {
-			errChan <- p.Log(ctx, true, c.Args()...)
-		}()
-		go func() {
-			select {
-			case <-signalChan:
-				fmt.Printf("\nGracefully stopping...\n")
-				cancelFun()
-				ProjectStop(p, c)
-				cleanupDone <- true
-			case err := <-errChan:
-				if err != nil {
-					logrus.Fatal(err)
-				}
-				cleanupDone <- true
-			}
-		}()
-		<-cleanupDone
-		return nil
+		exitOnSignal(p, c)
 	}
-	return nil
 }
 
 // ProjectRun runs a given command within a service's container.
-func ProjectRun(p project.APIProject, c *cli.Context) error {
+func ProjectRun(p *project.Project, c *cli.Context) {
 	if len(c.Args()) == 1 {
 		logrus.Fatal("No service specified")
 	}
@@ -181,114 +147,147 @@ func ProjectRun(p project.APIProject, c *cli.Context) error {
 	serviceName := c.Args()[0]
 	commandParts := c.Args()[1:]
 
-	options := options.Run{
-		Detached: c.Bool("d"),
+	if !p.Configs.Has(serviceName) {
+		logrus.Fatalf("%s is not defined in the template", serviceName)
 	}
 
-	exitCode, err := p.Run(context.Background(), serviceName, commandParts, options)
+	exitCode, err := p.Run(serviceName, commandParts)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return cli.NewExitError("", exitCode)
+
+	os.Exit(exitCode)
 }
 
 // ProjectStart starts services.
-func ProjectStart(p project.APIProject, c *cli.Context) error {
-	err := p.Start(context.Background(), c.Args()...)
+func ProjectStart(p *project.Project, c *cli.Context) {
+	err := p.Start(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectRestart restarts services.
-func ProjectRestart(p project.APIProject, c *cli.Context) error {
-	err := p.Restart(context.Background(), c.Int("timeout"), c.Args()...)
+func ProjectRestart(p *project.Project, c *cli.Context) {
+	err := p.Restart(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectLog gets services logs.
-func ProjectLog(p project.APIProject, c *cli.Context) error {
-	err := p.Log(context.Background(), c.Bool("follow"), c.Args()...)
+func ProjectLog(p *project.Project, c *cli.Context) {
+	err := p.Log(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
+	if c.Bool("follow") {
+		wait()
+	}
 }
 
 // ProjectPull pulls images for services.
-func ProjectPull(p project.APIProject, c *cli.Context) error {
-	err := p.Pull(context.Background(), c.Args()...)
-	if err != nil && !c.Bool("ignore-pull-failures") {
-		return cli.NewExitError(err.Error(), 1)
+func ProjectPull(p *project.Project, c *cli.Context) {
+	err := p.Pull(c.Args()...)
+	if err != nil {
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectDelete deletes services.
-func ProjectDelete(p project.APIProject, c *cli.Context) error {
+func ProjectDelete(p *project.Project, c *cli.Context) {
 	if !c.Bool("force") && len(c.Args()) == 0 {
 		logrus.Fatal("Will not remove all services without --force")
 	}
-	err := p.Delete(context.Background(), options.Delete{}, c.Args()...)
+	err := p.Delete(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectKill forces stop service containers.
-func ProjectKill(p project.APIProject, c *cli.Context) error {
-	err := p.Kill(context.Background(), c.String("signal"), c.Args()...)
+func ProjectKill(p *project.Project, c *cli.Context) {
+	err := p.Kill(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectPause pauses service containers.
-func ProjectPause(p project.APIProject, c *cli.Context) error {
-	err := p.Pause(context.Background(), c.Args()...)
+func ProjectPause(p *project.Project, c *cli.Context) {
+	err := p.Pause(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectUnpause unpauses service containers.
-func ProjectUnpause(p project.APIProject, c *cli.Context) error {
-	err := p.Unpause(context.Background(), c.Args()...)
+func ProjectUnpause(p *project.Project, c *cli.Context) {
+	err := p.Unpause(c.Args()...)
 	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+		logrus.Fatal(err)
 	}
-	return nil
 }
 
 // ProjectScale scales services.
-func ProjectScale(p project.APIProject, c *cli.Context) error {
-	servicesScale := map[string]int{}
+func ProjectScale(p *project.Project, c *cli.Context) {
+	// This code is a bit verbose but I wanted to parse everything up front
+	order := make([]string, 0, 0)
+	serviceScale := make(map[string]int)
+	services := make(map[string]project.Service)
+
 	for _, arg := range c.Args() {
 		kv := strings.SplitN(arg, "=", 2)
 		if len(kv) != 2 {
-			return cli.NewExitError(fmt.Sprintf("Invalid scale parameter: %s", arg), 2)
+			logrus.Fatalf("Invalid scale parameter: %s", arg)
 		}
 
 		name := kv[0]
 
 		count, err := strconv.Atoi(kv[1])
 		if err != nil {
-			return cli.NewExitError(fmt.Sprintf("Invalid scale parameter: %v", err), 2)
+			logrus.Fatalf("Invalid scale parameter: %v", err)
 		}
 
-		servicesScale[name] = count
+		if !p.Configs.Has(name) {
+			logrus.Fatalf("%s is not defined in the template", name)
+		}
+
+		service, err := p.CreateService(name)
+		if err != nil {
+			logrus.Fatalf("Failed to lookup service: %s: %v", service, err)
+		}
+
+		order = append(order, name)
+		serviceScale[name] = count
+		services[name] = service
 	}
 
-	err := p.Scale(context.Background(), c.Int("timeout"), servicesScale)
-	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
+	for _, name := range order {
+		scale := serviceScale[name]
+		logrus.Infof("Setting scale %s=%d...", name, scale)
+		err := services[name].Scale(scale)
+		if err != nil {
+			logrus.Fatalf("Failed to set the scale %s=%d: %v", name, scale, err)
+		}
 	}
-	return nil
+}
+
+func wait() {
+	<-make(chan interface{})
+}
+
+func exitOnSignal(p *project.Project, c *cli.Context) {
+	signalChan := make(chan os.Signal, 1)
+	cleanupDone := make(chan bool)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		for range signalChan {
+			fmt.Printf("\nGracefully stopping...\n")
+			ProjectDown(p, c)
+			cleanupDone <- true
+		}
+	}()
+	<-cleanupDone
 }

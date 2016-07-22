@@ -133,15 +133,15 @@ config := &configs.Config{
 	UidMappings: []configs.IDMap{
 		{
 			ContainerID: 0,
-			HostID: 1000,
-			Size: 65536,
+			Host: 1000,
+			size: 65536,
 		},
 	},
 	GidMappings: []configs.IDMap{
 		{
 			ContainerID: 0,
-			HostID: 1000,
-			Size: 65536,
+			Host: 1000,
+			size: 65536,
 		},
 	},
 	Networks: []*configs.Network{
@@ -186,8 +186,8 @@ process := &libcontainer.Process{
 
 err := container.Start(process)
 if err != nil {
-	container.Destroy()
 	logrus.Fatal(err)
+	container.Destroy()
 	return
 }
 
@@ -216,12 +216,6 @@ container.Pause()
 
 // resume all paused processes.
 container.Resume()
-
-// send signal to container's init process.
-container.Signal(signal)
-
-// update container resource constraints.
-container.Set(config)
 ```
 
 

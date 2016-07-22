@@ -4,13 +4,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/libcompose/docker/builder"
+	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/project"
 )
 
@@ -36,12 +35,7 @@ func Upload(c *Context, name string) (string, string, error) {
 }
 
 func createBuildArchive(p *project.Project, name string) (io.ReadSeeker, string, error) {
-	service, ok := p.ServiceConfigs.Get(name)
-	if !ok {
-		return nil, "", fmt.Errorf("No such service: %s", name)
-	}
-
-	tar, err := builder.CreateTar(service.Build.Context, service.Build.Dockerfile)
+	tar, err := docker.CreateTar(p, name)
 	if err != nil {
 		return nil, "", err
 	}

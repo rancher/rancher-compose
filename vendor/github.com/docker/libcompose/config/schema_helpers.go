@@ -37,7 +37,7 @@ func setupSchemaLoaders() error {
 	}
 
 	var schemaRaw interface{}
-	err := json.Unmarshal([]byte(schemaV1), &schemaRaw)
+	err := json.Unmarshal([]byte(schemaString), &schemaRaw)
 	if err != nil {
 		return err
 	}

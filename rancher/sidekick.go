@@ -1,8 +1,6 @@
 package rancher
 
 import (
-	"golang.org/x/net/context"
-
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project"
 )
@@ -56,6 +54,6 @@ func (s *Sidekick) DependentServices() []project.ServiceRelationship {
 	return dependentServices
 }
 
-func (s *Sidekick) Log(ctx context.Context, follow bool) error {
+func (s *Sidekick) Log() error {
 	return nil
 }

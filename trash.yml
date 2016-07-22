@@ -1,0 +1,91 @@
+import:
+- package:  github.com/Sirupsen/logrus
+  version:  26709e2714106fb8ad40b773b711ebce25b78914
+
+- package:  github.com/awslabs/aws-sdk-go
+  version:  75d65bc91a02d9f67cf4a5297c46d4d2c4c09c6c
+
+- package:  github.com/codegangsta/cli
+  version:  6086d7927ec35315964d9fea46df6c04e6d697c1
+
+- package:  github.com/docker/distribution
+  version:  d06d6d3b093302c02a93153ac7b06ebc0ffd1793
+
+- package:  github.com/docker/docker
+  version:  v1.11.0
+
+- package:  github.com/docker/engine-api
+  version:  a6dca654f28f26b648115649f6382252ada81119
+
+- package:  github.com/docker/go-connections
+  version:  v0.2.0
+
+- package:  github.com/docker/libcompose
+  version:  cb3788b043945b6700a4206c230e892e9c75664f
+  repo:     https://github.com/rancher/libcompose
+
+- package:  github.com/docker/libtrust
+  version:  9cbd2a1374f46905c68a4eb3694a130610adc62a
+
+- package:  github.com/flynn/go-shlex
+  version:  3f9db97f856818214da2e1057f8ad84803971cff
+
+- package:  github.com/gorilla/context
+  version:  14f550f51a
+
+- package:  github.com/gorilla/mux
+  version:  e444e69cbd
+
+- package:  github.com/gorilla/websocket
+  version:  1551221275a7bd42978745a376b2531f791d88f3
+
+- package:  github.com/hashicorp/go-version
+  version:  2b9865f60ce11e527bd1255ba82036d465570aa3
+
+- package:  github.com/opencontainers/runc
+  version:  7b6c4c418d5090f4f11eee949fdf49afd15838c9
+
+- package:  github.com/rancher/event-subscriber
+  version:  2e42f210dae2234d08786806100b4ddc4ce87641
+
+- package:  github.com/rancher/go-rancher
+  version:  37c17e456a2d6dce279f54ee2f957797d30a20dc
+
+- package:  github.com/rancher/rancher-catalog-service
+  version:  a3a8b500adceb82b3a0387b2c7b06a60e7eeee9a
+
+- package:  github.com/vaughan0/go-ini
+  version:  a98ad7ee00ec53921f08832bc06ecf7fd600e6a1
+
+- package: golang.org/x/net
+  version: 3a29182c25eeabbaaf94daaeecbc7823d86261e7
+
+- package: golang.org/x/crypto
+  version: 4d48e5fa3d62b5e6e71260571bf76c767198ca02
+
+- package:  gopkg.in/yaml.v2
+  version:  49c95bdc21843256fb6c4e0d370a05f24a0bf213
+
+- package:  github.com/docker/go-units
+  version:  651fc226e7441360384da338d0fd37f2440ffbe3
+
+- package: github.com/cloudfoundry-incubator/candiedyaml
+  version: 5cef21e2e4f0fd147973b558d4db7395176bcd95
+
+- package: github.com/vbatts/tar-split
+  version: v0.9.11
+
+- package: github.com/Azure/go-ansiterm
+  version: 70b2c90b260171e829f1ebd7c17f600c11858dbe
+
+- package: github.com/Microsoft/go-winio
+  version: v0.1.0
+
+- package: github.com/xeipuuv/gojsonschema
+  version: 3988ac14d6f66842abf574a0615d2935ef5dab9d
+
+- package: github.com/xeipuuv/gojsonreference
+  version: e02fc20de94c78484cd5ffb007f8af96be030a45
+
+- package: github.com/xeipuuv/gojsonpointer
+  version: e0fe6f68307607d540ed8eac07a342c33fa1b54a

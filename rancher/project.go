@@ -2,9 +2,8 @@ package rancher
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/libcompose/config"
+
 	"github.com/docker/libcompose/project"
-	"github.com/rancher/rancher-compose/preprocess"
 )
 
 func NewProject(context *Context) (*project.Project, error) {
@@ -12,11 +11,7 @@ func NewProject(context *Context) (*project.Project, error) {
 		Context: context,
 	}
 
-	p := project.NewProject(&context.Context, nil, &config.ParseOptions{
-		Interpolate: true,
-		Validate:    true,
-		Preprocess:  preprocess.PreprocessServiceMap,
-	})
+	p := project.NewProject(&context.Context)
 
 	err := p.Parse()
 	if err != nil {

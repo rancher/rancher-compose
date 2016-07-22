@@ -19,12 +19,20 @@ var projectRegexp = regexp.MustCompile("[^a-zA-Z0-9_.-]")
 // Context holds context meta information about a libcompose project, like
 // the project name, the compose file, etc.
 type Context struct {
+	Timeout             uint
+	Log                 bool
+	FollowLog           bool
+	Volume              bool
+	ForceRecreate       bool
+	NoRecreate          bool
+	NoCache             bool
+	NoBuild             bool
+	Signal              string
 	ComposeFiles        []string
 	ComposeBytes        [][]byte
 	ProjectName         string
 	isOpen              bool
 	ServiceFactory      ServiceFactory
-	NetworksFactory     NetworksFactory
 	EnvironmentLookup   config.EnvironmentLookup
 	ResourceLookup      config.ResourceLookup
 	LoggerFactory       logger.Factory
@@ -72,10 +80,14 @@ func (c *Context) determineProject() error {
 		return err
 	}
 
-	c.ProjectName = normalizeName(name)
+	c.ProjectName = projectRegexp.ReplaceAllString(strings.ToLower(name), "-")
 
 	if c.ProjectName == "" {
 		return fmt.Errorf("Falied to determine project name")
+	}
+
+	if strings.ContainsAny(c.ProjectName[0:1], "_.-") {
+		c.ProjectName = "x" + c.ProjectName
 	}
 
 	return nil
@@ -111,10 +123,6 @@ func (c *Context) lookupProjectName() (string, error) {
 	} else {
 		return path.Base(toUnixPath(wd)), nil
 	}
-}
-
-func normalizeName(name string) string {
-	return name
 }
 
 func toUnixPath(p string) string {

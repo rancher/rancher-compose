@@ -1,6 +1,8 @@
 package docker
 
 import (
+	"fmt"
+
 	"golang.org/x/net/context"
 
 	"github.com/docker/engine-api/client"
@@ -10,7 +12,7 @@ import (
 
 // GetContainersByFilter looks up the hosts containers with the specified filters and
 // returns a list of container matching it, or an error.
-func GetContainersByFilter(ctx context.Context, clientInstance client.APIClient, containerFilters ...map[string][]string) ([]types.Container, error) {
+func GetContainersByFilter(client client.APIClient, containerFilters ...map[string][]string) ([]types.Container, error) {
 	filterArgs := filters.NewArgs()
 
 	// FIXME(vdemeester) I don't like 3 for loops >_<
@@ -22,21 +24,50 @@ func GetContainersByFilter(ctx context.Context, clientInstance client.APIClient,
 		}
 	}
 
-	return clientInstance.ContainerList(ctx, types.ContainerListOptions{
+	return client.ContainerList(context.Background(), types.ContainerListOptions{
 		All:    true,
 		Filter: filterArgs,
 	})
 }
 
-// GetContainer looks up the hosts containers with the specified ID
-// or name and returns it, or an error.
-func GetContainer(ctx context.Context, clientInstance client.APIClient, id string) (*types.ContainerJSON, error) {
-	container, err := clientInstance.ContainerInspect(ctx, id)
+// GetContainerByName looks up the hosts containers with the specified name and
+// returns it, or an error.
+func GetContainerByName(client client.APIClient, name string) (*types.Container, error) {
+	filterArgs := filters.NewArgs()
+	filterArgs.Add("name", fmt.Sprintf("%s", name))
+
+	containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{
+		All:    true,
+		Filter: filterArgs,
+	})
 	if err != nil {
-		if client.IsErrContainerNotFound(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
-	return &container, nil
+
+	if len(containers) == 0 {
+		return nil, nil
+	}
+
+	return &containers[0], nil
+}
+
+// GetContainerByID looks up the hosts containers with the specified Id and
+// returns it, or an error.
+func GetContainerByID(client client.APIClient, id string) (*types.Container, error) {
+	filterArgs := filters.NewArgs()
+	filterArgs.Add("id", id)
+
+	containers, err := client.ContainerList(context.Background(), types.ContainerListOptions{
+		All:    true,
+		Filter: filterArgs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(containers) == 0 {
+		return nil, nil
+	}
+
+	return &containers[0], nil
 }

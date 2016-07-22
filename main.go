@@ -6,11 +6,11 @@ import (
 	"path"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/cli/command"
 	rancherApp "github.com/rancher/rancher-compose/app"
 	"github.com/rancher/rancher-compose/executor"
 	"github.com/rancher/rancher-compose/version"
-	"github.com/urfave/cli"
 )
 
 func beforeApp(c *cli.Context) error {

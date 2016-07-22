@@ -15,7 +15,6 @@
 			"aduermael",
 			"dnephin",
 			"ibuildthecloud",
-			"joshwget",
 			"gdevillele",
 			"vdemeester",
 		]
@@ -52,11 +51,6 @@
 	Name = "Gaetan de Villele"
 	Email = "gaetan@docker.com"
 	GitHub = "gdevillele"
-
-	[people.joshwget]
-	Name = "Josh Curl"
-	Email = "josh@rancher.com"
-	GitHub = "joshwget"
 
 	[people.vdemeester]
 	Name = "Vincent Demeester"

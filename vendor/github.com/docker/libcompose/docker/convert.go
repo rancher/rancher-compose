@@ -134,7 +134,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 
 	var volumesFrom []string
 	if c.VolumesFrom != nil {
-		volumesFrom, err = getVolumesFrom(c.VolumesFrom, ctx.Project.Configs, ctx.ProjectName)
+		volumesFrom, err = getVolumesFrom(c.VolumesFrom, ctx.Project.ServiceConfigs, ctx.ProjectName)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -219,16 +219,17 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 		DNS:         utils.CopySlice(c.DNS),
 		DNSSearch:   utils.CopySlice(c.DNSSearch),
 		LogConfig: container.LogConfig{
-			Type:   c.LogDriver,
-			Config: utils.CopyMap(c.LogOpt),
+			Type:   c.Logging.Driver,
+			Config: utils.CopyMap(c.Logging.Options),
 		},
-		NetworkMode:    container.NetworkMode(c.Net),
+		NetworkMode:    container.NetworkMode(c.NetworkMode),
 		ReadonlyRootfs: c.ReadOnly,
 		PidMode:        container.PidMode(c.Pid),
 		UTSMode:        container.UTSMode(c.Uts),
 		IpcMode:        container.IpcMode(c.Ipc),
 		PortBindings:   portBindings,
 		RestartPolicy:  *restartPolicy,
+		ShmSize:        c.ShmSize,
 		SecurityOpt:    utils.CopySlice(c.SecurityOpt),
 		VolumeDriver:   c.VolumeDriver,
 		Resources:      resources,
@@ -237,12 +238,16 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 	return config, hostConfig, nil
 }
 
-func getVolumesFrom(volumesFrom []string, serviceConfigs *config.Configs, projectName string) ([]string, error) {
+func getVolumesFrom(volumesFrom []string, serviceConfigs *config.ServiceConfigs, projectName string) ([]string, error) {
 	volumes := []string{}
 	for _, volumeFrom := range volumesFrom {
-		if serviceConfigs.Has(volumeFrom) {
+		if serviceConfig, ok := serviceConfigs.Get(volumeFrom); ok {
 			// It's a service - Use the first one
 			name := fmt.Sprintf("%s_%s_1", projectName, volumeFrom)
+			// If a container name is specified, use that instead
+			if serviceConfig.ContainerName != "" {
+				name = serviceConfig.ContainerName
+			}
 			volumes = append(volumes, name)
 		} else {
 			volumes = append(volumes, volumeFrom)

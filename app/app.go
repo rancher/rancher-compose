@@ -1,22 +1,25 @@
 package app
 
 import (
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
-	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/cli/app"
 	"github.com/docker/libcompose/cli/command"
 	"github.com/docker/libcompose/cli/logger"
 	"github.com/docker/libcompose/lookup"
 	"github.com/docker/libcompose/project"
+	"github.com/docker/libcompose/project/options"
 	rLookup "github.com/rancher/rancher-compose/lookup"
 	"github.com/rancher/rancher-compose/rancher"
 	"github.com/rancher/rancher-compose/upgrade"
+	"github.com/urfave/cli"
 )
 
 type ProjectFactory struct {
 }
 
-func (p *ProjectFactory) Create(c *cli.Context) (*project.Project, error) {
+func (p *ProjectFactory) Create(c *cli.Context) (project.APIProject, error) {
 	rancherComposeFile, err := rancher.ResolveRancherCompose(c.GlobalString("file"),
 		c.GlobalString("rancher-file"))
 	if err != nil {
@@ -189,33 +192,38 @@ func CreateCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
-func ProjectCreate(p *project.Project, c *cli.Context) {
-	if err := p.Create(c.Args()...); err != nil {
-		logrus.Fatal(err)
+func ProjectCreate(p project.APIProject, c *cli.Context) error {
+	if err := p.Create(context.Background(), options.Create{}, c.Args()...); err != nil {
+		return err
 	}
 
 	// This is to fix circular links... What!? It works.
-	if err := p.Create(c.Args()...); err != nil {
-		logrus.Fatal(err)
+	if err := p.Create(context.Background(), options.Create{}, c.Args()...); err != nil {
+		return err
 	}
+
+	return nil
 }
 
-func ProjectUp(p *project.Project, c *cli.Context) {
-	if err := p.Create(c.Args()...); err != nil {
-		logrus.Fatal(err)
+func ProjectUp(p project.APIProject, c *cli.Context) error {
+	if err := p.Create(context.Background(), options.Create{}, c.Args()...); err != nil {
+		return err
 	}
 
-	if err := p.Up(c.Args()...); err != nil {
-		logrus.Fatal(err)
+	if err := p.Up(context.Background(), options.Up{}, c.Args()...); err != nil {
+		return err
 	}
 
 	if !c.Bool("d") {
+		p.Log(context.Background(), true)
 		// wait forever
 		<-make(chan interface{})
 	}
+
+	return nil
 }
 
-func Upgrade(p *project.Project, c *cli.Context) {
+func Upgrade(p project.APIProject, c *cli.Context) error {
 	args := c.Args()
 	if len(args) != 2 {
 		logrus.Fatalf("Please pass arguments in the form: [from service] [to service]")
@@ -234,6 +242,7 @@ func Upgrade(p *project.Project, c *cli.Context) {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	return nil
 }
 
 // StopCommand defines the libcompose stop subcommand.

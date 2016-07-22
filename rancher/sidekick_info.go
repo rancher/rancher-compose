@@ -19,8 +19,8 @@ func NewSidekickInfo(project *project.Project) *SidekickInfo {
 		sidekickToPrimaries:  map[string][]string{},
 	}
 
-	for _, name := range project.Configs.Keys() {
-		config, _ := project.Configs.Get(name)
+	for _, name := range project.ServiceConfigs.Keys() {
+		config, _ := project.ServiceConfigs.Get(name)
 
 		sidekicks := []string{}
 

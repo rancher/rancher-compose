@@ -986,6 +986,86 @@ def test_service_inplace_upgrade(client, compose):
     assert s2.state == 'active'
 
 
+def test_upgrade_add_sidekick(client, compose):
+    project_name = random_str()
+    template = '''
+parent:
+    image: nginx
+    labels:
+      io.rancher.sidekicks: child1
+child1:
+    image: nginx
+'''
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 1
+
+    parent = _get_service(project.services(), 'parent')
+    instances = parent.instances()
+    child_id = [x.id for x in instances if 'child' in x.name]
+    assert len(child_id) == 1
+
+    template = '''
+parent:
+    image: nginx
+    labels:
+      io.rancher.sidekicks: child1, child2
+child1:
+    image: nginx
+child2:
+    image: nginx
+'''
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up',
+                       '--upgrade', '-c', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 1
+
+    parent = _get_service(project.services(), 'parent')
+    instances = parent.instances()
+    child_id = [x.id for x in instances if 'child' in x.name]
+    assert len(child_id) == 2
+
+
+def test_upgrade_remove_sidekick(client, compose):
+    project_name = random_str()
+    template = '''
+parent:
+    image: nginx
+    labels:
+      io.rancher.sidekicks: child1, child2
+child1:
+    image: nginx
+child2:
+    image: nginx
+'''
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 1
+
+    parent = _get_service(project.services(), 'parent')
+    instances = parent.instances()
+    child_id = [x.id for x in instances if 'child' in x.name]
+    assert len(child_id) == 2
+
+    template = '''
+parent:
+    image: nginx
+    labels:
+      io.rancher.sidekicks: child1
+child1:
+    image: nginx
+'''
+    compose.check_call(template, '-p', project_name, '-f', '-', 'up',
+                       '--upgrade', '-c', '-d')
+    project = find_one(client.list_environment, name=project_name)
+    assert len(project.services()) == 1
+
+    parent = _get_service(project.services(), 'parent')
+    instances = parent.instances()
+    child_id = [x.id for x in instances if 'child' in x.name]
+    assert len(child_id) == 1
+
+
 def test_service_hash_with_rancher(client, compose):
     project_name = create_project(compose,
                                   file='assets/hash-no-rancher/test.yml')

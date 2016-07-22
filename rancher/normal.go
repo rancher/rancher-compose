@@ -130,6 +130,7 @@ func (f *NormalFactory) Upgrade(r *RancherService, force bool, selected []string
 
 	existingHash, _ := digest.LookupHash(existingService)
 	secondaryNames := []string{}
+	removedSecondaryNames := []string{}
 
 	hash, err := f.Hash(r)
 	if err != nil {
@@ -138,6 +139,11 @@ func (f *NormalFactory) Upgrade(r *RancherService, force bool, selected []string
 
 	service := hash.Service != existingHash.Service || isForce(r.Name(), force, selected)
 	launchConfig := hash.LaunchConfig != existingHash.LaunchConfig || isForce(r.Name(), force, selected)
+	for oldSecondary, _ := range existingHash.SecondaryLaunchConfigs {
+		if _, ok := hash.SecondaryLaunchConfigs[oldSecondary]; !ok {
+			removedSecondaryNames = append(removedSecondaryNames, oldSecondary)
+		}
+	}
 	for newSecondary, newHash := range hash.SecondaryLaunchConfigs {
 		if oldHash, ok := existingHash.SecondaryLaunchConfigs[newSecondary]; ok {
 			if oldHash != newHash || isForce(newSecondary, force, selected) {
@@ -148,10 +154,10 @@ func (f *NormalFactory) Upgrade(r *RancherService, force bool, selected []string
 		}
 	}
 
-	return f.upgrade(r, existingService, service, launchConfig, secondaryNames)
+	return f.upgrade(r, existingService, service, launchConfig, secondaryNames, removedSecondaryNames)
 }
 
-func (f *NormalFactory) upgrade(r *RancherService, existingService *rancherClient.Service, service, launchConfig bool, secondaryNames []string) error {
+func (f *NormalFactory) upgrade(r *RancherService, existingService *rancherClient.Service, service, launchConfig bool, secondaryNames, removedSecondaryNames []string) error {
 	_, config, err := f.configAndHash(r)
 	if err != nil {
 		return err
@@ -179,6 +185,13 @@ func (f *NormalFactory) upgrade(r *RancherService, existingService *rancherClien
 				}
 			}
 		}
+	}
+
+	for _, removedSecondaryName := range removedSecondaryNames {
+		serviceUpgrade.InServiceStrategy.SecondaryLaunchConfigs = append(serviceUpgrade.InServiceStrategy.SecondaryLaunchConfigs, &rancherClient.SecondaryLaunchConfig{
+			Name:      removedSecondaryName,
+			ImageUuid: "rancher/none",
+		})
 	}
 
 	if service {

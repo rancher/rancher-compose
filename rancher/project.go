@@ -12,6 +12,10 @@ func NewProject(context *Context) (*project.Project, error) {
 		Context: context,
 	}
 
+	context.VolumesFactory = &RancherVolumesFactory{
+		Context: context,
+	}
+
 	p := project.NewProject(&context.Context, nil, &config.ParseOptions{
 		Interpolate: true,
 		Validate:    true,

@@ -23,7 +23,7 @@ func createLaunchConfigs(r *RancherService) (rancherClient.LaunchConfig, []ranch
 
 	if secondaries, ok := r.Context().SidekickInfo.primariesToSidekicks[r.Name()]; ok {
 		for _, secondaryName := range secondaries {
-			serviceConfig, ok := r.Context().Project.Configs.Get(secondaryName)
+			serviceConfig, ok := r.Context().Project.ServiceConfigs.Get(secondaryName)
 			if !ok {
 				return launchConfig, nil, fmt.Errorf("Failed to find sidekick: %s", secondaryName)
 			}
@@ -76,7 +76,7 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *config.Se
 
 	result.VolumeDriver = hostConfig.VolumeDriver
 
-	setupNetworking(serviceConfig.Net, &result)
+	setupNetworking(serviceConfig.NetworkMode, &result)
 	setupVolumesFrom(serviceConfig.VolumesFrom, &result)
 
 	err = setupBuild(r, name, &result, serviceConfig)
@@ -122,18 +122,15 @@ func setupVolumesFrom(volumesFrom []string, launchConfig *rancherClient.LaunchCo
 }
 
 func setupBuild(r *RancherService, name string, result *rancherClient.LaunchConfig, serviceConfig *config.ServiceConfig) error {
-	if serviceConfig.Build != "" {
+	if serviceConfig.Build.Context != "" {
 		result.Build = &rancherClient.DockerBuild{
-			Remote:     serviceConfig.Build,
-			Dockerfile: serviceConfig.Dockerfile,
+			Remote:     serviceConfig.Build.Context,
+			Dockerfile: serviceConfig.Build.Dockerfile,
 		}
 
 		needBuild := true
-		for _, remote := range config.ValidRemotes {
-			if strings.HasPrefix(serviceConfig.Build, remote) {
-				needBuild = false
-				break
-			}
+		if config.IsValidRemote(serviceConfig.Build.Context) {
+			needBuild = false
 		}
 
 		if needBuild {
@@ -142,7 +139,7 @@ func setupBuild(r *RancherService, name string, result *rancherClient.LaunchConf
 				return err
 			}
 			logrus.Infof("Build for %s available at %s", name, url)
-			serviceConfig.Build = url
+			serviceConfig.Build.Context = url
 
 			if serviceConfig.Image == "" {
 				serviceConfig.Image = image
@@ -150,7 +147,7 @@ func setupBuild(r *RancherService, name string, result *rancherClient.LaunchConf
 
 			result.Build = &rancherClient.DockerBuild{
 				Context:    url,
-				Dockerfile: serviceConfig.Dockerfile,
+				Dockerfile: serviceConfig.Build.Dockerfile,
 			}
 			result.ImageUuid = "docker:" + image
 		} else if result.ImageUuid == "" {

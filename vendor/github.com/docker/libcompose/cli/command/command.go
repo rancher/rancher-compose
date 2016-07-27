@@ -3,10 +3,24 @@ package command
 import (
 	"os"
 
-	"github.com/codegangsta/cli"
 	"github.com/docker/libcompose/cli/app"
 	"github.com/docker/libcompose/project"
+	"github.com/urfave/cli"
 )
+
+// Populate updates the specified project context based on command line arguments and subcommands.
+func Populate(context *project.Context, c *cli.Context) {
+	context.ComposeFiles = c.GlobalStringSlice("file")
+
+	if len(context.ComposeFiles) == 0 {
+		context.ComposeFiles = []string{"docker-compose.yml"}
+		if _, err := os.Stat("docker-compose.override.yml"); err == nil {
+			context.ComposeFiles = append(context.ComposeFiles, "docker-compose.override.yml")
+		}
+	}
+
+	context.ProjectName = c.GlobalString("project-name")
+}
 
 // CreateCommand defines the libcompose create subcommand.
 func CreateCommand(factory app.ProjectFactory) cli.Command {
@@ -41,6 +55,14 @@ func BuildCommand(factory app.ProjectFactory) cli.Command {
 			cli.BoolFlag{
 				Name:  "no-cache",
 				Usage: "Do not use cache when building the image",
+			},
+			cli.BoolFlag{
+				Name:  "force-rm",
+				Usage: "Always remove intermediate containers",
+			},
+			cli.BoolFlag{
+				Name:  "pull",
+				Usage: "Always attempt to pull a newer version of the image",
 			},
 		},
 	}
@@ -130,7 +152,12 @@ func RunCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "run",
 		Usage:  "Run a one-off command",
 		Action: app.WithProject(factory, app.ProjectRun),
-		Flags:  []cli.Flag{},
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "d",
+				Usage: "Detached mode: Run container in the background, print new container name.",
+			},
+		},
 	}
 }
 
@@ -140,6 +167,12 @@ func PullCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "pull",
 		Usage:  "Pulls images for services",
 		Action: app.WithProject(factory, app.ProjectPull),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "ignore-pull-failures",
+				Usage: "Pull what it can and ignores images with pull failures.",
+			},
+		},
 	}
 }
 
@@ -150,11 +183,6 @@ func LogsCommand(factory app.ProjectFactory) cli.Command {
 		Usage:  "Get service logs",
 		Action: app.WithProject(factory, app.ProjectLog),
 		Flags: []cli.Flag{
-			cli.IntFlag{
-				Name:  "lines",
-				Usage: "number of lines to tail",
-				Value: 100,
-			},
 			cli.BoolFlag{
 				Name:  "follow",
 				Usage: "Follow log output.",
@@ -201,7 +229,20 @@ func DownCommand(factory app.ProjectFactory) cli.Command {
 		Name:   "down",
 		Usage:  "Stop and remove containers, networks, images, and volumes",
 		Action: app.WithProject(factory, app.ProjectDown),
-		Flags:  []cli.Flag{},
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "volumes,v",
+				Usage: "Remove data volumes",
+			},
+			cli.StringFlag{
+				Name:  "rmi",
+				Usage: "Remove images, type may be one of: 'all' to remove all images, or 'local' to remove only images that don't have an custom name set by the `image` field",
+			},
+			cli.BoolFlag{
+				Name:  "remove-orphans",
+				Usage: "Remove containers for services not defined in the Compose file",
+			},
+		},
 	}
 }
 
@@ -276,6 +317,36 @@ func UnpauseCommand(factory app.ProjectFactory) cli.Command {
 	}
 }
 
+// EventsCommand defines the libcompose events subcommand
+func EventsCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "events",
+		Usage:  "Receive real time events from containers.",
+		Action: app.WithProject(factory, app.ProjectEvents),
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "json",
+				Usage: "Output events as a stream of json objects",
+			},
+		},
+	}
+}
+
+// VersionCommand defines the libcompose version subcommand.
+func VersionCommand(factory app.ProjectFactory) cli.Command {
+	return cli.Command{
+		Name:   "version",
+		Usage:  "Show version informations",
+		Action: app.Version,
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "short",
+				Usage: "Shows only Compose's version number.",
+			},
+		},
+	}
+}
+
 // CommonFlags defines the flags that are in common for all subcommands.
 func CommonFlags() []cli.Flag {
 	return []cli.Flag{
@@ -289,40 +360,9 @@ func CommonFlags() []cli.Flag {
 			EnvVar: "COMPOSE_FILE",
 		},
 		cli.StringFlag{
-			Name:  "project-name,p",
-			Usage: "Specify an alternate project name (default: directory name)",
+			Name:   "project-name,p",
+			Usage:  "Specify an alternate project name (default: directory name)",
+			EnvVar: "COMPOSE_PROJECT_NAME",
 		},
-	}
-}
-
-// Populate updates the specified project context based on command line arguments and subcommands.
-func Populate(context *project.Context, c *cli.Context) {
-	context.ComposeFiles = c.GlobalStringSlice("file")
-
-	if len(context.ComposeFiles) == 0 {
-		context.ComposeFiles = []string{"docker-compose.yml"}
-		if _, err := os.Stat("docker-compose.override.yml"); err == nil {
-			context.ComposeFiles = append(context.ComposeFiles, "docker-compose.override.yml")
-		}
-	}
-
-	context.ProjectName = c.GlobalString("project-name")
-
-	if c.Command.Name == "logs" {
-		context.Log = true
-		context.FollowLog = c.Bool("follow")
-	} else if c.Command.Name == "up" || c.Command.Name == "create" {
-		context.Log = !c.Bool("d")
-		context.NoRecreate = c.Bool("no-recreate")
-		context.ForceRecreate = c.Bool("force-recreate")
-		context.NoBuild = c.Bool("no-build")
-	} else if c.Command.Name == "stop" || c.Command.Name == "restart" || c.Command.Name == "scale" {
-		context.Timeout = uint(c.Int("timeout"))
-	} else if c.Command.Name == "kill" {
-		context.Signal = c.String("signal")
-	} else if c.Command.Name == "rm" {
-		context.Volume = c.Bool("v")
-	} else if c.Command.Name == "build" {
-		context.NoCache = c.Bool("no-cache")
 	}
 }

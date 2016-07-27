@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
 	"github.com/rancher/event-subscriber/events"
 	"github.com/rancher/go-rancher/client"
@@ -177,7 +180,7 @@ func upgradeEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cl
 
 	publishTransitioningReply("Upgrading stack", event, apiClient)
 
-	if err := project.Up(); err != nil {
+	if err := project.Up(context.Background(), options.Up{}); err != nil {
 		return err
 	}
 

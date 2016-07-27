@@ -4,8 +4,8 @@ cd $(dirname $0)/..
 
 source $(dirname $0)/version
 
-OS_PLATFORM_ARG=(linux windows darwin freebsd)
-OS_ARCH_ARG=(386 amd64 arm)
+OS_PLATFORM_ARG=(linux windows darwin)
+OS_ARCH_ARG=(amd64 arm)
 
 go generate
 go build -ldflags="-w -X github.com/rancher/rancher-compose/version.VERSION=$VERSION" -o bin/rancher-compose

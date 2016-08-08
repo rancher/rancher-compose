@@ -193,12 +193,30 @@ def test_args(client, compose):
         'remote': 'github.com/ibuildthecloud/tiny-build',
     }
 
+    project_name = create_project(compose,
+                                  file='assets/full-with-build-v2.yml')
+    project_with_build_v2 = find_one(client.list_environment,
+                                     name=project_name)
+    service = find_one(project_with_build_v2.services)
+    assert service.launchConfig.build == {
+        'dockerfile': 'something/other',
+        'remote': 'github.com/ibuildthecloud/tiny-build',
+    }
+
     project_name = create_project(compose, file='assets/full-with-image.yml')
     project_with_image = find_one(client.list_environment, name=project_name)
     service = find_one(project_with_image.services)
     assert service.launchConfig.imageUuid == 'docker:nginx'
 
-    for project in (project_with_build, project_with_image):
+    project_name = create_project(compose,
+                                  file='assets/full-with-image-v2.yml')
+    project_with_image_v2 = find_one(client.list_environment,
+                                     name=project_name)
+    service = find_one(project_with_image_v2.services)
+    assert service.launchConfig.imageUuid == 'docker:nginx'
+
+    for project in (project_with_build, project_with_build_v2,
+                    project_with_image, project_with_image_v2):
         service = find_one(project.services)
         assert service.name == 'web'
         launch_config = service.launchConfig

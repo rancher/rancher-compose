@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	yaml "github.com/cloudfoundry-incubator/candiedyaml"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/config"
@@ -112,19 +112,32 @@ func (c *Context) readRancherConfig() error {
 func (c *Context) unmarshalBytes(composeBytes, bytes []byte) error {
 	rawServiceMap := config.RawServiceMap{}
 	if composeBytes != nil {
-		if err := yaml.Unmarshal(composeBytes, &rawServiceMap); err != nil {
+		var config config.Config
+		if err := yaml.Unmarshal(composeBytes, &config); err != nil {
 			return err
+		}
+
+		if config.Version == "2" {
+			rawServiceMap = config.Services
+		} else {
+			if err := yaml.Unmarshal(composeBytes, &rawServiceMap); err != nil {
+				return err
+			}
 		}
 
 		for key := range rawServiceMap {
 			delete(rawServiceMap[key], "hostname")
 		}
 	}
-	if bytes != nil {
+	if bytes != nil && len(bytes) > 0 {
 		if err := yaml.Unmarshal(bytes, &rawServiceMap); err != nil {
 			return err
 		}
 	}
+	return c.fillInRancherConfig(rawServiceMap)
+}
+
+func (c *Context) fillInRancherConfig(rawServiceMap config.RawServiceMap) error {
 	if err := config.Interpolate(c.EnvironmentLookup, &rawServiceMap); err != nil {
 		return err
 	}

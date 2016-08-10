@@ -1,0 +1,8 @@
+service:
+    image: nginx
+    environment:
+        A: :A
+        B: ":B"
+        C: "contains: colon"
+        D: 'contains: colon'
+        E: œ∑˙ß®∫ƒ˜†∂˜老版本没问题

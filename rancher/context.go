@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	yaml "github.com/cloudfoundry-incubator/candiedyaml"
+	"gopkg.in/yaml.v2"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/config"

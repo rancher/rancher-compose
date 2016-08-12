@@ -276,7 +276,7 @@ func (r *RancherService) getConfiguredScale() int {
 	scale := 1
 	if config, ok := r.context.RancherConfig[r.name]; ok {
 		if config.Scale > 0 {
-			scale = config.Scale
+			scale = int(config.Scale)
 		}
 	}
 

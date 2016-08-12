@@ -15,6 +15,7 @@ import (
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
+	composeYaml "github.com/docker/libcompose/yaml"
 	rancherClient "github.com/rancher/go-rancher/client"
 	rUtils "github.com/rancher/rancher-compose/utils"
 	rVersion "github.com/rancher/rancher-compose/version"
@@ -52,13 +53,13 @@ type Context struct {
 
 type RancherConfig struct {
 	// VirtualMachine fields
-	Vcpu     int64                              `yaml:"vcpu,omitempty"`
+	Vcpu     composeYaml.StringorInt            `yaml:"vcpu,omitempty"`
 	Userdata string                             `yaml:"userdata,omitempty"`
-	Memory   int64                              `yaml:"memory,omitempty"`
+	Memory   composeYaml.StringorInt            `yaml:"memory,omitempty"`
 	Disks    []rancherClient.VirtualMachineDisk `yaml:"disks,omitempty"`
 
 	Type               string                                 `yaml:"type,omitempty"`
-	Scale              int                                    `yaml:"scale,omitempty"`
+	Scale              composeYaml.StringorInt                `yaml:"scale,omitempty"`
 	RetainIp           bool                                   `yaml:"retain_ip,omitempty"`
 	LoadBalancerConfig *rancherClient.LoadBalancerConfig      `yaml:"load_balancer_config,omitempty"`
 	ExternalIps        []string                               `yaml:"external_ips,omitempty"`

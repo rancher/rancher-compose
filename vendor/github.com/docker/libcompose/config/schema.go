@@ -113,7 +113,7 @@ var schemaV1 = `{
         "read_only": {"type": "boolean"},
         "restart": {"type": "string"},
         "retain_ip": {"type": "boolean"},
-        "scale": {"type": "number"},
+        "scale": {"type": ["number", "string"]},
         "scale_policy": {"type": "object"},
         "security_opt": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "shm_size": {"type": ["number", "string"]},

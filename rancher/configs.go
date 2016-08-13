@@ -86,9 +86,9 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *config.Se
 	}
 
 	result.Kind = rancherConfig.Type
-	result.Vcpu = rancherConfig.Vcpu
+	result.Vcpu = int64(rancherConfig.Vcpu)
 	result.Userdata = rancherConfig.Userdata
-	result.MemoryMb = rancherConfig.Memory
+	result.MemoryMb = int64(rancherConfig.Memory)
 	result.Disks = []interface{}{}
 	for _, i := range rancherConfig.Disks {
 		result.Disks = append(result.Disks, i)

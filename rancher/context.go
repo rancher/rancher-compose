@@ -17,6 +17,7 @@ import (
 	"github.com/docker/libcompose/utils"
 	composeYaml "github.com/docker/libcompose/yaml"
 	rancherClient "github.com/rancher/go-rancher/client"
+	"github.com/rancher/rancher-compose/preprocess"
 	rUtils "github.com/rancher/rancher-compose/utils"
 	rVersion "github.com/rancher/rancher-compose/version"
 
@@ -140,6 +141,10 @@ func (c *Context) unmarshalBytes(composeBytes, bytes []byte) error {
 
 func (c *Context) fillInRancherConfig(rawServiceMap config.RawServiceMap) error {
 	if err := config.Interpolate(c.EnvironmentLookup, &rawServiceMap); err != nil {
+		return err
+	}
+	rawServiceMap, err := preprocess.TryConvertStringsToInts(rawServiceMap)
+	if err != nil {
 		return err
 	}
 	if err := utils.Convert(rawServiceMap, &c.RancherConfig); err != nil {

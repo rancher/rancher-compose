@@ -1,4 +1,4 @@
-package docker
+package service
 
 import (
 	"fmt"
@@ -35,6 +35,16 @@ func Filter(vs []string, f func(string) bool) []string {
 	return r
 }
 
+func toMap(vs []string) map[string]struct{} {
+	m := map[string]struct{}{}
+	for _, v := range vs {
+		if v != "" {
+			m[v] = struct{}{}
+		}
+	}
+	return m
+}
+
 func isBind(s string) bool {
 	return strings.ContainsRune(s, ':')
 }
@@ -44,8 +54,8 @@ func isVolume(s string) bool {
 }
 
 // ConvertToAPI converts a service configuration to a docker API container configuration.
-func ConvertToAPI(s *Service) (*ConfigWrapper, error) {
-	config, hostConfig, err := Convert(s.serviceConfig, s.context.Context)
+func ConvertToAPI(serviceConfig *config.ServiceConfig, ctx project.Context) (*ConfigWrapper, error) {
+	config, hostConfig, err := Convert(serviceConfig, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,21 +67,18 @@ func ConvertToAPI(s *Service) (*ConfigWrapper, error) {
 	return &result, nil
 }
 
-func isNamedVolume(volume string) bool {
-	return !strings.HasPrefix(volume, ".") && !strings.HasPrefix(volume, "/") && !strings.HasPrefix(volume, "~")
-}
-
-func volumes(c *config.ServiceConfig, ctx project.Context) map[string]struct{} {
-	volumes := make(map[string]struct{}, len(c.Volumes))
-	for k, v := range c.Volumes {
-		if len(ctx.ComposeFiles) > 0 && !isNamedVolume(v) {
-			v = ctx.ResourceLookup.ResolvePath(v, ctx.ComposeFiles[0])
+func volumes(c *config.ServiceConfig, ctx project.Context) []string {
+	if c.Volumes == nil {
+		return []string{}
+	}
+	volumes := make([]string, len(c.Volumes.Volumes))
+	for _, v := range c.Volumes.Volumes {
+		vol := v
+		if len(ctx.ComposeFiles) > 0 && !project.IsNamedVolume(v.Source) {
+			sourceVol := ctx.ResourceLookup.ResolvePath(v.String(), ctx.ComposeFiles[0])
+			vol.Source = strings.SplitN(sourceVol, ":", 2)[0]
 		}
-
-		c.Volumes[k] = v
-		if isVolume(v) {
-			volumes[v] = struct{}{}
-		}
+		volumes = append(volumes, vol.String())
 	}
 	return volumes
 }
@@ -140,6 +147,8 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 		}
 	}
 
+	vols := volumes(c, ctx)
+
 	config := &container.Config{
 		Entrypoint:   strslice.StrSlice(utils.CopySlice(c.Entrypoint)),
 		Hostname:     c.Hostname,
@@ -153,7 +162,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 		Tty:          c.Tty,
 		OpenStdin:    c.StdinOpen,
 		WorkingDir:   c.WorkingDir,
-		Volumes:      volumes(c, ctx),
+		Volumes:      toMap(Filter(vols, isVolume)),
 		MacAddress:   c.MacAddress,
 	}
 
@@ -215,7 +224,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 		CapDrop:     strslice.StrSlice(utils.CopySlice(c.CapDrop)),
 		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
 		Privileged:  c.Privileged,
-		Binds:       Filter(c.Volumes, isBind),
+		Binds:       Filter(vols, isBind),
 		DNS:         utils.CopySlice(c.DNS),
 		DNSSearch:   utils.CopySlice(c.DNSSearch),
 		LogConfig: container.LogConfig{
@@ -233,6 +242,10 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 		SecurityOpt:    utils.CopySlice(c.SecurityOpt),
 		VolumeDriver:   c.VolumeDriver,
 		Resources:      resources,
+	}
+
+	if config.Labels == nil {
+		config.Labels = map[string]string{}
 	}
 
 	return config, hostConfig, nil

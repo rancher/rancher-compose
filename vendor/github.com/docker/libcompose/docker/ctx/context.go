@@ -1,8 +1,9 @@
-package docker
+package ctx
 
 import (
 	"github.com/docker/docker/cliconfig"
 	"github.com/docker/docker/cliconfig/configfile"
+	"github.com/docker/libcompose/docker/auth"
 	"github.com/docker/libcompose/docker/client"
 	"github.com/docker/libcompose/project"
 )
@@ -14,11 +15,7 @@ type Context struct {
 	ClientFactory client.Factory
 	ConfigDir     string
 	ConfigFile    *configfile.ConfigFile
-	AuthLookup    AuthLookup
-}
-
-func (c *Context) open() error {
-	return c.LookupConfig()
+	AuthLookup    auth.Lookup
 }
 
 // LookupConfig tries to load the docker configuration files, if any.

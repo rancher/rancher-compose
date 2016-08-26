@@ -12,6 +12,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/engine-api/types/container"
 	"github.com/docker/libcompose/config"
+	"github.com/docker/libcompose/docker/service"
 	"github.com/docker/libcompose/labels"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/events"
@@ -544,7 +545,7 @@ func (r *RancherService) pipeLogs(container *rancherClient.Container, conn *webs
 	defer conn.Close()
 
 	log_name := strings.TrimPrefix(container.Name, r.context.ProjectName+"_")
-	logger := r.context.LoggerFactory.Create(log_name)
+	logger := r.context.LoggerFactory.CreateContainerLogger(log_name)
 
 	for {
 		messageType, bytes, err := conn.ReadMessage()
@@ -576,7 +577,7 @@ func (r *RancherService) pipeLogs(container *rancherClient.Container, conn *webs
 func (r *RancherService) DependentServices() []project.ServiceRelationship {
 	result := []project.ServiceRelationship{}
 
-	for _, rel := range project.DefaultDependentServices(r.context.Project, r) {
+	for _, rel := range service.DefaultDependentServices(r.context.Project, r) {
 		if rel.Type == project.RelTypeLink {
 			rel.Optional = true
 			result = append(result, rel)
@@ -594,7 +595,7 @@ func (r *RancherService) Kill(ctx context.Context, signal string) error {
 	return project.ErrUnsupported
 }
 
-func (r *RancherService) Info(ctx context.Context, qFlag bool) (project.InfoSet, error) {
+func (r *RancherService) Info(ctx context.Context) (project.InfoSet, error) {
 	return project.InfoSet{}, project.ErrUnsupported
 }
 

@@ -1969,3 +1969,35 @@ def test_cyclic_link_dependency(client, compose):
 def test_yaml_corner_cases(client, compose):
     create_project(compose, file='assets/yaml-corner-cases/'
                                  'docker-compose.yml')
+
+
+def test_environment_variables(client, compose):
+    template = '''
+    env-test1:
+        image: nginx
+        environment:
+            ENV1: ENV1
+            ENV2:
+    '''
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+
+    service = find_one(project.services)
+    assert service.name == 'env-test1'
+    launch_config = service.launchConfig
+    assert launch_config.environment == {'ENV1': 'ENV1'}
+
+    template = '''
+    env-test2:
+        image: nginx
+        environment:
+        - ENV1=ENV1
+        - ENV2
+    '''
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_environment, name=project_name)
+
+    service = find_one(project.services)
+    assert service.name == 'env-test2'
+    launch_config = service.launchConfig
+    assert launch_config.environment == {'ENV1': 'ENV1'}

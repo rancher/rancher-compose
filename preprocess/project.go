@@ -48,7 +48,7 @@ func Preprocess(item interface{}, replaceTypes bool) interface{} {
 		return newArray
 
 	default:
-		if replaceTypes {
+		if replaceTypes && item != nil {
 			return fmt.Sprint(item)
 		}
 		return item

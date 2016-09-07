@@ -3,41 +3,9 @@
   "id": "config_schema_v2.0.json",
   "type": "object",
 
-  "properties": {
-    "version": {
-      "type": "string"
-    },
-
-    "services": {
-      "id": "#/properties/services",
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "#/definitions/service"
-        }
-      },
-      "additionalProperties": false
-    },
-
-    "networks": {
-      "id": "#/properties/networks",
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "#/definitions/network"
-        }
-      }
-    },
-
-    "volumes": {
-      "id": "#/properties/volumes",
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9._-]+$": {
-          "$ref": "#/definitions/volume"
-        }
-      },
-      "additionalProperties": false
+  "patternProperties": {
+    "^[a-zA-Z0-9._-]+$": {
+      "$ref": "#/definitions/service"
     }
   },
 
@@ -148,6 +116,7 @@
         "memory": {"type": ["number", "string"]},
         "mem_limit": {"type": ["number", "string"]},
         "memswap_limit": {"type": ["number", "string"]},
+        "mem_swappiness": {"type": "integer"},
         "metadata": {"type": "object"},
         "network_mode": {"type": "string"},
 
@@ -176,6 +145,7 @@
             }
           ]
         },
+        "oom_score_adj": {"type": "integer", "minimum": -1000, "maximum": 1000},
         "pid": {"type": ["string", "null"]},
 
         "ports": {
@@ -262,7 +232,8 @@
             "name": {"type": "string"}
           },
           "additionalProperties": false
-        }
+        },
+        "internal": {"type": "boolean"}
       },
       "additionalProperties": false
     },
@@ -283,8 +254,7 @@
           "properties": {
             "name": {"type": "string"}
           }
-        },
-        "additionalProperties": false
+        }
       },
       "additionalProperties": false
     },

@@ -496,6 +496,10 @@ func (r *RancherService) Restart(ctx context.Context, timeout int) error {
 		return err
 	}
 
+	if service == nil {
+		return fmt.Errorf("Failed to find %s to restart", r.name)
+	}
+
 	service, err = r.context.Client.Service.ActionRestart(service, &rancherClient.ServiceRestart{
 		RollingRestartStrategy: rancherClient.RollingRestartStrategy{
 			BatchSize:      r.context.BatchSize,

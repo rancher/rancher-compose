@@ -26,7 +26,7 @@ func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgr
 			ComposeBytes: [][]byte{
 				[]byte(upgradeOpts.DockerCompose),
 			},
-			ResourceLookup: &lookup.FileConfigLookup{},
+			ResourceLookup: &lookup.FileResourceLookup{},
 			EnvironmentLookup: &lookup.MapEnvLookup{
 				Env: variables,
 			},
@@ -54,7 +54,7 @@ func constructProject(logger *logrus.Entry, env *client.Environment, url, access
 			ComposeBytes: [][]byte{
 				[]byte(env.DockerCompose),
 			},
-			ResourceLookup: &lookup.FileConfigLookup{},
+			ResourceLookup: &lookup.FileResourceLookup{},
 			EnvironmentLookup: &lookup.MapEnvLookup{
 				Env: env.Environment,
 			},

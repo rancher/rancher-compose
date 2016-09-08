@@ -120,7 +120,7 @@ type ServiceConfig struct {
 	ShmSize         yaml.StringorInt     `yaml:"shm_size,omitempty"`
 	StopSignal      string               `yaml:"stop_signal,omitempty"`
 	VolumeDriver    string               `yaml:"volume_driver,omitempty"`
-	Volumes         []string             `yaml:"volumes,omitempty"`
+	Volumes         *yaml.Volumes        `yaml:"volumes,omitempty"`
 	VolumesFrom     []string             `yaml:"volumes_from,omitempty"`
 	Uts             string               `yaml:"uts,omitempty"`
 	Restart         string               `yaml:"restart,omitempty"`
@@ -205,6 +205,13 @@ func (c *ServiceConfigs) Add(name string, service *ServiceConfig) {
 	c.mu.Unlock()
 }
 
+// Remove removes the config with the specified name
+func (c *ServiceConfigs) Remove(name string) {
+	c.mu.Lock()
+	delete(c.m, name)
+	c.mu.Unlock()
+}
+
 // Len returns the len of the configs
 func (c *ServiceConfigs) Len() int {
 	c.mu.RLock()
@@ -221,6 +228,13 @@ func (c *ServiceConfigs) Keys() []string {
 		keys = append(keys, name)
 	}
 	return keys
+}
+
+// All returns all the config at once
+func (c *ServiceConfigs) All() map[string]*ServiceConfig {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.m
 }
 
 // RawService is represent a Service in map form unparsed

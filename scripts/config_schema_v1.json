@@ -94,6 +94,7 @@
         "memory": {"type": ["number", "string"]},
         "mem_limit": {"type": ["number", "string"]},
         "memswap_limit": {"type": ["number", "string"]},
+        "mem_swappiness": {"type": "integer"},
         "metadata": {"type": "object"},
         "net": {"type": "string"},
         "pid": {"type": ["string", "null"]},

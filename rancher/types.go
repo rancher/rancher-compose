@@ -1,6 +1,6 @@
 package rancher
 
-import rancherClient "github.com/rancher/go-rancher/client"
+import rancherClient "github.com/rancher/go-rancher/v2"
 
 const (
 	LB_IMAGE       = "rancher/load-balancer-service"

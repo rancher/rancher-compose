@@ -16,7 +16,7 @@ import (
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 	composeYaml "github.com/docker/libcompose/yaml"
-	rancherClient "github.com/rancher/go-rancher/client"
+	rancherClient "github.com/rancher/go-rancher/v2"
 	"github.com/rancher/rancher-compose/preprocess"
 	rUtils "github.com/rancher/rancher-compose/utils"
 	rVersion "github.com/rancher/rancher-compose/version"
@@ -36,7 +36,7 @@ type Context struct {
 	AccessKey           string
 	SecretKey           string
 	Client              *rancherClient.RancherClient
-	Environment         *rancherClient.Environment
+	Stack               *rancherClient.Stack
 	isOpen              bool
 	SidekickInfo        *SidekickInfo
 	Uploader            Uploader
@@ -251,9 +251,9 @@ func (c *Context) getSetting(key string) string {
 	return s.Value
 }
 
-func (c *Context) LoadEnv() (*rancherClient.Environment, error) {
-	if c.Environment != nil {
-		return c.Environment, nil
+func (c *Context) LoadEnv() (*rancherClient.Stack, error) {
+	if c.Stack != nil {
+		return c.Stack, nil
 	}
 
 	projectName := c.sanitizedProjectName()
@@ -263,7 +263,7 @@ func (c *Context) LoadEnv() (*rancherClient.Environment, error) {
 
 	logrus.Debugf("Looking for stack %s", projectName)
 	// First try by name
-	envs, err := c.Client.Environment.List(&rancherClient.ListOpts{
+	envs, err := c.Client.Stack.List(&rancherClient.ListOpts{
 		Filters: map[string]interface{}{
 			"name":         projectName,
 			"removed_null": nil,
@@ -276,13 +276,13 @@ func (c *Context) LoadEnv() (*rancherClient.Environment, error) {
 	for _, env := range envs.Data {
 		if strings.EqualFold(projectName, env.Name) {
 			logrus.Debugf("Found stack: %s(%s)", env.Name, env.Id)
-			c.Environment = &env
-			return c.Environment, nil
+			c.Stack = &env
+			return c.Stack, nil
 		}
 	}
 
 	// Now try not by name for case sensitive databases
-	envs, err = c.Client.Environment.List(&rancherClient.ListOpts{
+	envs, err = c.Client.Stack.List(&rancherClient.ListOpts{
 		Filters: map[string]interface{}{
 			"removed_null": nil,
 		},
@@ -294,20 +294,20 @@ func (c *Context) LoadEnv() (*rancherClient.Environment, error) {
 	for _, env := range envs.Data {
 		if strings.EqualFold(projectName, env.Name) {
 			logrus.Debugf("Found stack: %s(%s)", env.Name, env.Id)
-			c.Environment = &env
-			return c.Environment, nil
+			c.Stack = &env
+			return c.Stack, nil
 		}
 	}
 
 	logrus.Infof("Creating stack %s", projectName)
-	env, err := c.Client.Environment.Create(&rancherClient.Environment{
+	env, err := c.Client.Stack.Create(&rancherClient.Stack{
 		Name: projectName,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	c.Environment = env
+	c.Stack = env
 
-	return c.Environment, nil
+	return c.Stack, nil
 }

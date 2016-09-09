@@ -18,7 +18,7 @@ import (
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
 	"github.com/gorilla/websocket"
-	rancherClient "github.com/rancher/go-rancher/client"
+	rancherClient "github.com/rancher/go-rancher/v2"
 	"github.com/rancher/go-rancher/hostaccess"
 	rUtils "github.com/rancher/rancher-compose/utils"
 )
@@ -203,13 +203,13 @@ func (r *RancherService) Delete(ctx context.Context, options options.Delete) err
 	return r.Wait(service)
 }
 
-func (r *RancherService) resolveServiceAndEnvironmentId(name string) (string, string, error) {
+func (r *RancherService) resolveServiceAndStackId(name string) (string, string, error) {
 	parts := strings.SplitN(name, "/", 2)
 	if len(parts) == 1 {
-		return name, r.context.Environment.Id, nil
+		return name, r.context.Stack.Id, nil
 	}
 
-	envs, err := r.context.Client.Environment.List(&rancherClient.ListOpts{
+	envs, err := r.context.Client.Stack.List(&rancherClient.ListOpts{
 		Filters: map[string]interface{}{
 			"name":         parts[0],
 			"removed_null": nil,
@@ -230,7 +230,7 @@ func (r *RancherService) resolveServiceAndEnvironmentId(name string) (string, st
 func (r *RancherService) FindExisting(name string) (*rancherClient.Service, error) {
 	logrus.Debugf("Finding service %s", name)
 
-	name, environmentId, err := r.resolveServiceAndEnvironmentId(name)
+	name, environmentId, err := r.resolveServiceAndStackId(name)
 	if err != nil {
 		return nil, err
 	}

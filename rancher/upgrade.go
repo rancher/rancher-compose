@@ -2,7 +2,7 @@ package rancher
 
 import (
 	"github.com/Sirupsen/logrus"
-	rancherClient "github.com/rancher/go-rancher/client"
+	rancherClient "github.com/rancher/go-rancher/v2"
 	"github.com/rancher/rancher-compose/digest"
 )
 

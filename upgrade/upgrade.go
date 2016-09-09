@@ -8,7 +8,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/project/options"
-	rancherClient "github.com/rancher/go-rancher/client"
+	rancherClient "github.com/rancher/go-rancher/v2"
 	"github.com/rancher/rancher-compose/rancher"
 )
 

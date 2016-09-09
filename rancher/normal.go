@@ -5,7 +5,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/utils"
-	rancherClient "github.com/rancher/go-rancher/client"
+	rancherClient "github.com/rancher/go-rancher/v2"
 	"github.com/rancher/rancher-compose/digest"
 )
 
@@ -56,7 +56,7 @@ func (f *NormalFactory) config(r *RancherService) (*CompositeService, *rancherCl
 			Scale:             int64(r.getConfiguredScale()),
 			ScalePolicy:       rancherConfig.ScalePolicy,
 			RetainIp:          rancherConfig.RetainIp,
-			EnvironmentId:     r.Context().Environment.Id,
+			StackId:           r.Context().Stack.Id,
 			SelectorContainer: r.SelectorContainer(),
 			SelectorLink:      r.SelectorLink(),
 		},

@@ -3,7 +3,7 @@ package rancher
 import (
 	"fmt"
 
-	rancherClient "github.com/rancher/go-rancher/client"
+	rancherClient "github.com/rancher/go-rancher/v2"
 )
 
 func populateCerts(client *rancherClient.RancherClient, lbService *CompositeService, rancherConfig *RancherConfig) error {

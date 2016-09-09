@@ -9,7 +9,7 @@ import (
 	"sort"
 
 	"github.com/docker/libcompose/utils"
-	rancherClient "github.com/rancher/go-rancher/client"
+	rancherClient "github.com/rancher/go-rancher/v2"
 	rUtils "github.com/rancher/rancher-compose/utils"
 )
 

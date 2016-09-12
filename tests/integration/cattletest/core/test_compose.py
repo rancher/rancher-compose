@@ -161,10 +161,12 @@ def create_project(compose, operation='create', project_name=None, file=None,
     if project_name is None:
         project_name = random_str()
     if file is not None:
-        compose.check_call(None, '--verbose', '-f', file, '-p', project_name,
+        # TODO
+        compose.check_call(None, '-f', file, '-p', project_name,
                            operation)
     elif input is not None:
-        compose.check_call(input, '--verbose', '-f', '-', '-p', project_name,
+        # TODO
+        compose.check_call(input, '-f', '-', '-p', project_name,
                            operation)
 
     PROJECTS.append(project_name)
@@ -175,7 +177,7 @@ def create_project(compose, operation='create', project_name=None, file=None,
 def test_build(client, compose):
     project_name = create_project(compose, file='assets/build/test.yml')
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.name == 'fromfile'
@@ -186,7 +188,7 @@ def test_build(client, compose):
 
 def test_args(client, compose):
     project_name = create_project(compose, file='assets/full-with-build.yml')
-    project_with_build = find_one(client.list_environment, name=project_name)
+    project_with_build = find_one(client.list_stack, name=project_name)
     service = find_one(project_with_build.services)
     assert service.launchConfig.build == {
         'dockerfile': 'something/other',
@@ -195,7 +197,7 @@ def test_args(client, compose):
 
     project_name = create_project(compose,
                                   file='assets/full-with-build-v2.yml')
-    project_with_build_v2 = find_one(client.list_environment,
+    project_with_build_v2 = find_one(client.list_stack,
                                      name=project_name)
     service = find_one(project_with_build_v2.services)
     assert service.launchConfig.build == {
@@ -204,13 +206,13 @@ def test_args(client, compose):
     }
 
     project_name = create_project(compose, file='assets/full-with-image.yml')
-    project_with_image = find_one(client.list_environment, name=project_name)
+    project_with_image = find_one(client.list_stack, name=project_name)
     service = find_one(project_with_image.services)
     assert service.launchConfig.imageUuid == 'docker:nginx'
 
     project_name = create_project(compose,
                                   file='assets/full-with-image-v2.yml')
-    project_with_image_v2 = find_one(client.list_environment,
+    project_with_image_v2 = find_one(client.list_stack,
                                      name=project_name)
     service = find_one(project_with_image_v2.services)
     assert service.launchConfig.imageUuid == 'docker:nginx'
@@ -276,7 +278,7 @@ def test_git_build(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.launchConfig.build == {
@@ -305,7 +307,7 @@ def test_circular_sidekick(client, compose):
       command: cat
     '''
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.launchConfig.dataVolumesFromLaunchConfigs == ['secondary']
@@ -321,7 +323,7 @@ def test_delete(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.state == 'inactive'
@@ -348,7 +350,7 @@ def test_delete_while_stopped(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.state == 'inactive'
@@ -369,7 +371,7 @@ def test_network_bridge(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.launchConfig.networkMode == 'bridge'
@@ -383,7 +385,7 @@ def test_network_none(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.launchConfig.networkMode == 'none'
@@ -402,7 +404,7 @@ def test_network_container(compose, client):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.launchConfig.networkMode == 'managed'
@@ -418,7 +420,7 @@ def test_network_managed(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.launchConfig.networkMode == 'managed'
@@ -431,7 +433,7 @@ def test_network_default(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.launchConfig.networkMode == 'managed'
@@ -439,7 +441,7 @@ def test_network_default(client, compose):
 
 def test_env_file(client, compose):
     project_name = create_project(compose, file='assets/base.yml')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert project.name == project_name
 
     second = _get_service(project.services(), 'base')
@@ -455,7 +457,7 @@ def test_env_file(client, compose):
 
 def test_extends(client, compose):
     project_name = create_project(compose, file='assets/base.yml')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert project.name == project_name
 
     base = _get_service(project.services(), 'base')
@@ -477,7 +479,7 @@ def test_extends(client, compose):
 def test_extends_1556(client, compose):
     project_name = create_project(compose,
                                   file='assets/extends/docker-compose.yml')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert project.name == project_name
 
     web = _get_service(project.services(), 'web')
@@ -514,7 +516,7 @@ def test_lb_private(client, compose):
 
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 3
     lb = _get_service(project.services(), 'lb')
 
@@ -537,7 +539,7 @@ def test_lb_basic(client, compose):
 
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 3
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
@@ -572,7 +574,7 @@ def test_lb_default_port_http(client, compose):
 
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 2
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
@@ -599,7 +601,7 @@ def test_lb_default_port_with_mapped_tcp(client, compose):
 
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 2
     lb = _get_service(project.services(), 'lb')
     assert lb.launchConfig.ports == ['80:8080/tcp']
@@ -627,7 +629,7 @@ def test_lb_default_port_with_tcp(client, compose):
 
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 2
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
@@ -656,7 +658,7 @@ def test_lb_path_space_target(client, compose):
 
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 2
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
@@ -696,7 +698,7 @@ def test_lb_path_name(client, compose):
 
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 4
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
@@ -733,7 +735,7 @@ def test_lb_path_name_minimal(client, compose):
 
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 2
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
@@ -748,7 +750,7 @@ def test_lb_path_name_minimal(client, compose):
 
 def test_lb_full_config(client, compose):
     project_name = create_project(compose, file='assets/lb/docker-compose.yml')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 2
 
     lb = _get_service(project.services(), 'lb')
@@ -777,7 +779,7 @@ def test_links(client, compose):
 
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
 
     web = _get_service(project.services(), 'web')
     db = _get_service(project.services(), 'db')
@@ -808,7 +810,7 @@ def test_volumes_from(client, compose):
     '''
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.secondaryLaunchConfigs[0].dataVolumesFromLaunchConfigs == \
@@ -828,7 +830,7 @@ def test_sidekick_simple(client, compose):
     '''
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     services = project.services()
 
     service = _get_service(services, 'web')
@@ -859,7 +861,7 @@ def test_sidekick_container_network(client, compose):
     '''
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.name == 'web'
@@ -879,7 +881,7 @@ def test_not_external_service_hostname(client, compose):
     '''
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.name == 'web'
@@ -890,7 +892,7 @@ def test_not_external_service_hostname(client, compose):
 def test_external_service_hostname(client, compose):
     project_name = create_project(compose, file='assets/hostname/test.yml')
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.name == 'web'
@@ -901,7 +903,7 @@ def test_external_service_hostname(client, compose):
 def test_external_ip(client, compose):
     project_name = create_project(compose, file='assets/externalip/test.yml')
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.name == 'web'
@@ -918,7 +920,7 @@ def test_service_inplace_rollback(client, compose):
     '''
     compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
                        'up', '-d')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     s = find_one(project.services)
     assert s.state == 'active'
 
@@ -950,7 +952,7 @@ def test_service_inplace_upgrade_inactive(client, compose):
     '''
     compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
                        'create')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     s = find_one(project.services)
     assert s.state == 'inactive'
 
@@ -981,7 +983,7 @@ def test_service_inplace_upgrade(client, compose):
     '''
     compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
                        'up', '-d')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     s = find_one(project.services)
     assert s.state == 'active'
 
@@ -1015,7 +1017,7 @@ child1:
     image: nginx
 '''
     compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-d')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 1
 
     parent = _get_service(project.services(), 'parent')
@@ -1035,7 +1037,7 @@ child2:
 '''
     compose.check_call(template, '-p', project_name, '-f', '-', 'up',
                        '--upgrade', '-c', '-d')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 1
 
     parent = _get_service(project.services(), 'parent')
@@ -1057,7 +1059,7 @@ child2:
     image: nginx
 '''
     compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-d')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 1
 
     parent = _get_service(project.services(), 'parent')
@@ -1075,7 +1077,7 @@ child1:
 '''
     compose.check_call(template, '-p', project_name, '-f', '-', 'up',
                        '--upgrade', '-c', '-d')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 1
 
     parent = _get_service(project.services(), 'parent')
@@ -1087,12 +1089,12 @@ child1:
 def test_service_hash_with_rancher(client, compose):
     project_name = create_project(compose,
                                   file='assets/hash-no-rancher/test.yml')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     s = find_one(project.services)
 
     project_name = create_project(compose,
                                   file='assets/hash-with-rancher/test.yml')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     s2 = find_one(project.services)
 
     assert s.metadata['io.rancher.service.hash'] is not None
@@ -1107,20 +1109,23 @@ def test_service_hash_no_change(client, compose):
         image: nginx
     '''
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     web = find_one(project.services)
 
     assert web.metadata['io.rancher.service.hash'] is not None
     assert web.launchConfig.labels['io.rancher.service.hash'] is not None
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     web2 = find_one(project.services)
 
-    assert web.metadata['io.rancher.service.hash'] == \
-        web2.metadata['io.rancher.service.hash']
+    assert web2.metadata['io.rancher.service.hash'] is not None
+    assert web2.launchConfig.labels['io.rancher.service.hash'] is not None
+
     assert web.launchConfig.labels['io.rancher.service.hash'] == \
         web2.launchConfig.labels['io.rancher.service.hash']
+    assert web.metadata['io.rancher.service.hash'] == \
+        web2.metadata['io.rancher.service.hash']
 
 
 def test_dns_service(client, compose):
@@ -1137,7 +1142,7 @@ def test_dns_service(client, compose):
     '''
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     services = project.services()
 
     assert len(services) == 3
@@ -1169,7 +1174,7 @@ def test_up_relink(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     lb = _get_service(project.services(), 'lb')
 
     consumed = lb.consumedservices()
@@ -1237,7 +1242,7 @@ def test_service_upgrade_no_global_on_src(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
 
     assert len(project.services()) == 1
 
@@ -1289,7 +1294,7 @@ def test_service_map_syntax(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     foo = _get_service(project.services(), 'foo')
     maps = client.list_serviceConsumeMap(serviceId=foo.id)
 
@@ -1304,7 +1309,7 @@ def test_cross_stack_link(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     dest = _get_service(project.services(), 'dest')
 
     template = '''
@@ -1315,7 +1320,7 @@ def test_cross_stack_link(client, compose):
     '''.format(project_name)
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     src = _get_service(project.services(), 'src')
 
     services = src.consumedservices()
@@ -1341,7 +1346,7 @@ def test_up_deletes_links(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     src = _get_service(project.services(), 'src')
 
     services = src.consumedservices()
@@ -1364,7 +1369,7 @@ def test_upgrade_no_source(client, compose):
                           'upgrade', '--interval', '1000',
                           '--scale=2', 'from', 'to')
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 0
 
 
@@ -1374,7 +1379,7 @@ def test_upgrade_ignore_scale(client, compose):
     compose.check_call(None, '--verbose', '-f', 'assets/upgrade-ignore-scale/'
                        'docker-compose-source.yml',
                        '-p', project_name, 'up', '-d')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     compose.check_call(None, '-p', project_name, '-f',
                        'assets/upgrade-ignore-scale/docker-compose.yml',
                        'upgrade', '--pull', '--interval', '1000',
@@ -1404,7 +1409,7 @@ def test_service_link_with_space(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     foo = _get_service(project.services(), 'foo')
     maps = client.list_serviceConsumeMap(serviceId=foo.id)
 
@@ -1427,7 +1432,7 @@ def test_circle_simple(client, compose):
     project_name = random_str()
     compose.check_call(template, '-p', project_name, '-f',
                        '-', 'create')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     foo = _get_service(project.services(), 'foo')
     web = _get_service(project.services(), 'web')
 
@@ -1449,7 +1454,7 @@ def test_one_circle(client, compose):
     project_name = random_str()
     compose.check_call(template, '-p', project_name, '-f',
                        '-', 'create')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     foo = _get_service(project.services(), 'foo')
 
     s = find_one(foo.consumedservices)
@@ -1481,7 +1486,7 @@ def test_circle_madness(client, compose):
     project_name = random_str()
     compose.check_call(template, '-p', project_name, '-f',
                        '-', 'up', '-d')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     foo = _get_service(project.services(), 'foo')
     foo2 = _get_service(project.services(), 'foo2')
     foo3 = _get_service(project.services(), 'foo3')
@@ -1497,7 +1502,7 @@ def test_variables(client, compose):
                        '--verbose', '-f', 'assets/env-file/docker-compose.yml',
                        '-p', project_name, 'create')
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.launchConfig.imageUuid == 'docker:B'
@@ -1509,7 +1514,7 @@ def test_variables(client, compose):
 def test_metadata_on_service(client, compose):
     project_name = create_project(compose, file='assets/metadata/test.yml')
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.name == 'web'
@@ -1541,7 +1546,7 @@ def test_metadata_on_service(client, compose):
 def test_healthchecks(client, compose):
     project_name = create_project(compose, file='assets/health/test.yml')
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
     assert service.name == 'web'
@@ -1572,11 +1577,11 @@ def test_restart_no(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    find_one(client.list_environment, name=project_name)
+    find_one(client.list_stack, name=project_name)
 
     compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
                        'up', '-d')
-    p = find_one(client.list_environment, name=project_name)
+    p = find_one(client.list_stack, name=project_name)
     find_one(p.services)
 
 
@@ -1587,14 +1592,14 @@ def test_stack_case(client, compose):
     '''
 
     project_name = create_project(compose, input=template)
-    find_one(client.list_environment, name=project_name)
+    find_one(client.list_stack, name=project_name)
 
     compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
                        'up', '-d')
 
     compose.check_call(template, '--verbose', '-f', '-', '-p',
                        project_name.upper(), 'up', '-d')
-    find_one(client.list_environment, name=project_name)
+    find_one(client.list_stack, name=project_name)
 
 
 @pytest.mark.skipif('True')
@@ -1618,7 +1623,7 @@ def test_certs(new_context, compose_bin, request):
 
     project_name = create_project(compose,
                                   file='assets/ssl/docker-compose.yml')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 2
 
     lb = _get_service(project.services(), 'lb')
@@ -1635,7 +1640,7 @@ def test_cert_not_found(new_context, compose_bin, request):
 
 def test_project_name(client, compose):
     project_name = 'FooBar23-' + random_str()
-    stack = client.create_environment(name=project_name)
+    stack = client.create_stack(name=project_name)
     stack = client.wait_success(stack)
     assert stack.state == 'active'
 
@@ -1644,7 +1649,7 @@ def test_project_name(client, compose):
         image: nginx
     '''
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 0
 
     compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
@@ -1654,7 +1659,7 @@ def test_project_name(client, compose):
 
 def test_project_name_case_insensitive(client, compose):
     project_name = 'FooBar23-' + random_str()
-    stack = client.create_environment(name=project_name)
+    stack = client.create_stack(name=project_name)
     stack = client.wait_success(stack)
     assert stack.state == 'active'
 
@@ -1663,7 +1668,7 @@ def test_project_name_case_insensitive(client, compose):
         image: nginx
     '''
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 0
 
     project_name = project_name.replace('FooBar', 'fOoBaR')
@@ -1678,14 +1683,14 @@ def test_project_name_with_dots(client, compose):
     project_name = 'something-with-dashes-v0-2-6'
     bad_project_name = 'something-with-dashes-v0.2.6'
 
-    ret = client.list_environment(name=project_name)
+    ret = client.list_stack(name=project_name)
     assert len(ret) == 0
 
     compose.check_call(None, '--verbose', '-f',
                        'assets/{}/docker-compose.yml'.format(bad_project_name),
                        'create')
 
-    ret = client.list_environment(name=project_name)
+    ret = client.list_stack(name=project_name)
     assert len(ret) == 1
 
 
@@ -1725,7 +1730,7 @@ def test_create_then_up_on_circle(client, compose):
 
     project_name = create_project(compose, input=template)
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     etcd_lb = _get_service(project.services(), 'etcd-lb')
     etcd0 = _get_service(project.services(), 'etcd0')
     etcd1 = _get_service(project.services(), 'etcd1')
@@ -1757,7 +1762,7 @@ foo:
     project_name = random_str()
     compose.check_call(template, '-p', project_name, '-f',
                        '-', 'create')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     foo = _get_service(project.services(), 'foo')
 
     assert 'ports' not in foo.launchConfig
@@ -1778,7 +1783,7 @@ foo3:
     project_name = random_str()
     compose.check_call(template, '--verbose', '-f', '-', '-p', project_name,
                        'up', '-d')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 3
 
     foo = _get_service(project.services(), 'foo')
@@ -1814,7 +1819,7 @@ foo2:
     project_name = random_str()
     out, err = compose.check_retcode(template, 0, '-p', project_name, '-f',
                                      '-', 'pull', stdout=subprocess.PIPE)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 0
 
     assert 'nginx' in out
@@ -1825,7 +1830,7 @@ def test_retain_ip(client, compose):
     project_name = create_project(compose, file='assets/retain-ip/'
                                                 'docker-compose.yml')
 
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     retain = _get_service(project.services(), 'retain')
     not_retain = _get_service(project.services(), 'not-retain')
 
@@ -1846,7 +1851,7 @@ child:
 '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 2
 
     parent = _get_service(project.services(), 'parent')
@@ -1871,7 +1876,7 @@ child:
 '''
 
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 1
 
     parent = _get_service(project.services(), 'parent')
@@ -1885,7 +1890,7 @@ child:
 def test_sidekick_healthcheck(client, compose):
     project_name = create_project(compose, file='assets/sidekick-health/'
                                                 'docker-compose.yml')
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 1
 
     parent = _get_service(project.services(), 'parent')
@@ -1903,7 +1908,7 @@ child:
     image: nginx
 '''
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 1
     compose.check_call(template, '-p', project_name, '-f', '-', 'up', '-d')
 
@@ -1948,7 +1953,7 @@ vm:
       size: 2g
 '''
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
     vm = find_one(project.services)
 
     assert vm.launchConfig.kind == 'virtualMachine'
@@ -1980,7 +1985,7 @@ def test_environment_variables(client, compose):
             ENV2:
     '''
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
 
     service = find_one(project.services)
     assert service.name == 'env-test1'
@@ -1995,7 +2000,7 @@ def test_environment_variables(client, compose):
         - ENV2
     '''
     project_name = create_project(compose, input=template)
-    project = find_one(client.list_environment, name=project_name)
+    project = find_one(client.list_stack, name=project_name)
 
     service = find_one(project.services)
     assert service.name == 'env-test2'

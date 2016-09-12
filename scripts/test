@@ -32,7 +32,7 @@ go test -race -cover -tags=test ${PACKAGES}
 setup_root
 
 cd tests/integration
-export CATTLE_URL=${CATTLE_URL:-http://localhost:8080/v1/schemas}
+export CATTLE_URL=${CATTLE_URL:-http://localhost:8080/v2-beta/schemas}
 
 if [ -e .tox ] && [ ! -e .tox/py27/include/python2.7 ]; then
     rm -rf .tox

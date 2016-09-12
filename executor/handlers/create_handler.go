@@ -8,10 +8,10 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/project/options"
 	"github.com/rancher/event-subscriber/events"
-	"github.com/rancher/go-rancher/client"
+	"github.com/rancher/go-rancher/v2"
 )
 
-func CreateEnvironment(event *events.Event, apiClient *client.RancherClient) error {
+func CreateStack(event *events.Event, apiClient *client.RancherClient) error {
 	logger := logrus.WithFields(logrus.Fields{
 		"resourceId": event.ResourceID,
 		"eventId":    event.ID,
@@ -19,7 +19,7 @@ func CreateEnvironment(event *events.Event, apiClient *client.RancherClient) err
 
 	logger.Info("Stack Create Event Received")
 
-	if err := createEnvironment(logger, event, apiClient); err != nil {
+	if err := createStack(logger, event, apiClient); err != nil {
 		logger.Errorf("Stack Create Event Failed: %v", err)
 		publishTransitioningReply(err.Error(), event, apiClient)
 		return err
@@ -29,21 +29,21 @@ func CreateEnvironment(event *events.Event, apiClient *client.RancherClient) err
 	return nil
 }
 
-func createEnvironment(logger *logrus.Entry, event *events.Event, apiClient *client.RancherClient) error {
-	env, err := apiClient.Environment.ById(event.ResourceID)
+func createStack(logger *logrus.Entry, event *events.Event, apiClient *client.RancherClient) error {
+	stack, err := apiClient.Stack.ById(event.ResourceID)
 	if err != nil {
 		return err
 	}
 
-	if env == nil {
+	if stack == nil {
 		return errors.New("Failed to find stack")
 	}
 
-	if env.DockerCompose == "" {
+	if stack.DockerCompose == "" {
 		return emptyReply(event, apiClient)
 	}
 
-	_, project, err := constructProject(logger, env, apiClient.Opts.Url, apiClient.Opts.AccessKey, apiClient.Opts.SecretKey)
+	_, project, err := constructProject(logger, stack, apiClient.Opts.Url, apiClient.Opts.AccessKey, apiClient.Opts.SecretKey)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func createEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cli
 	}
 
 	startOnCreate := false
-	if fields, ok := env.Data["fields"].(map[string]interface{}); ok {
+	if fields, ok := stack.Data["fields"].(map[string]interface{}); ok {
 		if on, ok := fields["startOnCreate"].(bool); ok {
 			startOnCreate = on
 		}

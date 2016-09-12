@@ -18,8 +18,7 @@ import (
 	"github.com/docker/libcompose/project/events"
 	"github.com/docker/libcompose/project/options"
 	"github.com/gorilla/websocket"
-	rancherClient "github.com/rancher/go-rancher/v2"
-	"github.com/rancher/go-rancher/hostaccess"
+	"github.com/rancher/go-rancher/v2"
 	rUtils "github.com/rancher/rancher-compose/utils"
 )
 
@@ -27,7 +26,7 @@ type Link struct {
 	ServiceName, Alias string
 }
 
-type IsDone func(*rancherClient.Resource) (bool, error)
+type IsDone func(*client.Resource) (bool, error)
 
 type ContainerInspect struct {
 	Name       string
@@ -68,7 +67,7 @@ func NewService(name string, config *config.ServiceConfig, context *Context) *Ra
 	}
 }
 
-func (r *RancherService) RancherService() (*rancherClient.Service, error) {
+func (r *RancherService) RancherService() (*client.Service, error) {
 	return r.FindExisting(r.name)
 }
 
@@ -209,7 +208,7 @@ func (r *RancherService) resolveServiceAndStackId(name string) (string, string, 
 		return name, r.context.Stack.Id, nil
 	}
 
-	envs, err := r.context.Client.Stack.List(&rancherClient.ListOpts{
+	stacks, err := r.context.Client.Stack.List(&client.ListOpts{
 		Filters: map[string]interface{}{
 			"name":         parts[0],
 			"removed_null": nil,
@@ -220,26 +219,26 @@ func (r *RancherService) resolveServiceAndStackId(name string) (string, string, 
 		return "", "", err
 	}
 
-	if len(envs.Data) == 0 {
+	if len(stacks.Data) == 0 {
 		return "", "", fmt.Errorf("Failed to find stack: %s", parts[0])
 	}
 
-	return parts[1], envs.Data[0].Id, nil
+	return parts[1], stacks.Data[0].Id, nil
 }
 
-func (r *RancherService) FindExisting(name string) (*rancherClient.Service, error) {
+func (r *RancherService) FindExisting(name string) (*client.Service, error) {
 	logrus.Debugf("Finding service %s", name)
 
-	name, environmentId, err := r.resolveServiceAndStackId(name)
+	name, stackId, err := r.resolveServiceAndStackId(name)
 	if err != nil {
 		return nil, err
 	}
 
-	services, err := r.context.Client.Service.List(&rancherClient.ListOpts{
+	services, err := r.context.Client.Service.List(&client.ListOpts{
 		Filters: map[string]interface{}{
-			"environmentId": environmentId,
-			"name":          name,
-			"removed_null":  nil,
+			"stackId":      stackId,
+			"name":         name,
+			"removed_null": nil,
 		},
 	})
 
@@ -262,7 +261,7 @@ func (r *RancherService) Metadata() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
-func (r *RancherService) HealthCheck(service string) *rancherClient.InstanceHealthCheck {
+func (r *RancherService) HealthCheck(service string) *client.InstanceHealthCheck {
 	if service == "" {
 		service = r.name
 	}
@@ -284,7 +283,7 @@ func (r *RancherService) getConfiguredScale() int {
 	return scale
 }
 
-func (r *RancherService) createService() (*rancherClient.Service, error) {
+func (r *RancherService) createService() (*client.Service, error) {
 	logrus.Infof("Creating service %s", r.name)
 
 	factory, err := GetFactory(r)
@@ -309,7 +308,7 @@ func (r *RancherService) createService() (*rancherClient.Service, error) {
 	return service, err
 }
 
-func (r *RancherService) setupLinks(service *rancherClient.Service, update bool) error {
+func (r *RancherService) setupLinks(service *client.Service, update bool) error {
 	// Don't modify links for selector based linking, don't want to conflict
 	if service.SelectorLink != "" || FindServiceType(r) == ExternalServiceType {
 		return nil
@@ -318,7 +317,7 @@ func (r *RancherService) setupLinks(service *rancherClient.Service, update bool)
 	var err error
 	var links []interface{}
 
-	existingLinks, err := r.context.Client.ServiceConsumeMap.List(&rancherClient.ListOpts{
+	existingLinks, err := r.context.Client.ServiceConsumeMap.List(&client.ListOpts{
 		Filters: map[string]interface{}{
 			"serviceId": service.Id,
 		},
@@ -331,14 +330,14 @@ func (r *RancherService) setupLinks(service *rancherClient.Service, update bool)
 		return nil
 	}
 
-	if service.Type == rancherClient.LOAD_BALANCER_SERVICE_TYPE {
+	if service.Type == client.LOAD_BALANCER_SERVICE_TYPE {
 		links, err = r.getLbLinks()
 	} else {
 		links, err = r.getServiceLinks()
 	}
 
 	if err == nil {
-		_, err = r.context.Client.Service.ActionSetservicelinks(service, &rancherClient.SetServiceLinksInput{
+		_, err = r.context.Client.Service.ActionSetservicelinks(service, &client.SetServiceLinksInput{
 			ServiceLinks: links,
 		})
 	}
@@ -358,7 +357,7 @@ func (r *RancherService) getLbLinks() ([]interface{}, error) {
 			return nil, err
 		}
 
-		result = append(result, rancherClient.LoadBalancerServiceLink{
+		result = append(result, client.LoadBalancerServiceLink{
 			Ports:     ports,
 			ServiceId: id,
 		})
@@ -393,7 +392,7 @@ func (r *RancherService) getServiceLinks() ([]interface{}, error) {
 
 	result := []interface{}{}
 	for link, id := range links {
-		result = append(result, rancherClient.ServiceLink{
+		result = append(result, client.ServiceLink{
 			Name:      link.Alias,
 			ServiceId: id,
 		})
@@ -475,13 +474,13 @@ func (r *RancherService) Containers(ctx context.Context) ([]project.Container, e
 	return result, nil
 }
 
-func (r *RancherService) containers() ([]rancherClient.Container, error) {
+func (r *RancherService) containers() ([]client.Container, error) {
 	service, err := r.FindExisting(r.name)
 	if err != nil {
 		return nil, err
 	}
 
-	var instances rancherClient.ContainerCollection
+	var instances client.ContainerCollection
 
 	err = r.context.Client.GetLink(service.Resource, "instances", &instances)
 	if err != nil {
@@ -501,8 +500,8 @@ func (r *RancherService) Restart(ctx context.Context, timeout int) error {
 		return fmt.Errorf("Failed to find %s to restart", r.name)
 	}
 
-	service, err = r.context.Client.Service.ActionRestart(service, &rancherClient.ServiceRestart{
-		RollingRestartStrategy: rancherClient.RollingRestartStrategy{
+	service, err = r.context.Client.Service.ActionRestart(service, &client.ServiceRestart{
+		RollingRestartStrategy: client.RollingRestartStrategy{
 			BatchSize:      r.context.BatchSize,
 			IntervalMillis: r.context.Interval,
 		},
@@ -532,7 +531,8 @@ func (r *RancherService) Log(ctx context.Context, follow bool) error {
 		return err
 	}
 
-	for _, container := range containers {
+	_ = containers
+	/*for _, container := range containers {
 		conn, err := (*hostaccess.RancherWebsocketClient)(r.context.Client).GetHostAccess(container.Resource, "logs", nil)
 		if err != nil {
 			logrus.Errorf("Failed to get logs for %s: %v", container.Name, err)
@@ -540,12 +540,12 @@ func (r *RancherService) Log(ctx context.Context, follow bool) error {
 		}
 
 		go r.pipeLogs(&container, conn)
-	}
+	}*/
 
 	return nil
 }
 
-func (r *RancherService) pipeLogs(container *rancherClient.Container, conn *websocket.Conn) {
+func (r *RancherService) pipeLogs(container *client.Container, conn *websocket.Conn) {
 	defer conn.Close()
 
 	log_name := strings.TrimPrefix(container.Name, r.context.ProjectName+"_")
@@ -591,7 +591,7 @@ func (r *RancherService) DependentServices() []project.ServiceRelationship {
 	return result
 }
 
-func (r *RancherService) Client() *rancherClient.RancherClient {
+func (r *RancherService) Client() *client.RancherClient {
 	return r.context.Client
 }
 
@@ -604,7 +604,7 @@ func (r *RancherService) Info(ctx context.Context) (project.InfoSet, error) {
 }
 
 func (r *RancherService) pullImage(image string, labels map[string]string) error {
-	taskOpts := &rancherClient.PullTask{
+	taskOpts := &client.PullTask{
 		Mode:   "all",
 		Labels: rUtils.ToMapInterface(labels),
 		Image:  image,

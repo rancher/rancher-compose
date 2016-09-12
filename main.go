@@ -68,6 +68,10 @@ func cliMain() {
 			Name:  "env-file,e",
 			Usage: "Specify a file from which to read environment variables",
 		},
+		cli.StringFlag{
+			Name:  "bindings-file,b",
+			Usage: "Specify a file from which to read bindings",
+		},
 	)
 	app.Commands = []cli.Command{
 		rancherApp.CreateCommand(factory),

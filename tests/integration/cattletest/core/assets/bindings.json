@@ -1,0 +1,10 @@
+{
+	"services": {
+		"prometheus": {
+			"labels": {
+				"labels_prom_binding": "value_prom_binding"
+			},
+			"ports": ["8081"]
+		}
+	}
+}

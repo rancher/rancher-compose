@@ -43,8 +43,8 @@ two:
   image: nginx
 '''
 
-    env = client.create_environment(name=name, dockerCompose=template,
-                                    rancherCompose=rancher_compose)
+    env = client.create_stack(name=name, dockerCompose=template,
+                              rancherCompose=rancher_compose)
     env = client.wait_success(env)
     assert env.state == 'active'
     assert env.externalId is None
@@ -113,9 +113,9 @@ two:
   image: nginx
 '''
 
-    env = client.create_environment(name=name, dockerCompose=template,
-                                    environment={'a': 'b', 'd': 'e'},
-                                    rancherCompose=rancher_compose)
+    env = client.create_stack(name=name, dockerCompose=template,
+                              environment={'a': 'b', 'd': 'e'},
+                              rancherCompose=rancher_compose)
     env = client.wait_success(env)
     env = client.wait_success(env.activateservices())
     assert env.state == 'active'
@@ -175,8 +175,8 @@ one:
 one:
   scale: 2
 '''
-    env = client.create_environment(name=name, dockerCompose=template,
-                                    rancherCompose=rancher_compose)
+    env = client.create_stack(name=name, dockerCompose=template,
+                              rancherCompose=rancher_compose)
     env = client.wait_success(env)
     env = client.wait_success(env.activateservices())
     assert env.state == 'active'
@@ -218,7 +218,7 @@ two:
   links:
   - one
 '''
-    env = client.create_environment(name=name, dockerCompose=template)
+    env = client.create_stack(name=name, dockerCompose=template)
     env = client.wait_success(env)
 
     for s in env.services():

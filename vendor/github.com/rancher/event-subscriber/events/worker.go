@@ -1,40 +1,80 @@
 package events
 
 import (
-	"encoding/json"
-
 	log "github.com/Sirupsen/logrus"
 	"github.com/rancher/event-subscriber/locks"
-	"github.com/rancher/go-rancher/client"
+	"github.com/rancher/go-rancher/v2"
 )
 
-func newWorker() *Worker {
-	return &Worker{}
+type EventLocker func(event *Event) locks.Locker
+
+func nopLocker(_ *Event) locks.Locker { return locks.NopLocker() }
+
+func resourceIDLocker(event *Event) locks.Locker { return locks.KeyLocker(event.ResourceID) }
+
+type WorkerPool interface {
+	HandleWork(event *Event, eventHandlers map[string]EventHandler, apiClient *client.RancherClient)
 }
 
-type Worker struct {
+type skippingWorkerPool struct {
+	workers     chan int
+	eventLocker EventLocker
 }
 
-func (w *Worker) DoWork(rawEvent []byte, eventHandlers map[string]EventHandler, apiClient *client.RancherClient,
-	workers chan *Worker) {
-	defer func() { workers <- w }()
-
-	event := &Event{}
-	err := json.Unmarshal(rawEvent, &event)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"err": err,
-		}).Error("Error unmarshalling event")
-		return
+func SkippingWorkerPool(size int, eventLocker EventLocker) WorkerPool {
+	if eventLocker == nil {
+		eventLocker = nopLocker
 	}
+	wp := &skippingWorkerPool{workers: make(chan int, size), eventLocker: eventLocker}
+	for i := 0; i < size; i++ {
+		wp.workers <- i
+	}
+	return wp
+}
+
+func (wp *skippingWorkerPool) HandleWork(event *Event, eventHandlers map[string]EventHandler, apiClient *client.RancherClient) {
+	select {
+	case w := <-wp.workers:
+		go func() {
+			defer func() { wp.workers <- w }()
+			doWork(event, eventHandlers, apiClient, wp.eventLocker(event))
+		}()
+	default:
+		log.Warnf("No workers available, dropping event. workerCount: %v, event: %v", cap(wp.workers), *event)
+	}
+}
+
+type nonSkippingWorkerPool struct {
+	workers chan int
+}
+
+func NonSkippingWorkerPool(size int) WorkerPool {
+	wp := &nonSkippingWorkerPool{workers: make(chan int, size)}
+	go func() {
+		for i := 0; i < size; i++ {
+			wp.workers <- i
+		}
+	}()
+	return wp
+}
+
+func (wp *nonSkippingWorkerPool) HandleWork(event *Event, eventHandlers map[string]EventHandler, apiClient *client.RancherClient) {
+	w := <-wp.workers
+	go func() {
+		defer func() { wp.workers <- w }()
+		doWork(event, eventHandlers, apiClient, nopLocker(event))
+	}()
+}
+
+func doWork(event *Event, eventHandlers map[string]EventHandler, apiClient *client.RancherClient, locker locks.Locker) {
 
 	if event.Name != "ping" {
 		log.WithFields(log.Fields{
-			"event": string(rawEvent[:]),
+			"event": *event,
 		}).Debug("Processing event.")
 	}
 
-	unlocker := locks.Lock(event.ResourceID)
+	unlocker := locker.Lock()
 	if unlocker == nil {
 		log.WithFields(log.Fields{
 			"resourceId": event.ResourceID,
@@ -44,8 +84,7 @@ func (w *Worker) DoWork(rawEvent []byte, eventHandlers map[string]EventHandler, 
 	defer unlocker.Unlock()
 
 	if fn, ok := eventHandlers[event.Name]; ok {
-		err = fn(event, apiClient)
-		if err != nil {
+		if err := fn(event, apiClient); err != nil {
 			log.WithFields(log.Fields{
 				"eventName":  event.Name,
 				"eventId":    event.ID,

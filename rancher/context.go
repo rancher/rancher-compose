@@ -3,6 +3,7 @@ package rancher
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,7 +17,7 @@ import (
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 	composeYaml "github.com/docker/libcompose/yaml"
-	rancherClient "github.com/rancher/go-rancher/client"
+	"github.com/rancher/go-rancher/v2"
 	"github.com/rancher/rancher-compose/preprocess"
 	rUtils "github.com/rancher/rancher-compose/utils"
 	rVersion "github.com/rancher/rancher-compose/version"
@@ -35,8 +36,8 @@ type Context struct {
 	Url                 string
 	AccessKey           string
 	SecretKey           string
-	Client              *rancherClient.RancherClient
-	Environment         *rancherClient.Environment
+	Client              *client.RancherClient
+	Stack               *client.Stack
 	isOpen              bool
 	SidekickInfo        *SidekickInfo
 	Uploader            Uploader
@@ -54,24 +55,24 @@ type Context struct {
 
 type RancherConfig struct {
 	// VirtualMachine fields
-	Vcpu     composeYaml.StringorInt            `yaml:"vcpu,omitempty"`
-	Userdata string                             `yaml:"userdata,omitempty"`
-	Memory   composeYaml.StringorInt            `yaml:"memory,omitempty"`
-	Disks    []rancherClient.VirtualMachineDisk `yaml:"disks,omitempty"`
+	Vcpu     composeYaml.StringorInt     `yaml:"vcpu,omitempty"`
+	Userdata string                      `yaml:"userdata,omitempty"`
+	Memory   composeYaml.StringorInt     `yaml:"memory,omitempty"`
+	Disks    []client.VirtualMachineDisk `yaml:"disks,omitempty"`
 
-	Type               string                                 `yaml:"type,omitempty"`
-	Scale              composeYaml.StringorInt                `yaml:"scale,omitempty"`
-	RetainIp           bool                                   `yaml:"retain_ip,omitempty"`
-	LoadBalancerConfig *rancherClient.LoadBalancerConfig      `yaml:"load_balancer_config,omitempty"`
-	ExternalIps        []string                               `yaml:"external_ips,omitempty"`
-	Hostname           string                                 `yaml:"hostname,omitempty"`
-	HealthCheck        *rancherClient.InstanceHealthCheck     `yaml:"health_check,omitempty"`
-	DefaultCert        string                                 `yaml:"default_cert,omitempty"`
-	Certs              []string                               `yaml:"certs,omitempty"`
-	Metadata           map[string]interface{}                 `yaml:"metadata,omitempty"`
-	ScalePolicy        *rancherClient.ScalePolicy             `yaml:"scale_policy,omitempty"`
-	ServiceSchemas     map[string]rancherClient.Schema        `yaml:"service_schemas,omitempty"`
-	UpgradeStrategy    rancherClient.InServiceUpgradeStrategy `yaml:"upgrade_strategy,omitempty"`
+	Type               string                          `yaml:"type,omitempty"`
+	Scale              composeYaml.StringorInt         `yaml:"scale,omitempty"`
+	RetainIp           bool                            `yaml:"retain_ip,omitempty"`
+	LoadBalancerConfig *client.LoadBalancerConfig      `yaml:"load_balancer_config,omitempty"`
+	ExternalIps        []string                        `yaml:"external_ips,omitempty"`
+	Hostname           string                          `yaml:"hostname,omitempty"`
+	HealthCheck        *client.InstanceHealthCheck     `yaml:"health_check,omitempty"`
+	DefaultCert        string                          `yaml:"default_cert,omitempty"`
+	Certs              []string                        `yaml:"certs,omitempty"`
+	Metadata           map[string]interface{}          `yaml:"metadata,omitempty"`
+	ScalePolicy        *client.ScalePolicy             `yaml:"scale_policy,omitempty"`
+	ServiceSchemas     map[string]client.Schema        `yaml:"service_schemas,omitempty"`
+	UpgradeStrategy    client.InServiceUpgradeStrategy `yaml:"upgrade_strategy,omitempty"`
 }
 
 func ResolveRancherCompose(composeFile, rancherComposeFile string) (string, error) {
@@ -166,14 +167,24 @@ func (c *Context) sanitizedProjectName() string {
 	return projectName
 }
 
-func (c *Context) loadClient() (*rancherClient.RancherClient, error) {
+func (c *Context) loadClient() (*client.RancherClient, error) {
 	if c.Client == nil {
 		if c.Url == "" {
 			return nil, fmt.Errorf("RANCHER_URL is not set")
 		}
 
-		if client, err := rancherClient.NewRancherClient(&rancherClient.ClientOpts{
-			Url:       c.Url,
+		url, err := url.Parse(c.Url)
+		if err != nil {
+			return nil, err
+		}
+
+		base := path.Base(url.Path)
+		if base != "v2-beta" && base != "schemas" {
+			url.Path = path.Join(url.Path, "v2-beta")
+		}
+
+		if client, err := client.NewRancherClient(&client.ClientOpts{
+			Url:       url.String(),
 			AccessKey: c.AccessKey,
 			SecretKey: c.SecretKey,
 		}); err != nil {
@@ -201,13 +212,13 @@ func (c *Context) open() error {
 		return err
 	}
 
-	if envSchema, ok := c.Client.Types["environment"]; !ok || !rUtils.Contains(envSchema.CollectionMethods, "POST") {
+	if stackSchema, ok := c.Client.Types["stack"]; !ok || !rUtils.Contains(stackSchema.CollectionMethods, "POST") {
 		return fmt.Errorf("Can not create a stack, check API key [%s] for [%s]", c.AccessKey, c.Url)
 	}
 
 	c.checkVersion()
 
-	if _, err := c.LoadEnv(); err != nil {
+	if _, err := c.LoadStack(); err != nil {
 		return err
 	}
 
@@ -251,9 +262,9 @@ func (c *Context) getSetting(key string) string {
 	return s.Value
 }
 
-func (c *Context) LoadEnv() (*rancherClient.Environment, error) {
-	if c.Environment != nil {
-		return c.Environment, nil
+func (c *Context) LoadStack() (*client.Stack, error) {
+	if c.Stack != nil {
+		return c.Stack, nil
 	}
 
 	projectName := c.sanitizedProjectName()
@@ -263,7 +274,7 @@ func (c *Context) LoadEnv() (*rancherClient.Environment, error) {
 
 	logrus.Debugf("Looking for stack %s", projectName)
 	// First try by name
-	envs, err := c.Client.Environment.List(&rancherClient.ListOpts{
+	stacks, err := c.Client.Stack.List(&client.ListOpts{
 		Filters: map[string]interface{}{
 			"name":         projectName,
 			"removed_null": nil,
@@ -273,16 +284,16 @@ func (c *Context) LoadEnv() (*rancherClient.Environment, error) {
 		return nil, err
 	}
 
-	for _, env := range envs.Data {
-		if strings.EqualFold(projectName, env.Name) {
-			logrus.Debugf("Found stack: %s(%s)", env.Name, env.Id)
-			c.Environment = &env
-			return c.Environment, nil
+	for _, stack := range stacks.Data {
+		if strings.EqualFold(projectName, stack.Name) {
+			logrus.Debugf("Found stack: %s(%s)", stack.Name, stack.Id)
+			c.Stack = &stack
+			return c.Stack, nil
 		}
 	}
 
 	// Now try not by name for case sensitive databases
-	envs, err = c.Client.Environment.List(&rancherClient.ListOpts{
+	stacks, err = c.Client.Stack.List(&client.ListOpts{
 		Filters: map[string]interface{}{
 			"removed_null": nil,
 		},
@@ -291,23 +302,23 @@ func (c *Context) LoadEnv() (*rancherClient.Environment, error) {
 		return nil, err
 	}
 
-	for _, env := range envs.Data {
-		if strings.EqualFold(projectName, env.Name) {
-			logrus.Debugf("Found stack: %s(%s)", env.Name, env.Id)
-			c.Environment = &env
-			return c.Environment, nil
+	for _, stack := range stacks.Data {
+		if strings.EqualFold(projectName, stack.Name) {
+			logrus.Debugf("Found stack: %s(%s)", stack.Name, stack.Id)
+			c.Stack = &stack
+			return c.Stack, nil
 		}
 	}
 
 	logrus.Infof("Creating stack %s", projectName)
-	env, err := c.Client.Environment.Create(&rancherClient.Environment{
+	stack, err := c.Client.Stack.Create(&client.Stack{
 		Name: projectName,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	c.Environment = env
+	c.Stack = stack
 
-	return c.Environment, nil
+	return c.Stack, nil
 }

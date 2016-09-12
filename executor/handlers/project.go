@@ -5,14 +5,14 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/project"
-	"github.com/rancher/go-rancher/client"
+	"github.com/rancher/go-rancher/v2"
 	"github.com/rancher/rancher-compose/lookup"
 	"github.com/rancher/rancher-compose/rancher"
 )
 
-func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgradeOpts client.EnvironmentUpgrade, url, accessKey, secretKey string) (*project.Project, map[string]interface{}, error) {
+func constructProjectUpgrade(logger *logrus.Entry, stack *client.Stack, upgradeOpts client.StackUpgrade, url, accessKey, secretKey string) (*project.Project, map[string]interface{}, error) {
 	variables := map[string]interface{}{}
-	for k, v := range env.Environment {
+	for k, v := range stack.Environment {
 		variables[k] = v
 	}
 
@@ -22,7 +22,7 @@ func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgr
 
 	context := rancher.Context{
 		Context: project.Context{
-			ProjectName: env.Name,
+			ProjectName: stack.Name,
 			ComposeBytes: [][]byte{
 				[]byte(upgradeOpts.DockerCompose),
 			},
@@ -31,7 +31,7 @@ func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgr
 				Env: variables,
 			},
 		},
-		Url:                 fmt.Sprintf("%s/projects/%s/schemas", url, env.AccountId),
+		Url:                 fmt.Sprintf("%s/projects/%s/schemas", url, stack.AccountId),
 		AccessKey:           accessKey,
 		SecretKey:           secretKey,
 		RancherComposeBytes: []byte(upgradeOpts.RancherCompose),
@@ -47,22 +47,22 @@ func constructProjectUpgrade(logger *logrus.Entry, env *client.Environment, upgr
 	return p, variables, nil
 }
 
-func constructProject(logger *logrus.Entry, env *client.Environment, url, accessKey, secretKey string) (*rancher.Context, *project.Project, error) {
+func constructProject(logger *logrus.Entry, stack *client.Stack, url, accessKey, secretKey string) (*rancher.Context, *project.Project, error) {
 	context := rancher.Context{
 		Context: project.Context{
-			ProjectName: env.Name,
+			ProjectName: stack.Name,
 			ComposeBytes: [][]byte{
-				[]byte(env.DockerCompose),
+				[]byte(stack.DockerCompose),
 			},
 			ResourceLookup: &lookup.FileResourceLookup{},
 			EnvironmentLookup: &lookup.MapEnvLookup{
-				Env: env.Environment,
+				Env: stack.Environment,
 			},
 		},
-		Url:                 fmt.Sprintf("%s/projects/%s/schemas", url, env.AccountId),
+		Url:                 fmt.Sprintf("%s/projects/%s/schemas", url, stack.AccountId),
 		AccessKey:           accessKey,
 		SecretKey:           secretKey,
-		RancherComposeBytes: []byte(env.RancherCompose),
+		RancherComposeBytes: []byte(stack.RancherCompose),
 	}
 
 	p, err := rancher.NewProject(&context)

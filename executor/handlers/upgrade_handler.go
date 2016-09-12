@@ -11,10 +11,10 @@ import (
 	"github.com/docker/libcompose/project/options"
 	"github.com/docker/libcompose/utils"
 	"github.com/rancher/event-subscriber/events"
-	"github.com/rancher/go-rancher/client"
+	"github.com/rancher/go-rancher/v2"
 )
 
-func UpgradeEnvironment(event *events.Event, apiClient *client.RancherClient) error {
+func UpgradeStack(event *events.Event, apiClient *client.RancherClient) error {
 	logger := logrus.WithFields(logrus.Fields{
 		"resourceId": event.ResourceID,
 		"eventId":    event.ID,
@@ -32,7 +32,7 @@ func UpgradeEnvironment(event *events.Event, apiClient *client.RancherClient) er
 	return nil
 }
 
-func FinishUpgradeEnvironment(event *events.Event, apiClient *client.RancherClient) error {
+func FinishUpgradeStack(event *events.Event, apiClient *client.RancherClient) error {
 	logger := logrus.WithFields(logrus.Fields{
 		"resourceId": event.ResourceID,
 		"eventId":    event.ID,
@@ -40,17 +40,17 @@ func FinishUpgradeEnvironment(event *events.Event, apiClient *client.RancherClie
 
 	logger.Info("Finish Upgrade Stack Event Received")
 
-	env, err := apiClient.Environment.ById(event.ResourceID)
+	stack, err := apiClient.Stack.ById(event.ResourceID)
 	if err != nil {
 		return err
 	}
 
-	if env == nil {
+	if stack == nil {
 		return errors.New("Failed to find stack")
 	}
 
 	var services client.ServiceCollection
-	if err := apiClient.GetLink(env.Resource, "services", &services); err != nil {
+	if err := apiClient.GetLink(stack.Resource, "services", &services); err != nil {
 		return err
 	}
 
@@ -76,7 +76,7 @@ func FinishUpgradeEnvironment(event *events.Event, apiClient *client.RancherClie
 	})
 }
 
-func RollbackEnvironment(event *events.Event, apiClient *client.RancherClient) error {
+func RollbackStack(event *events.Event, apiClient *client.RancherClient) error {
 	logger := logrus.WithFields(logrus.Fields{
 		"resourceId": event.ResourceID,
 		"eventId":    event.ID,
@@ -84,17 +84,17 @@ func RollbackEnvironment(event *events.Event, apiClient *client.RancherClient) e
 
 	logger.Info("Rollback Stack Event Received")
 
-	env, err := apiClient.Environment.ById(event.ResourceID)
+	stack, err := apiClient.Stack.ById(event.ResourceID)
 	if err != nil {
 		return err
 	}
 
-	if env == nil {
+	if stack == nil {
 		return errors.New("Failed to find stack")
 	}
 
 	var services client.ServiceCollection
-	if err := apiClient.GetLink(env.Resource, "services", &services); err != nil {
+	if err := apiClient.GetLink(stack.Resource, "services", &services); err != nil {
 		return err
 	}
 
@@ -114,13 +114,13 @@ func RollbackEnvironment(event *events.Event, apiClient *client.RancherClient) e
 	}
 
 	logger.Info("Rollback Stack Event Done")
-	newId := env.PreviousExternalId
+	newId := stack.PreviousExternalId
 	if newId == "" {
-		newId = env.ExternalId
+		newId = stack.ExternalId
 	}
-	newEnv := env.PreviousEnvironment
+	newEnv := stack.PreviousEnvironment
 	if len(newEnv) == 0 {
-		newEnv = env.Environment
+		newEnv = stack.Environment
 	}
 
 	return reply(event, apiClient, map[string]interface{}{
@@ -154,26 +154,26 @@ func wait(apiClient *client.RancherClient, service *client.Service) error {
 }
 
 func upgradeEnvironment(logger *logrus.Entry, event *events.Event, apiClient *client.RancherClient) error {
-	var upgradeOpts client.EnvironmentUpgrade
+	var upgradeOpts client.StackUpgrade
 
 	if err := utils.ConvertByJSON(event.Data, &upgradeOpts); err != nil {
 		return err
 	}
 
-	env, err := apiClient.Environment.ById(event.ResourceID)
+	stack, err := apiClient.Stack.ById(event.ResourceID)
 	if err != nil {
 		return err
 	}
 
-	if env == nil {
+	if stack == nil {
 		return errors.New("Failed to find stack")
 	}
 
-	if env.DockerCompose == "" {
+	if stack.DockerCompose == "" {
 		return emptyReply(event, apiClient)
 	}
 
-	project, newEnv, err := constructProjectUpgrade(logger, env, upgradeOpts, apiClient.Opts.Url, apiClient.Opts.AccessKey, apiClient.Opts.SecretKey)
+	project, newEnv, err := constructProjectUpgrade(logger, stack, upgradeOpts, apiClient.Opts.Url, apiClient.Opts.AccessKey, apiClient.Opts.SecretKey)
 	if err != nil {
 		return err
 	}
@@ -184,14 +184,14 @@ func upgradeEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cl
 		return err
 	}
 
-	previous := env.PreviousExternalId
+	previous := stack.PreviousExternalId
 	if previous == "" {
-		previous = env.ExternalId
+		previous = stack.ExternalId
 	}
 
-	previousEnv := env.PreviousEnvironment
+	previousEnv := stack.PreviousEnvironment
 	if len(previousEnv) == 0 {
-		previousEnv = env.Environment
+		previousEnv = stack.Environment
 	}
 
 	return reply(event, apiClient, map[string]interface{}{

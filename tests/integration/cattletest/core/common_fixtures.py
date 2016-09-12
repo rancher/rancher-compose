@@ -13,7 +13,7 @@ _SUPER_CLIENT = None
 
 @pytest.fixture(scope='session')
 def cattle_url():
-    default_url = 'http://localhost:8080/v1/schemas'
+    default_url = 'http://localhost:8080/v2-beta/schemas'
     return os.environ.get('CATTLE_URL', default_url)
 
 

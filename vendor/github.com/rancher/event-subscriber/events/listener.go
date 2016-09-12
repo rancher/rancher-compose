@@ -3,6 +3,7 @@ package events
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 
 	"io/ioutil"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
-	"github.com/rancher/go-rancher/client"
+	"github.com/rancher/go-rancher/v2"
 )
 
 const MaxWait = time.Duration(time.Second * 10)
@@ -83,19 +84,20 @@ func (router *EventRouter) Start(ready chan<- bool) error {
 		return err
 	}
 	eventSuffix := ";handler=" + router.name
-	return router.run(ready, eventSuffix)
+	wp := SkippingWorkerPool(router.workerCount, resourceIDLocker)
+	return router.run(wp, ready, eventSuffix)
 }
 
 func (router *EventRouter) StartWithoutCreate(ready chan<- bool) error {
-	return router.run(ready, "")
+	wp := SkippingWorkerPool(router.workerCount, resourceIDLocker)
+	return router.run(wp, ready, "")
 }
 
-func (router *EventRouter) run(ready chan<- bool, eventSuffix string) (err error) {
-	workers := make(chan *Worker, router.workerCount)
-	for i := 0; i < router.workerCount; i++ {
-		w := newWorker()
-		workers <- w
-	}
+func (router *EventRouter) RunWithWorkerPool(wp WorkerPool) error {
+	return router.run(wp, nil, "")
+}
+
+func (router *EventRouter) run(wp WorkerPool, ready chan<- bool, eventSuffix string) (err error) {
 
 	log.WithFields(log.Fields{
 		"workerCount": router.workerCount,
@@ -129,11 +131,11 @@ func (router *EventRouter) run(ready chan<- bool, eventSuffix string) (err error
 	}
 
 	ph := newPongHandler(router)
+	defer ph.stop()
 	router.eventStream.SetPongHandler(ph.handle)
 	go router.sendWebsocketPings()
 
 	for {
-
 		_, message, err := router.eventStream.ReadMessage()
 		if err != nil {
 			// Error here means the connection is closed. It's normal, so just return.
@@ -145,14 +147,15 @@ func (router *EventRouter) run(ready chan<- bool, eventSuffix string) (err error
 			continue
 		}
 
-		select {
-		case worker := <-workers:
-			go worker.DoWork(message, handlers, router.apiClient, workers)
-		default:
+		event := &Event{}
+		err = json.Unmarshal(message, &event)
+		if err != nil {
 			log.WithFields(log.Fields{
-				"workerCount": router.workerCount,
-			}).Info("No workers available dropping event.")
+				"message": string(message),
+			}).Warnf("Error parsing message: %s", err)
+			continue
 		}
+		wp.HandleWork(event, handlers, router.apiClient)
 	}
 }
 
@@ -169,16 +172,21 @@ func (router *EventRouter) subscribeToEvents(subscribeURL string, accessKey stri
 	ws, resp, err := dialer.Dial(subscribeURL, headers)
 
 	if err != nil {
-		defer resp.Body.Close()
-		body, _ := ioutil.ReadAll(resp.Body)
 		log.WithFields(log.Fields{
-			"status":          resp.Status,
-			"statusCode":      resp.StatusCode,
-			"responseHeaders": resp.Header,
-			"responseBody":    string(body[:]),
-			"error":           err,
-			"subscribeUrl":    subscribeURL,
-		}).Error("Failed to subscribe to events.")
+			"subscribeUrl": subscribeURL,
+		}).Errorf("Error subscribing to events: %s", err)
+		if resp != nil {
+			log.WithFields(log.Fields{
+				"status":          resp.Status,
+				"statusCode":      resp.StatusCode,
+				"responseHeaders": resp.Header,
+			}).Error("Got error response")
+			if resp.Body != nil {
+				defer resp.Body.Close()
+				body, _ := ioutil.ReadAll(resp.Body)
+				log.Errorf("Error response: %s", body)
+			}
+		}
 		return nil, err
 	}
 	return ws, nil

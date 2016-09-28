@@ -3,7 +3,6 @@ package rancher
 import (
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -186,18 +185,8 @@ func (c *Context) loadClient() (*client.RancherClient, error) {
 			return nil, fmt.Errorf("RANCHER_URL is not set")
 		}
 
-		url, err := url.Parse(c.Url)
-		if err != nil {
-			return nil, err
-		}
-
-		base := path.Base(url.Path)
-		if base != "v2-beta" && base != "schemas" {
-			url.Path = path.Join(url.Path, "v2-beta")
-		}
-
 		if client, err := client.NewRancherClient(&client.ClientOpts{
-			Url:       url.String(),
+			Url:       c.Url,
 			AccessKey: c.AccessKey,
 			SecretKey: c.SecretKey,
 		}); err != nil {

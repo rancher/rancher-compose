@@ -36,6 +36,7 @@ func constructProjectUpgrade(logger *logrus.Entry, stack *client.Stack, upgradeO
 		SecretKey:           secretKey,
 		RancherComposeBytes: []byte(upgradeOpts.RancherCompose),
 		Upgrade:             true,
+		Binding:             stack.Binding,
 	}
 
 	p, err := rancher.NewProject(&context)
@@ -63,6 +64,7 @@ func constructProject(logger *logrus.Entry, stack *client.Stack, url, accessKey,
 		AccessKey:           accessKey,
 		SecretKey:           secretKey,
 		RancherComposeBytes: []byte(stack.RancherCompose),
+		Binding:             stack.Binding,
 	}
 
 	p, err := rancher.NewProject(&context)

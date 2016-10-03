@@ -343,6 +343,31 @@ def test_delete(client, compose):
     assert service.state == 'removed'
 
 
+def test_bindings(client, compose):
+    template = '''
+    prometheus:
+      image: busybox
+      command: cat
+      labels:
+        labels_prom: value_prom
+    '''
+
+    project_name = random_str()
+
+    compose.check_call(template, '--bindings-file', 'assets/bindings.json',
+                       '--verbose', '-p', project_name, '-f', '-', 'up', '-d')
+
+    project = find_one(client.list_stack, name=project_name)
+    service = find_one(project.services)
+
+    service = client.wait_success(service)
+
+    dict_label = {"labels_prom_binding": "value_prom_binding"}
+    ports_array = ["8081"]
+    assert dict_label.viewitems() <= service.launchConfig.labels.viewitems()
+    assert service.launchConfig.ports[0].find(ports_array[0]) != -1
+
+
 def test_delete_while_stopped(client, compose):
     template = '''
     web:

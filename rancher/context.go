@@ -33,6 +33,9 @@ type Context struct {
 	RancherConfig       map[string]RancherConfig
 	RancherComposeFile  string
 	RancherComposeBytes []byte
+	BindingsFile        string
+	Binding             *client.Binding
+	BindingsBytes       []byte
 	Url                 string
 	AccessKey           string
 	SecretKey           string
@@ -73,6 +76,15 @@ type RancherConfig struct {
 	ScalePolicy        *client.ScalePolicy             `yaml:"scale_policy,omitempty"`
 	ServiceSchemas     map[string]client.Schema        `yaml:"service_schemas,omitempty"`
 	UpgradeStrategy    client.InServiceUpgradeStrategy `yaml:"upgrade_strategy,omitempty"`
+}
+
+type BindingProperty struct {
+	Services map[string]Service `json:"services"`
+}
+
+type Service struct {
+	Labels map[string]interface{} `json:"labels"`
+	Ports  []interface{}          `json:"ports"`
 }
 
 func ResolveRancherCompose(composeFile, rancherComposeFile string) (string, error) {
@@ -144,6 +156,7 @@ func (c *Context) fillInRancherConfig(rawServiceMap config.RawServiceMap) error 
 	if err := config.Interpolate(c.EnvironmentLookup, &rawServiceMap); err != nil {
 		return err
 	}
+
 	rawServiceMap, err := preprocess.TryConvertStringsToInts(rawServiceMap)
 	if err != nil {
 		return err

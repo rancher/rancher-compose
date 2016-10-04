@@ -24,10 +24,15 @@ func publishReply(reply *client.Publish, apiClient *client.RancherClient) error 
 	return err
 }
 
-func publishTransitioningReply(msg string, event *events.Event, apiClient *client.RancherClient) {
+func publishTransitioningReply(msg string, event *events.Event, apiClient *client.RancherClient, isError bool) {
 	// Since this is only updating the msg for the state transition, we will ignore errors here
 	replyT := newReply(event)
-	replyT.Transitioning = "yes"
+	if isError {
+		replyT.Transitioning = "error"
+	} else {
+		replyT.Transitioning = "yes"
+	}
+
 	replyT.TransitioningMessage = msg
 	publishReply(replyT, apiClient)
 }

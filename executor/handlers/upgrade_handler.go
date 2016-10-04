@@ -24,7 +24,7 @@ func UpgradeStack(event *events.Event, apiClient *client.RancherClient) error {
 
 	if err := upgradeEnvironment(logger, event, apiClient); err != nil {
 		logger.Errorf("Stack Upgrade Event Failed: %v", err)
-		publishTransitioningReply(err.Error(), event, apiClient)
+		publishTransitioningReply(err.Error(), event, apiClient, true)
 		return err
 	}
 
@@ -178,7 +178,7 @@ func upgradeEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cl
 		return err
 	}
 
-	publishTransitioningReply("Upgrading stack", event, apiClient)
+	publishTransitioningReply("Upgrading stack", event, apiClient, false)
 
 	if err := project.Up(context.Background(), options.Up{}); err != nil {
 		return err

@@ -21,7 +21,7 @@ func CreateStack(event *events.Event, apiClient *client.RancherClient) error {
 
 	if err := createStack(logger, event, apiClient); err != nil {
 		logger.Errorf("Stack Create Event Failed: %v", err)
-		publishTransitioningReply(err.Error(), event, apiClient)
+		publishTransitioningReply(err.Error(), event, apiClient, true)
 		return err
 	}
 
@@ -48,7 +48,7 @@ func createStack(logger *logrus.Entry, event *events.Event, apiClient *client.Ra
 		return err
 	}
 
-	publishTransitioningReply("Creating stack", event, apiClient)
+	publishTransitioningReply("Creating stack", event, apiClient, false)
 
 	if err := project.Create(context.Background(), options.Create{}); err != nil {
 		return err

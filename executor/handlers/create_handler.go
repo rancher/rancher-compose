@@ -43,7 +43,7 @@ func createStack(logger *logrus.Entry, event *events.Event, apiClient *client.Ra
 		return emptyReply(event, apiClient)
 	}
 
-	_, project, err := constructProject(logger, stack, apiClient.Opts.Url, apiClient.Opts.AccessKey, apiClient.Opts.SecretKey)
+	_, project, err := constructProject(logger, stack, apiClient.GetOpts().Url, apiClient.GetOpts().AccessKey, apiClient.GetOpts().SecretKey)
 	if err != nil {
 		return err
 	}

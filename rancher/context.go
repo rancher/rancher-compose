@@ -225,7 +225,7 @@ func (c *Context) open() error {
 		return err
 	}
 
-	if stackSchema, ok := c.Client.Types["stack"]; !ok || !rUtils.Contains(stackSchema.CollectionMethods, "POST") {
+	if stackSchema, ok := c.Client.GetTypes()["stack"]; !ok || !rUtils.Contains(stackSchema.CollectionMethods, "POST") {
 		return fmt.Errorf("Can not create a stack, check API key [%s] for [%s]", c.AccessKey, c.Url)
 	}
 

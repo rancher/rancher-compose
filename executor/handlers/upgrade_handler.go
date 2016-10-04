@@ -173,7 +173,7 @@ func upgradeEnvironment(logger *logrus.Entry, event *events.Event, apiClient *cl
 		return emptyReply(event, apiClient)
 	}
 
-	project, newEnv, err := constructProjectUpgrade(logger, stack, upgradeOpts, apiClient.Opts.Url, apiClient.Opts.AccessKey, apiClient.Opts.SecretKey)
+	project, newEnv, err := constructProjectUpgrade(logger, stack, upgradeOpts, apiClient.GetOpts().Url, apiClient.GetOpts().AccessKey, apiClient.GetOpts().SecretKey)
 	if err != nil {
 		return err
 	}

@@ -1,19 +1,19 @@
 package events
 
 type Event struct {
-	Name                         string
-	ID                           string
-	PreviousIds                  string
-	PreviousNames                string
-	Publisher                    string
-	ReplyTo                      string
-	ResourceID                   string
-	ResourceType                 string
-	Transitioning                string
-	TransitioningInternalMessage string
-	TransitioningMessage         string
-	TransitioningProgress        string
-	Data                         map[string]interface{}
+	Name                         string                 `json:"name,omitempty"`
+	ID                           string                 `json:"id,omitempty"`
+	PreviousIds                  string                 `json:"previousIds,omitempty"`
+	PreviousNames                string                 `json:"previousNames,omitempty"`
+	Publisher                    string                 `json:"publisher,omitempty"`
+	ReplyTo                      string                 `json:"replyTo,omitempty"`
+	ResourceID                   string                 `json:"resourceId,omitempty"`
+	ResourceType                 string                 `json:"resourceType,omitempty"`
+	Transitioning                string                 `json:"transitioning,omitempty"`
+	TransitioningInternalMessage string                 `json:"transitioningInternalMessage,omitempty"`
+	TransitioningMessage         string                 `json:"transitioningMessage,omitempty"`
+	TransitioningProgress        string                 `json:"transitioningProgress,omitempty"`
+	Data                         map[string]interface{} `json:"data,omitempty"`
 }
 
 type ReplyEvent struct {

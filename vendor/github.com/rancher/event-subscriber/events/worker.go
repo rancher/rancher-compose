@@ -1,6 +1,7 @@
 package events
 
 import (
+	"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/rancher/event-subscriber/locks"
 	"github.com/rancher/go-rancher/v2"
@@ -10,7 +11,13 @@ type EventLocker func(event *Event) locks.Locker
 
 func nopLocker(_ *Event) locks.Locker { return locks.NopLocker() }
 
-func resourceIDLocker(event *Event) locks.Locker { return locks.KeyLocker(event.ResourceID) }
+func resourceIDLocker(event *Event) locks.Locker {
+	if event.ResourceID == "" {
+		return locks.NopLocker()
+	}
+	key := fmt.Sprintf("%s:%s", event.ResourceType, event.ResourceID)
+	return locks.KeyLocker(key)
+}
 
 type WorkerPool interface {
 	HandleWork(event *Event, eventHandlers map[string]EventHandler, apiClient *client.RancherClient)

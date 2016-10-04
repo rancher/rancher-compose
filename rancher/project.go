@@ -14,6 +14,10 @@ func NewProject(context *Context) (*project.Project, error) {
 		Context: context,
 	}
 
+	context.VolumesFactory = &RancherVolumesFactory{
+		Context: context,
+	}
+
 	if context.Binding != nil {
 		bindingBytes, err := json.Marshal(context.Binding)
 		if err != nil {

@@ -191,3 +191,7 @@ func (router *EventRouter) subscribeToEvents(subscribeURL string, accessKey stri
 	}
 	return ws, nil
 }
+
+func (router *EventRouter) GetWebSocketConn() *websocket.Conn {
+	return router.eventStream
+}

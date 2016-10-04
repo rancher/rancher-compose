@@ -6,7 +6,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/rancher/event-subscriber/events"
-	"github.com/rancher/event-subscriber/locks"
 	"github.com/rancher/go-rancher/v2"
 )
 
@@ -45,19 +44,11 @@ func reply(event *events.Event, apiClient *client.RancherClient, data map[string
 	return publishReply(reply, apiClient)
 }
 
-func WithLock(f func(event *events.Event, apiClient *client.RancherClient) error) func(event *events.Event, apiClient *client.RancherClient) error {
+func WithTimeout(f func(event *events.Event, apiClient *client.RancherClient) error) func(event *events.Event, apiClient *client.RancherClient) error {
 	return func(event *events.Event, apiClient *client.RancherClient) error {
-		lockKey := fmt.Sprintf("%s:%s", event.ResourceType, event.ResourceID)
-		lock := locks.Lock(lockKey)
-		if lock == nil {
-			logrus.Infof("Busying processing %s", lockKey)
-			return nil
-		}
-		defer lock.Unlock()
-
 		err := f(event, apiClient)
 		if err == ErrTimeout {
-			logrus.Infof("Timeout processing %s", lockKey)
+			logrus.Infof("Timeout processing %s", fmt.Sprintf("%s:%s", event.ResourceType, event.ResourceID))
 			return nil
 		}
 		return nil

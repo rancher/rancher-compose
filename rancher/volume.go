@@ -69,11 +69,14 @@ type Volume struct {
 }
 
 func (v *Volume) Inspect(ctx context.Context) (*client.VolumeTemplate, error) {
+	filters := map[string]interface{}{
+		"name": v.name,
+	}
+	if !v.external {
+		filters["stackId"] = v.context.Stack.Id
+	}
 	volumes, err := v.context.Client.VolumeTemplate.List(&client.ListOpts{
-		Filters: map[string]interface{}{
-			"name":    v.name,
-			"stackId": v.context.Stack.Id,
-		},
+		Filters: filters,
 	})
 	if err != nil {
 		return nil, err

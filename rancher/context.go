@@ -73,6 +73,9 @@ type RancherConfig struct {
 	ScalePolicy        *client.ScalePolicy             `yaml:"scale_policy,omitempty"`
 	ServiceSchemas     map[string]client.Schema        `yaml:"service_schemas,omitempty"`
 	UpgradeStrategy    client.InServiceUpgradeStrategy `yaml:"upgrade_strategy,omitempty"`
+
+	StorageDriver *client.StorageDriver `yaml:"storage_driver,omitempty"`
+	NetworkDriver *client.NetworkDriver `yaml:"network_driver,omitempty"`
 }
 
 type BindingProperty struct {

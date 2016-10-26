@@ -62,6 +62,8 @@ func (f *NormalFactory) config(r *RancherService) (*CompositeService, *client.La
 		ExternalIpAddresses: rancherConfig.ExternalIps,
 		Hostname:            rancherConfig.Hostname,
 		HealthCheck:         r.HealthCheck(""),
+		StorageDriver:       rancherConfig.StorageDriver,
+		NetworkDriver:       rancherConfig.NetworkDriver,
 	}
 
 	if err := populateLbFields(r, &launchConfig, service); err != nil {
@@ -85,6 +87,10 @@ func (f *NormalFactory) Create(r *RancherService) error {
 		return r.context.Client.Create(client.DNS_SERVICE_TYPE, &service, nil)
 	case LbServiceType:
 		return r.context.Client.Create(client.LOAD_BALANCER_SERVICE_TYPE, &service, nil)
+	case StorageDriverType:
+		return r.context.Client.Create(client.STORAGE_DRIVER_TYPE, &service, nil)
+	case NetworkDriverType:
+		return r.context.Client.Create(client.NETWORK_DRIVER_TYPE, &service, nil)
 	default:
 		_, err = r.context.Client.Service.Create(&service.Service)
 	}

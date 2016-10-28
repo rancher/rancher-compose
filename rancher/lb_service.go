@@ -12,6 +12,10 @@ func populateLbFields(r *RancherService, launchConfig *client.LaunchConfig, serv
 		return nil
 	}
 
+	if config.LbConfig == nil {
+		return nil
+	}
+
 	// TODO: certs, defaultcert ?
 	service.LbConfig = &client.LbConfig{
 		Config: config.LbConfig.Config,

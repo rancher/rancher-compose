@@ -8,6 +8,7 @@ const (
 	EXTERNAL_IMAGE = "rancher/external-service"
 
 	RancherType         = ServiceType(iota)
+	LegacyLbServiceType = ServiceType(iota)
 	LbServiceType       = ServiceType(iota)
 	DnsServiceType      = ServiceType(iota)
 	ExternalServiceType = ServiceType(iota)
@@ -20,8 +21,10 @@ func FindServiceType(r *RancherService) ServiceType {
 
 	if len(rancherConfig.ExternalIps) > 0 || rancherConfig.Hostname != "" {
 		return ExternalServiceType
-	} else if r.serviceConfig.Image == LB_IMAGE {
+	} else if r.RancherConfig().LbConfig != nil {
 		return LbServiceType
+	} else if r.serviceConfig.Image == LB_IMAGE {
+		return LegacyLbServiceType
 	} else if r.serviceConfig.Image == DNS_IMAGE {
 		return DnsServiceType
 	}
@@ -32,10 +35,7 @@ func FindServiceType(r *RancherService) ServiceType {
 type CompositeService struct {
 	client.Service
 
-	//LoadBalancer Fields
-	CertificateIds       []string                   `json:"certificateIds,omitempty" yaml:"certificate_ids,omitempty"`
-	DefaultCertificateId string                     `json:"defaultCertificateId,omitempty" yaml:"default_certificate_id,omitempty"`
-	LoadBalancerConfig   *client.LoadBalancerConfig `json:"loadBalancerConfig,omitempty" yaml:"load_balancer_config,omitempty"`
+	LbConfig *client.LbConfig `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
 
 	// External Service Fields
 	ExternalIpAddresses []string                    `json:"externalIpAddresses,omitempty" yaml:"external_ip_addresses,omitempty"`

@@ -20,9 +20,12 @@ var schemaDataV1 = `{
       "type": "object",
 
       "properties": {
+        "blkio_weight": {"type": ["number", "string"]},
+        "blkio_weight_devices": {"$ref": "#/definitions/list_of_strings"},
         "build": {"type": "string"},
         "cap_add": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "cap_drop": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "certs": {"$ref": "#/definitions/list_of_strings"},
         "cgroup_parent": {"type": "string"},
         "command": {
           "oneOf": [
@@ -31,11 +34,19 @@ var schemaDataV1 = `{
           ]
         },
         "container_name": {"type": "string"},
+        "cpu_period": {"type": ["number", "string"]},
         "cpu_shares": {"type": ["number", "string"]},
         "cpu_quota": {"type": ["number", "string"]},
         "cpuset": {"type": "string"},
+        "device_read_bps": {"$ref": "#/definitions/list_or_dict"},
+        "device_read_iops": {"$ref": "#/definitions/list_or_dict"},
         "devices": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "device_write_bps": {"$ref": "#/definitions/list_or_dict"},
+        "device_write_iops": {"$ref": "#/definitions/list_or_dict"},
+        "default_cert": {"type": "string"},
+        "disks": {"type": "array"},
         "dns": {"$ref": "#/definitions/string_or_list"},
+        "dns_opt": {"$ref": "#/definitions/list_or_dict"},
         "dns_search": {"$ref": "#/definitions/string_or_list"},
         "dockerfile": {"type": "string"},
         "domainname": {"type": "string"},
@@ -76,19 +87,35 @@ var schemaDataV1 = `{
         },
 
         "extra_hosts": {"$ref": "#/definitions/list_or_dict"},
+        "external_ips": {"$ref": "#/definitions/list_of_strings"},
         "external_links": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "health_check": {"type": "object"},
         "hostname": {"type": "string"},
         "image": {"type": "string"},
         "ipc": {"type": "string"},
+        "isolation": {"type": "string"},
         "labels": {"$ref": "#/definitions/list_or_dict"},
         "links": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "load_balancer_config": {"type": "object"},
         "log_driver": {"type": "string"},
         "log_opt": {"type": "object"},
         "mac_address": {"type": "string"},
+        "memory": {"type": ["number", "string"]},
         "mem_limit": {"type": ["number", "string"]},
+        "mem_reservation": {"type": ["number", "string"]},
         "memswap_limit": {"type": ["number", "string"]},
         "mem_swappiness": {"type": "integer"},
+        "metadata": {"type": "object"},
         "net": {"type": "string"},
+        "oom_kill_disable": {"type": "boolean"},
+        "oom_score_adj": {"type": "integer", "minimum": -1000, "maximum": 1000},
+        "group_add": {
+            "type": "array",
+            "items": {
+                "type": ["string", "number"]
+            },
+            "uniqueItems": true
+        },
         "pid": {"type": ["string", "null"]},
 
         "ports": {
@@ -103,11 +130,16 @@ var schemaDataV1 = `{
         "privileged": {"type": "boolean"},
         "read_only": {"type": "boolean"},
         "restart": {"type": "string"},
+        "retain_ip": {"type": "boolean"},
+        "scale": {"type": ["number", "string"]},
+        "scale_policy": {"type": "object"},
         "security_opt": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "shm_size": {"type": ["number", "string"]},
         "stdin_open": {"type": "boolean"},
         "stop_signal": {"type": "string"},
         "tty": {"type": "boolean"},
+        "type": {"type": "string"},
+        "update_strategy": {"type": "object"},
         "ulimits": {
           "type": "object",
           "patternProperties": {
@@ -128,6 +160,8 @@ var schemaDataV1 = `{
           }
         },
         "user": {"type": "string"},
+        "userdata": {"type": "string"},
+        "vcpu": {"type": ["number", "string"]},
         "volumes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "volume_driver": {"type": "string"},
         "volumes_from": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
@@ -159,7 +193,7 @@ var schemaDataV1 = `{
           "type": "object",
           "patternProperties": {
             ".+": {
-              "type": ["string", "number", "null"]
+              "type": ["string", "number", "null", "boolean"]
             }
           },
           "additionalProperties": false
@@ -210,6 +244,8 @@ var servicesSchemaDataV2 = `{
       "type": "object",
 
       "properties": {
+        "blkio_weight": {"type": ["number", "string"]},
+        "blkio_weight_devices": {"$ref": "#/definitions/list_of_strings"},
         "build": {
           "oneOf": [
             {"type": "string"},
@@ -226,6 +262,7 @@ var servicesSchemaDataV2 = `{
         },
         "cap_add": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "cap_drop": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "certs": {"$ref": "#/definitions/list_of_strings"},
         "cgroup_parent": {"type": "string"},
         "command": {
           "oneOf": [
@@ -234,12 +271,20 @@ var servicesSchemaDataV2 = `{
           ]
         },
         "container_name": {"type": "string"},
+        "cpu_period": {"type": ["number", "string"]},
         "cpu_shares": {"type": ["number", "string"]},
         "cpu_quota": {"type": ["number", "string"]},
         "cpuset": {"type": "string"},
+        "default_cert": {"type": "string"},
         "depends_on": {"$ref": "#/definitions/list_of_strings"},
+        "device_read_bps": {"$ref": "#/definitions/list_or_dict"},
+        "device_read_iops": {"$ref": "#/definitions/list_or_dict"},
         "devices": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "device_write_bps": {"$ref": "#/definitions/list_or_dict"},
+        "device_write_iops": {"$ref": "#/definitions/list_or_dict"},
+        "disks": {"type": "array"},
         "dns": {"$ref": "#/definitions/string_or_list"},
+        "dns_opt": {"$ref": "#/definitions/list_or_dict"},
         "dns_search": {"$ref": "#/definitions/string_or_list"},
         "domainname": {"type": "string"},
         "entrypoint": {
@@ -278,13 +323,17 @@ var servicesSchemaDataV2 = `{
           ]
         },
 
+        "external_ips": {"$ref": "#/definitions/list_of_strings"},
         "external_links": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "extra_hosts": {"$ref": "#/definitions/list_or_dict"},
+        "health_check": {"type": "object"},
         "hostname": {"type": "string"},
         "image": {"type": "string"},
         "ipc": {"type": "string"},
+        "isolation": {"type": "string"},
         "labels": {"$ref": "#/definitions/list_or_dict"},
         "links": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "load_balancer_config": {"type": "object"},
 
         "logging": {
             "type": "object",
@@ -297,9 +346,12 @@ var servicesSchemaDataV2 = `{
         },
 
         "mac_address": {"type": "string"},
+        "memory": {"type": ["number", "string"]},
         "mem_limit": {"type": ["number", "string"]},
+        "mem_reservation": {"type": ["number", "string"]},
         "memswap_limit": {"type": ["number", "string"]},
         "mem_swappiness": {"type": "integer"},
+        "metadata": {"type": "object"},
         "network_mode": {"type": "string"},
 
         "networks": {
@@ -327,7 +379,15 @@ var servicesSchemaDataV2 = `{
             }
           ]
         },
+        "oom_kill_disable": {"type": "boolean"},
         "oom_score_adj": {"type": "integer", "minimum": -1000, "maximum": 1000},
+        "group_add": {
+            "type": "array",
+            "items": {
+                "type": ["string", "number"]
+            },
+            "uniqueItems": true
+        },
         "pid": {"type": ["string", "null"]},
 
         "ports": {
@@ -342,12 +402,17 @@ var servicesSchemaDataV2 = `{
         "privileged": {"type": "boolean"},
         "read_only": {"type": "boolean"},
         "restart": {"type": "string"},
+        "retain_ip": {"type": "boolean"},
+        "scale": {"type": "number"},
+        "scale_policy": {"type": "object"},
         "security_opt": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "shm_size": {"type": ["number", "string"]},
         "stdin_open": {"type": "boolean"},
         "stop_signal": {"type": "string"},
         "tmpfs": {"$ref": "#/definitions/string_or_list"},
         "tty": {"type": "boolean"},
+        "type": {"type": "string"},
+        "update_strategy": {"type": "object"},
         "ulimits": {
           "type": "object",
           "patternProperties": {
@@ -368,6 +433,8 @@ var servicesSchemaDataV2 = `{
           }
         },
         "user": {"type": "string"},
+        "userdata": {"type": "string"},
+        "vcpu": {"type": ["number", "string"]},
         "volumes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "volume_driver": {"type": "string"},
         "volumes_from": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
@@ -453,7 +520,7 @@ var servicesSchemaDataV2 = `{
           "type": "object",
           "patternProperties": {
             ".+": {
-              "type": ["string", "number", "null"]
+              "type": ["string", "number", "null", "boolean"]
             }
           },
           "additionalProperties": false

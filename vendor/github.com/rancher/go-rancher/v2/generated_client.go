@@ -53,7 +53,6 @@ type RancherClient struct {
 	ExternalStoragePoolEvent                 ExternalStoragePoolEventOperations
 	ExternalVolumeEvent                      ExternalVolumeEventOperations
 	FieldDocumentation                       FieldDocumentationOperations
-	Githubconfig                             GithubconfigOperations
 	HaConfig                                 HaConfigOperations
 	HaConfigInput                            HaConfigInputOperations
 	HaproxyConfig                            HaproxyConfigOperations
@@ -145,6 +144,7 @@ type RancherClient struct {
 	TaskInstance                             TaskInstanceOperations
 	ToServiceUpgradeStrategy                 ToServiceUpgradeStrategyOperations
 	TypeDocumentation                        TypeDocumentationOperations
+	Ulimit                                   UlimitOperations
 	VirtualMachine                           VirtualMachineOperations
 	VirtualMachineDisk                       VirtualMachineDiskOperations
 	Volume                                   VolumeOperations
@@ -208,7 +208,6 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.ExternalStoragePoolEvent = newExternalStoragePoolEventClient(client)
 	client.ExternalVolumeEvent = newExternalVolumeEventClient(client)
 	client.FieldDocumentation = newFieldDocumentationClient(client)
-	client.Githubconfig = newGithubconfigClient(client)
 	client.HaConfig = newHaConfigClient(client)
 	client.HaConfigInput = newHaConfigInputClient(client)
 	client.HaproxyConfig = newHaproxyConfigClient(client)
@@ -300,6 +299,7 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.TaskInstance = newTaskInstanceClient(client)
 	client.ToServiceUpgradeStrategy = newToServiceUpgradeStrategyClient(client)
 	client.TypeDocumentation = newTypeDocumentationClient(client)
+	client.Ulimit = newUlimitClient(client)
 	client.VirtualMachine = newVirtualMachineClient(client)
 	client.VirtualMachineDisk = newVirtualMachineDiskClient(client)
 	client.Volume = newVolumeClient(client)

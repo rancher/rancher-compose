@@ -6,7 +6,6 @@ type RancherClient struct {
 	Account                                  AccountOperations
 	ActiveSetting                            ActiveSettingOperations
 	AddOutputsInput                          AddOutputsInputOperations
-	AddRemoveLoadBalancerServiceLinkInput    AddRemoveLoadBalancerServiceLinkInputOperations
 	AddRemoveServiceLinkInput                AddRemoveServiceLinkInputOperations
 	Agent                                    AgentOperations
 	Amazonec2Config                          Amazonec2ConfigOperations
@@ -19,6 +18,7 @@ type RancherClient struct {
 	BaseMachineConfig                        BaseMachineConfigOperations
 	Binding                                  BindingOperations
 	BlkioDeviceOption                        BlkioDeviceOptionOperations
+	CatalogTemplate                          CatalogTemplateOperations
 	Certificate                              CertificateOperations
 	ChangeSecretInput                        ChangeSecretInputOperations
 	ComposeConfig                            ComposeConfigOperations
@@ -55,7 +55,6 @@ type RancherClient struct {
 	FieldDocumentation                       FieldDocumentationOperations
 	HaConfig                                 HaConfigOperations
 	HaConfigInput                            HaConfigInputOperations
-	HaproxyConfig                            HaproxyConfigOperations
 	HealthcheckInstanceHostMap               HealthcheckInstanceHostMapOperations
 	Host                                     HostOperations
 	HostAccess                               HostAccessOperations
@@ -76,12 +75,11 @@ type RancherClient struct {
 	KubernetesStackUpgrade                   KubernetesStackUpgradeOperations
 	Label                                    LabelOperations
 	LaunchConfig                             LaunchConfigOperations
+	LbConfig                                 LbConfigOperations
+	LbTargetConfig                           LbTargetConfigOperations
 	Ldapconfig                               LdapconfigOperations
-	LoadBalancerAppCookieStickinessPolicy    LoadBalancerAppCookieStickinessPolicyOperations
-	LoadBalancerConfig                       LoadBalancerConfigOperations
 	LoadBalancerCookieStickinessPolicy       LoadBalancerCookieStickinessPolicyOperations
 	LoadBalancerService                      LoadBalancerServiceOperations
-	LoadBalancerServiceLink                  LoadBalancerServiceLinkOperations
 	LocalAuthConfig                          LocalAuthConfigOperations
 	LogConfig                                LogConfigOperations
 	Machine                                  MachineOperations
@@ -95,11 +93,13 @@ type RancherClient struct {
 	Password                                 PasswordOperations
 	PhysicalHost                             PhysicalHostOperations
 	Port                                     PortOperations
+	PortRule                                 PortRuleOperations
 	ProcessDefinition                        ProcessDefinitionOperations
 	ProcessExecution                         ProcessExecutionOperations
 	ProcessInstance                          ProcessInstanceOperations
 	Project                                  ProjectOperations
 	ProjectMember                            ProjectMemberOperations
+	ProjectTemplate                          ProjectTemplateOperations
 	PublicEndpoint                           PublicEndpointOperations
 	Publish                                  PublishOperations
 	PullTask                                 PullTaskOperations
@@ -127,7 +127,6 @@ type RancherClient struct {
 	ServiceUpgrade                           ServiceUpgradeOperations
 	ServiceUpgradeStrategy                   ServiceUpgradeStrategyOperations
 	ServicesPortRange                        ServicesPortRangeOperations
-	SetLoadBalancerServiceLinksInput         SetLoadBalancerServiceLinksInputOperations
 	SetProjectMembersInput                   SetProjectMembersInputOperations
 	SetServiceLinksInput                     SetServiceLinksInputOperations
 	Setting                                  SettingOperations
@@ -140,6 +139,7 @@ type RancherClient struct {
 	StorageDriver                            StorageDriverOperations
 	StoragePool                              StoragePoolOperations
 	Subscribe                                SubscribeOperations
+	TargetPortRule                           TargetPortRuleOperations
 	Task                                     TaskOperations
 	TaskInstance                             TaskInstanceOperations
 	ToServiceUpgradeStrategy                 ToServiceUpgradeStrategyOperations
@@ -161,7 +161,6 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.Account = newAccountClient(client)
 	client.ActiveSetting = newActiveSettingClient(client)
 	client.AddOutputsInput = newAddOutputsInputClient(client)
-	client.AddRemoveLoadBalancerServiceLinkInput = newAddRemoveLoadBalancerServiceLinkInputClient(client)
 	client.AddRemoveServiceLinkInput = newAddRemoveServiceLinkInputClient(client)
 	client.Agent = newAgentClient(client)
 	client.Amazonec2Config = newAmazonec2ConfigClient(client)
@@ -174,6 +173,7 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.BaseMachineConfig = newBaseMachineConfigClient(client)
 	client.Binding = newBindingClient(client)
 	client.BlkioDeviceOption = newBlkioDeviceOptionClient(client)
+	client.CatalogTemplate = newCatalogTemplateClient(client)
 	client.Certificate = newCertificateClient(client)
 	client.ChangeSecretInput = newChangeSecretInputClient(client)
 	client.ComposeConfig = newComposeConfigClient(client)
@@ -210,7 +210,6 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.FieldDocumentation = newFieldDocumentationClient(client)
 	client.HaConfig = newHaConfigClient(client)
 	client.HaConfigInput = newHaConfigInputClient(client)
-	client.HaproxyConfig = newHaproxyConfigClient(client)
 	client.HealthcheckInstanceHostMap = newHealthcheckInstanceHostMapClient(client)
 	client.Host = newHostClient(client)
 	client.HostAccess = newHostAccessClient(client)
@@ -231,12 +230,11 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.KubernetesStackUpgrade = newKubernetesStackUpgradeClient(client)
 	client.Label = newLabelClient(client)
 	client.LaunchConfig = newLaunchConfigClient(client)
+	client.LbConfig = newLbConfigClient(client)
+	client.LbTargetConfig = newLbTargetConfigClient(client)
 	client.Ldapconfig = newLdapconfigClient(client)
-	client.LoadBalancerAppCookieStickinessPolicy = newLoadBalancerAppCookieStickinessPolicyClient(client)
-	client.LoadBalancerConfig = newLoadBalancerConfigClient(client)
 	client.LoadBalancerCookieStickinessPolicy = newLoadBalancerCookieStickinessPolicyClient(client)
 	client.LoadBalancerService = newLoadBalancerServiceClient(client)
-	client.LoadBalancerServiceLink = newLoadBalancerServiceLinkClient(client)
 	client.LocalAuthConfig = newLocalAuthConfigClient(client)
 	client.LogConfig = newLogConfigClient(client)
 	client.Machine = newMachineClient(client)
@@ -250,11 +248,13 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.Password = newPasswordClient(client)
 	client.PhysicalHost = newPhysicalHostClient(client)
 	client.Port = newPortClient(client)
+	client.PortRule = newPortRuleClient(client)
 	client.ProcessDefinition = newProcessDefinitionClient(client)
 	client.ProcessExecution = newProcessExecutionClient(client)
 	client.ProcessInstance = newProcessInstanceClient(client)
 	client.Project = newProjectClient(client)
 	client.ProjectMember = newProjectMemberClient(client)
+	client.ProjectTemplate = newProjectTemplateClient(client)
 	client.PublicEndpoint = newPublicEndpointClient(client)
 	client.Publish = newPublishClient(client)
 	client.PullTask = newPullTaskClient(client)
@@ -282,7 +282,6 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.ServiceUpgrade = newServiceUpgradeClient(client)
 	client.ServiceUpgradeStrategy = newServiceUpgradeStrategyClient(client)
 	client.ServicesPortRange = newServicesPortRangeClient(client)
-	client.SetLoadBalancerServiceLinksInput = newSetLoadBalancerServiceLinksInputClient(client)
 	client.SetProjectMembersInput = newSetProjectMembersInputClient(client)
 	client.SetServiceLinksInput = newSetServiceLinksInputClient(client)
 	client.Setting = newSettingClient(client)
@@ -295,6 +294,7 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.StorageDriver = newStorageDriverClient(client)
 	client.StoragePool = newStoragePoolClient(client)
 	client.Subscribe = newSubscribeClient(client)
+	client.TargetPortRule = newTargetPortRuleClient(client)
 	client.Task = newTaskClient(client)
 	client.TaskInstance = newTaskInstanceClient(client)
 	client.ToServiceUpgradeStrategy = newToServiceUpgradeStrategyClient(client)

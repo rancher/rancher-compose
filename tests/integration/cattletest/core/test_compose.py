@@ -708,7 +708,8 @@ def test_extends_1556_2(compose):
 #         ports:
 #         - 80:8080
 #         labels:
-#           io.rancher.loadbalancer.target.web: hostname/path:6000,hostname:7000
+#           io.rancher.loadbalancer.target.web:
+# hostname/path:6000,hostname:7000
 #           io.rancher.loadbalancer.target.web2: "9000"
 #         links:
 #         - web
@@ -774,7 +775,8 @@ def test_extends_1556_2(compose):
 
 
 # def test_lb_full_config(client, compose):
-#     project_name = create_project(compose, file='assets/lb/docker-compose.yml')
+#     project_name = create_project(compose,
+#  file='assets/lb/docker-compose.yml')
 #     project = find_one(client.list_stack, name=project_name)
 #     assert len(project.services()) == 2
 #

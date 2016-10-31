@@ -107,6 +107,7 @@ var schemaDataV1 = `{
         "mem_swappiness": {"type": "integer"},
         "metadata": {"type": "object"},
         "net": {"type": "string"},
+        "network_driver": {"type": "object"},
         "oom_kill_disable": {"type": "boolean"},
         "oom_score_adj": {"type": "integer", "minimum": -1000, "maximum": 1000},
         "group_add": {
@@ -137,6 +138,7 @@ var schemaDataV1 = `{
         "shm_size": {"type": ["number", "string"]},
         "stdin_open": {"type": "boolean"},
         "stop_signal": {"type": "string"},
+        "storage_driver": {"type": "object"},
         "tty": {"type": "boolean"},
         "type": {"type": "string"},
         "update_strategy": {"type": "object"},
@@ -352,6 +354,7 @@ var servicesSchemaDataV2 = `{
         "memswap_limit": {"type": ["number", "string"]},
         "mem_swappiness": {"type": "integer"},
         "metadata": {"type": "object"},
+        "network_driver": {"type": "object"},
         "network_mode": {"type": "string"},
 
         "networks": {
@@ -409,6 +412,7 @@ var servicesSchemaDataV2 = `{
         "shm_size": {"type": ["number", "string"]},
         "stdin_open": {"type": "boolean"},
         "stop_signal": {"type": "string"},
+        "storage_driver": {"type": "object"},
         "tmpfs": {"$ref": "#/definitions/string_or_list"},
         "tty": {"type": "boolean"},
         "type": {"type": "string"},

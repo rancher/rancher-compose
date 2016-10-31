@@ -126,6 +126,7 @@
         "memswap_limit": {"type": ["number", "string"]},
         "mem_swappiness": {"type": "integer"},
         "metadata": {"type": "object"},
+        "network_driver": {"type": "object"},
         "network_mode": {"type": "string"},
 
         "networks": {
@@ -183,6 +184,7 @@
         "shm_size": {"type": ["number", "string"]},
         "stdin_open": {"type": "boolean"},
         "stop_signal": {"type": "string"},
+        "storage_driver": {"type": "object"},
         "tmpfs": {"$ref": "#/definitions/string_or_list"},
         "tty": {"type": "boolean"},
         "type": {"type": "string"},

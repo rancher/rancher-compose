@@ -107,6 +107,8 @@ type Container struct {
 
 	InstanceLinks map[string]interface{} `json:"instanceLinks,omitempty" yaml:"instance_links,omitempty"`
 
+	InstanceTriggeredStop string `json:"instanceTriggeredStop,omitempty" yaml:"instance_triggered_stop,omitempty"`
+
 	IoMaximumBandwidth int64 `json:"ioMaximumBandwidth,omitempty" yaml:"io_maximum_bandwidth,omitempty"`
 
 	IoMaximumIOps int64 `json:"ioMaximumIOps,omitempty" yaml:"io_maximum_iops,omitempty"`
@@ -200,8 +202,6 @@ type Container struct {
 	Sysctls map[string]interface{} `json:"sysctls,omitempty" yaml:"sysctls,omitempty"`
 
 	System bool `json:"system,omitempty" yaml:"system,omitempty"`
-
-	SystemContainer string `json:"systemContainer,omitempty" yaml:"system_container,omitempty"`
 
 	Tmpfs map[string]interface{} `json:"tmpfs,omitempty" yaml:"tmpfs,omitempty"`
 

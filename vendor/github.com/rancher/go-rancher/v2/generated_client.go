@@ -35,6 +35,7 @@ type RancherClient struct {
 	Credential                               CredentialOperations
 	Databasechangelog                        DatabasechangelogOperations
 	Databasechangeloglock                    DatabasechangeloglockOperations
+	DefaultNetwork                           DefaultNetworkOperations
 	DigitaloceanConfig                       DigitaloceanConfigOperations
 	DnsService                               DnsServiceOperations
 	DockerBuild                              DockerBuildOperations
@@ -87,6 +88,7 @@ type RancherClient struct {
 	Mount                                    MountOperations
 	Network                                  NetworkOperations
 	NetworkDriver                            NetworkDriverOperations
+	NetworkDriverService                     NetworkDriverServiceOperations
 	NfsConfig                                NfsConfigOperations
 	Openldapconfig                           OpenldapconfigOperations
 	PacketConfig                             PacketConfigOperations
@@ -137,7 +139,9 @@ type RancherClient struct {
 	StateTransition                          StateTransitionOperations
 	StatsAccess                              StatsAccessOperations
 	StorageDriver                            StorageDriverOperations
+	StorageDriverService                     StorageDriverServiceOperations
 	StoragePool                              StoragePoolOperations
+	Subnet                                   SubnetOperations
 	Subscribe                                SubscribeOperations
 	TargetPortRule                           TargetPortRuleOperations
 	Task                                     TaskOperations
@@ -190,6 +194,7 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.Credential = newCredentialClient(client)
 	client.Databasechangelog = newDatabasechangelogClient(client)
 	client.Databasechangeloglock = newDatabasechangeloglockClient(client)
+	client.DefaultNetwork = newDefaultNetworkClient(client)
 	client.DigitaloceanConfig = newDigitaloceanConfigClient(client)
 	client.DnsService = newDnsServiceClient(client)
 	client.DockerBuild = newDockerBuildClient(client)
@@ -242,6 +247,7 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.Mount = newMountClient(client)
 	client.Network = newNetworkClient(client)
 	client.NetworkDriver = newNetworkDriverClient(client)
+	client.NetworkDriverService = newNetworkDriverServiceClient(client)
 	client.NfsConfig = newNfsConfigClient(client)
 	client.Openldapconfig = newOpenldapconfigClient(client)
 	client.PacketConfig = newPacketConfigClient(client)
@@ -292,7 +298,9 @@ func constructClient(rancherBaseClient *RancherBaseClientImpl) *RancherClient {
 	client.StateTransition = newStateTransitionClient(client)
 	client.StatsAccess = newStatsAccessClient(client)
 	client.StorageDriver = newStorageDriverClient(client)
+	client.StorageDriverService = newStorageDriverServiceClient(client)
 	client.StoragePool = newStoragePoolClient(client)
+	client.Subnet = newSubnetClient(client)
 	client.Subscribe = newSubscribeClient(client)
 	client.TargetPortRule = newTargetPortRuleClient(client)
 	client.Task = newTaskClient(client)

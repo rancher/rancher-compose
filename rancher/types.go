@@ -12,6 +12,8 @@ const (
 	LbServiceType       = ServiceType(iota)
 	DnsServiceType      = ServiceType(iota)
 	ExternalServiceType = ServiceType(iota)
+	StorageDriverType   = ServiceType(iota)
+	NetworkDriverType   = ServiceType(iota)
 )
 
 type ServiceType int
@@ -27,6 +29,10 @@ func FindServiceType(r *RancherService) ServiceType {
 		return LegacyLbServiceType
 	} else if r.serviceConfig.Image == DNS_IMAGE {
 		return DnsServiceType
+	} else if rancherConfig.NetworkDriver != nil {
+		return NetworkDriverType
+	} else if rancherConfig.StorageDriver != nil {
+		return StorageDriverType
 	}
 
 	return RancherType
@@ -35,7 +41,9 @@ func FindServiceType(r *RancherService) ServiceType {
 type CompositeService struct {
 	client.Service
 
-	LbConfig *client.LbConfig `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
+	StorageDriver *client.StorageDriver `json:"storageDriver,omitempty" yaml:"storageDriver,omitempty"`
+	NetworkDriver *client.NetworkDriver `json:"networkDriver,omitempty" yaml:"networkDriver,omitempty"`
+	LbConfig      *client.LbConfig      `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
 
 	// External Service Fields
 	ExternalIpAddresses []string                    `json:"externalIpAddresses,omitempty" yaml:"external_ip_addresses,omitempty"`

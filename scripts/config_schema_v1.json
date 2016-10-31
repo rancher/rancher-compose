@@ -105,6 +105,7 @@
         "mem_swappiness": {"type": "integer"},
         "metadata": {"type": "object"},
         "net": {"type": "string"},
+        "network_driver": {"type": "object"},
         "oom_kill_disable": {"type": "boolean"},
         "oom_score_adj": {"type": "integer", "minimum": -1000, "maximum": 1000},
         "group_add": {
@@ -135,6 +136,7 @@
         "shm_size": {"type": ["number", "string"]},
         "stdin_open": {"type": "boolean"},
         "stop_signal": {"type": "string"},
+        "storage_driver": {"type": "object"},
         "tty": {"type": "boolean"},
         "type": {"type": "string"},
         "update_strategy": {"type": "object"},

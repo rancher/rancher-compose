@@ -161,6 +161,7 @@
         },
         "user": {"type": "string"},
         "userdata": {"type": "string"},
+        "uts": {"type": "string"},
         "vcpu": {"type": ["number", "string"]},
         "volumes": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "volume_driver": {"type": "string"},

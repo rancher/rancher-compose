@@ -22,12 +22,10 @@ func populateLbFields(r *RancherService, launchConfig *client.LaunchConfig, serv
 
 	serviceType := FindServiceType(r)
 	if serviceType == LegacyLbServiceType {
-		legacyStickinessPolicy := &legacyClient.LoadBalancerCookieStickinessPolicy{}
 		existingHAProxyConfig := ""
+		var legacyStickinessPolicy *legacyClient.LoadBalancerCookieStickinessPolicy
 		if config.LegacyLoadBalancerConfig != nil {
-			if config.LegacyLoadBalancerConfig.LbCookieStickinessPolicy != nil {
-				legacyStickinessPolicy = config.LegacyLoadBalancerConfig.LbCookieStickinessPolicy
-			}
+			legacyStickinessPolicy = config.LegacyLoadBalancerConfig.LbCookieStickinessPolicy
 			if config.LegacyLoadBalancerConfig.HaproxyConfig != nil {
 				existingHAProxyConfig = generateHAProxyConf(config.LegacyLoadBalancerConfig.HaproxyConfig.Global, config.LegacyLoadBalancerConfig.HaproxyConfig.Defaults)
 			}
@@ -36,7 +34,9 @@ func populateLbFields(r *RancherService, launchConfig *client.LaunchConfig, serv
 			CertificateIds:       config.Certs,
 			Config:               string(existingHAProxyConfig),
 			DefaultCertificateId: config.DefaultCert,
-			StickinessPolicy: &client.LoadBalancerCookieStickinessPolicy{
+		}
+		if legacyStickinessPolicy != nil {
+			service.LbConfig.StickinessPolicy = &client.LoadBalancerCookieStickinessPolicy{
 				Cookie:   legacyStickinessPolicy.Cookie,
 				Domain:   legacyStickinessPolicy.Domain,
 				Indirect: legacyStickinessPolicy.Indirect,
@@ -44,7 +44,7 @@ func populateLbFields(r *RancherService, launchConfig *client.LaunchConfig, serv
 				Name:     legacyStickinessPolicy.Name,
 				Nocache:  legacyStickinessPolicy.Nocache,
 				Postonly: legacyStickinessPolicy.Postonly,
-			},
+			}
 		}
 		portRules, err := convertLb(r.serviceConfig.Ports, r.serviceConfig.Links, r.serviceConfig.ExternalLinks)
 		if err != nil {
@@ -112,10 +112,12 @@ func populateLbFields(r *RancherService, launchConfig *client.LaunchConfig, serv
 
 		return populateCerts(r.context.Client, service, config.DefaultCert, config.Certs)
 	} else if serviceType == LbServiceType {
-		stickinessPolicy := config.LbConfig.StickinessPolicy
 		service.LbConfig = &client.LbConfig{
 			Config: config.LbConfig.Config,
-			StickinessPolicy: &client.LoadBalancerCookieStickinessPolicy{
+		}
+		stickinessPolicy := config.LbConfig.StickinessPolicy
+		if stickinessPolicy != nil {
+			service.LbConfig.StickinessPolicy = &client.LoadBalancerCookieStickinessPolicy{
 				Name:     stickinessPolicy.Name,
 				Cookie:   stickinessPolicy.Cookie,
 				Domain:   stickinessPolicy.Domain,
@@ -123,7 +125,7 @@ func populateLbFields(r *RancherService, launchConfig *client.LaunchConfig, serv
 				Nocache:  stickinessPolicy.Nocache,
 				Postonly: stickinessPolicy.Postonly,
 				Mode:     stickinessPolicy.Mode,
-			},
+			}
 		}
 		for _, portRule := range config.LbConfig.PortRules {
 			targetService, err := r.FindExisting(portRule.Service)

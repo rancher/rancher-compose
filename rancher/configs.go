@@ -13,6 +13,10 @@ import (
 	"github.com/rancher/go-rancher/v2"
 )
 
+const (
+	defaultLoadBalancerImage = "rancher/lb-service-haproxy"
+)
+
 func createLaunchConfigs(r *RancherService) (client.LaunchConfig, []client.SecondaryLaunchConfig, error) {
 	secondaryLaunchConfigs := []client.SecondaryLaunchConfig{}
 	launchConfig, err := createLaunchConfig(r, r.Name(), r.Config())
@@ -56,10 +60,17 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *config.Se
 	schemasUrl := strings.SplitN(r.Context().Client.GetSchemas().Links["self"], "/schemas", 2)[0]
 	scriptsUrl := schemasUrl + "/scripts/transform"
 
+	tempImage := serviceConfig.Image
+	if serviceConfig.Image == "rancher/load-balancer-service" {
+		serviceConfig.Image = defaultLoadBalancerImage
+	}
+
 	config, hostConfig, err := service.Convert(serviceConfig, r.context.Context)
 	if err != nil {
 		return result, err
 	}
+
+	serviceConfig.Image = tempImage
 
 	dockerContainer := &ContainerInspect{
 		Config:     config,

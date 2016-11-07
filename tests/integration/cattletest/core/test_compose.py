@@ -522,271 +522,285 @@ def test_extends_1556_2(compose):
         create_project(compose, file='assets/extends_2/docker-compose.yml')
 
 
-# def test_lb_private(client, compose):
-#     template = '''
-#     lb:
-#         expose:
-#         - 111:222
-#         - 222:333/tcp
-#         image: rancher/load-balancer-service
-#         ports:
-#         - 80
-#         links:
-#         - web
-#         - web2
-#     web:
-#         image: nginx
-#     web2:
-#         image: nginx'''
-#
-#     project_name = create_project(compose, input=template)
-#
-#     project = find_one(client.list_stack, name=project_name)
-#     assert len(project.services()) == 3
-#     lb = _get_service(project.services(), 'lb')
-#
-#     assert lb.launchConfig.expose == ['111:222', '222:333/tcp']
+def test_legacy_lb_private(client, compose):
+    template = '''
+    lb:
+        expose:
+        - 111:222
+        - 222:333/tcp
+        image: rancher/load-balancer-service
+        ports:
+        - 80
+        links:
+        - web
+    web:
+        image: nginx'''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 2
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+
+    assert lb.lbConfig is not None
+    assert 'expose' not in lb.launchConfig
+    assert len(lb.lbConfig.portRules) == 3
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 80
+    assert lb.lbConfig.portRules[0].targetPort == 80
+
+    assert lb.lbConfig.portRules[1].serviceId == web.id
+    assert lb.lbConfig.portRules[1].sourcePort == 111
+    assert lb.lbConfig.portRules[1].targetPort == 222
+
+    assert lb.lbConfig.portRules[2].serviceId == web.id
+    assert lb.lbConfig.portRules[2].sourcePort == 222
+    assert lb.lbConfig.portRules[2].targetPort == 333
 
 
-# def test_lb_basic(client, compose):
-#     template = '''
-#     lb:
-#         image: rancher/load-balancer-service
-#         ports:
-#         - 80:80
-#         links:
-#         - web
-#         - web2
-#     web:
-#         image: nginx
-#     web2:
-#         image: nginx'''
-#
-#     project_name = create_project(compose, input=template)
-#
-#     project = find_one(client.list_stack, name=project_name)
-#     assert len(project.services()) == 3
-#     lb = _get_service(project.services(), 'lb')
-#     web = _get_service(project.services(), 'web')
-#     web2 = _get_service(project.services(), 'web2')
-#
-#     maps = client.list_service_consume_map(serviceId=lb.id)
-#     assert len(maps) == 2
-#
-#     for map in maps:
-#         if map.consumedServiceId == web.id:
-#             assert map.ports == []
-#         elif map.consumedServiceId == web2.id:
-#             assert map.ports == []
-#         else:
-#             assert False
-#
-#     assert lb.type == 'loadBalancerService'
-#     assert lb.launchConfig.ports == ['80:80']
+def test_legacy_lb_basic(client, compose):
+    template = '''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 80:80
+        links:
+        - web
+        - web2
+    web:
+        image: nginx
+    web2:
+        image: nginx'''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 3
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+    web2 = _get_service(project.services(), 'web2')
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 2
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 80
+    assert lb.lbConfig.portRules[0].targetPort == 80
+
+    assert lb.lbConfig.portRules[1].serviceId == web2.id
+    assert lb.lbConfig.portRules[1].sourcePort == 80
+    assert lb.lbConfig.portRules[1].targetPort == 80
 
 
-# def test_lb_default_port_http(client, compose):
-#     template = '''
-#     lb:
-#         image: rancher/load-balancer-service
-#         ports:
-#         - 7900:80/tcp
-#         links:
-#         - web
-#     web:
-#         image: nginx
-#     '''
-#
-#     project_name = create_project(compose, input=template)
-#
-#     project = find_one(client.list_stack, name=project_name)
-#     assert len(project.services()) == 2
-#     lb = _get_service(project.services(), 'lb')
-#     web = _get_service(project.services(), 'web')
-#     assert lb.launchConfig.ports == ['7900:80/tcp']
-#
-#     map = find_one(client.list_service_consume_map, serviceId=lb.id)
-#     assert map.consumedServiceId == web.id
-#     assert map.ports == []
-#
-#     assert lb.launchConfig.ports == ['7900:80/tcp']
+def test_legacy_lb_ssl(client, compose):
+    template = '''
+    lb:
+        image: rancher/load-balancer-service
+        labels:
+            io.rancher.loadbalancer.ssl.ports: '80'
+        ports:
+        - 80:80
+        links:
+        - web
+        - web2
+    web:
+        image: nginx
+    web2:
+        image: nginx'''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 3
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+    web2 = _get_service(project.services(), 'web2')
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 2
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].protocol == 'https'
+    assert lb.lbConfig.portRules[1].serviceId == web2.id
+    assert lb.lbConfig.portRules[1].protocol == 'https'
 
 
-# def test_lb_default_port_with_mapped_tcp(client, compose):
-#     template = '''
-#     lb:
-#         image: rancher/load-balancer-service
-#         ports:
-#         - 80:8080/tcp
-#         links:
-#         - web
-#     web:
-#         image: nginx
-#     '''
-#
-#     project_name = create_project(compose, input=template)
-#
-#     project = find_one(client.list_stack, name=project_name)
-#     assert len(project.services()) == 2
-#     lb = _get_service(project.services(), 'lb')
-#     assert lb.launchConfig.ports == ['80:8080/tcp']
-#
-#     web = _get_service(project.services(), 'web')
-#
-#     map = find_one(client.list_service_consume_map, serviceId=lb.id)
-#     assert map.consumedServiceId == web.id
-#     assert map.ports == []
-#
-#     assert lb.launchConfig.ports == ['80:8080/tcp']
+def test_legacy_lb_default_port_http(client, compose):
+    template = '''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 7900:80/tcp
+        links:
+        - web
+    web:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 2
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+    assert lb.launchConfig.ports == ['7900:7900/tcp'] # TODO
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 1
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 7900
+    assert lb.lbConfig.portRules[0].targetPort == 80
 
 
-# def test_lb_default_port_with_tcp(client, compose):
-#     template = '''
-#     lb:
-#         image: rancher/load-balancer-service
-#         ports:
-#         - 80/tcp
-#         links:
-#         - web
-#     web:
-#         image: nginx
-#     '''
-#
-#     project_name = create_project(compose, input=template)
-#
-#     project = find_one(client.list_stack, name=project_name)
-#     assert len(project.services()) == 2
-#     lb = _get_service(project.services(), 'lb')
-#     web = _get_service(project.services(), 'web')
-#
-#     map = find_one(client.list_service_consume_map, serviceId=lb.id)
-#     assert map.consumedServiceId == web.id
-#     assert map.ports == []
-#
-#     lb.launchConfig.ports == ['80/tcp']
+def test_legacy_lb_default_port_with_mapped_tcp(client, compose):
+    template = '''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 80:8080/tcp
+        links:
+        - web
+    web:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 2
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+    assert lb.launchConfig.ports == ['80:80/tcp'] # TODO
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 1
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 80
+    assert lb.lbConfig.portRules[0].targetPort == 8080
 
 
-# def test_lb_path_space_target(client, compose):
-#     template = '''
-#     lb:
-#         image: rancher/load-balancer-service
-#         ports:
-#         - 80:8080
-#         labels:
-#           io.rancher.loadbalancer.target.web: "hostname/path:6000,
-#            7000"
-#         links:
-#         - web
-#     web:
-#         image: nginx
-#     '''
-#
-#     project_name = create_project(compose, input=template)
-#
-#     project = find_one(client.list_stack, name=project_name)
-#     assert len(project.services()) == 2
-#     lb = _get_service(project.services(), 'lb')
-#     web = _get_service(project.services(), 'web')
-#
-#     maps = client.list_service_consume_map(serviceId=lb.id)
-#     assert len(maps) == 1
-#
-#     for map in maps:
-#         if map.consumedServiceId == web.id:
-#             assert map.ports == ['hostname/path:6000',
-#                                  '7000']
-#         else:
-#             assert False
-#
-#     assert lb.type == 'loadBalancerService'
+def test_legacy_lb_default_port_with_tcp(client, compose):
+    template = '''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 80/tcp
+        links:
+        - web
+    web:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 2
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+    assert lb.launchConfig.ports == ['80:80/tcp'] # TODO
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 1
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 80
+    assert lb.lbConfig.portRules[0].targetPort == 80
 
 
-# def test_lb_path_name(client, compose):
-#     template = '''
-#     lb:
-#         image: rancher/load-balancer-service
-#         ports:
-#         - 80:8080
-#         labels:
-#           io.rancher.loadbalancer.target.web:
-# hostname/path:6000,hostname:7000
-#           io.rancher.loadbalancer.target.web2: "9000"
-#         links:
-#         - web
-#         - web2
-#         - web3
-#     web:
-#         image: nginx
-#     web2:
-#         image: nginx
-#     web3:
-#         image: nginx'''
-#
-#     project_name = create_project(compose, input=template)
-#
-#     project = find_one(client.list_stack, name=project_name)
-#     assert len(project.services()) == 4
-#     lb = _get_service(project.services(), 'lb')
-#     web = _get_service(project.services(), 'web')
-#     web2 = _get_service(project.services(), 'web2')
-#     web3 = _get_service(project.services(), 'web2')
-#
-#     maps = client.list_service_consume_map(serviceId=lb.id)
-#     assert len(maps) == 3
-#
-#     for map in maps:
-#         if map.consumedServiceId == web.id:
-#             assert map.ports == ['hostname/path:6000',
-#                                  'hostname:7000']
-#         elif map.consumedServiceId == web2.id:
-#             assert map.ports == ['9000']
-#         elif map.consumedServiceId == web3.id:
-#             assert map.ports == []
-#
-#     assert lb.launchConfig.ports == ['80:8080']
-#     assert lb.type == 'loadBalancerService'
+def test_legacy_lb_label_basic(client, compose):
+    template = '''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 80:8080
+        labels:
+          io.rancher.loadbalancer.target.web: "hostname:80/path=9090"
+        links:
+        - web
+    web:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 2
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+    assert lb.launchConfig.ports == ['80:80/tcp'] # TODO
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 1
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 80
+    assert lb.lbConfig.portRules[0].targetPort == 9090
+    assert lb.lbConfig.portRules[0].hostname == 'hostname'
+    assert lb.lbConfig.portRules[0].path == '/path'
 
 
-# def test_lb_path_name_minimal(client, compose):
-#     template = '''
-#     lb:
-#         image: rancher/load-balancer-service
-#         ports:
-#         - 84:84
-#         links:
-#         - web
-#     web:
-#         image: nginx
-#     '''
-#
-#     project_name = create_project(compose, input=template)
-#
-#     project = find_one(client.list_stack, name=project_name)
-#     assert len(project.services()) == 2
-#     lb = _get_service(project.services(), 'lb')
-#     web = _get_service(project.services(), 'web')
-#
-#     map = find_one(client.list_service_consume_map, serviceId=lb.id)
-#     assert map.ports == []
-#     assert map.consumedServiceId == web.id
-#
-#     assert lb.type == 'loadBalancerService'
-#     assert lb.launchConfig.ports == ['84:84']
+def test_legacy_lb_path_name(client, compose):
+    template = '''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 6000:8080
+        labels:
+          io.rancher.loadbalancer.target.web: hostname:6000/path=7000
+        links:
+        - web
+        - web2
+    web:
+        image: nginx
+    web2:
+        image: nginx'''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 3
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+    web2 = _get_service(project.services(), 'web2')
+    assert lb.launchConfig.ports == ['6000:6000/tcp'] # TODO
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 2
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 6000
+    assert lb.lbConfig.portRules[0].targetPort == 7000
+    assert lb.lbConfig.portRules[0].hostname == 'hostname'
+    assert lb.lbConfig.portRules[0].path == '/path'
+
+    assert lb.lbConfig.portRules[1].serviceId == web2.id
+    assert lb.lbConfig.portRules[1].sourcePort == 6000
+    assert lb.lbConfig.portRules[1].targetPort == 8080
 
 
-# def test_lb_full_config(client, compose):
-#     project_name = create_project(compose,
-#  file='assets/lb/docker-compose.yml')
-#     project = find_one(client.list_stack, name=project_name)
-#     assert len(project.services()) == 2
-#
-#     lb = _get_service(project.services(), 'lb')
-#     _get_service(project.services(), 'web')
-#
-#     assert lb.type == 'loadBalancerService'
-#
-#     assert lb.loadBalancerConfig.haproxyConfig['global'] == 'foo bar\n'
-#     assert lb.loadBalancerConfig.haproxyConfig.defaults == 'def 1\n'
+def test_legacy_lb_full_config(client, compose):
+    project_name = create_project(compose, file='assets/lb/docker-compose.yml')
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 2
+
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+
+    assert lb.launchConfig.ports == ['80:80/tcp'] # TODO
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 1
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 80
+    assert lb.lbConfig.portRules[0].targetPort == 80
+
+    conf = 'global\n    foo bar\n    \ndefaults\n    def 1\n    '
+    assert lb.lbConfig.config == conf
 
 
 def test_links(client, compose):

@@ -84,6 +84,15 @@ func populateLbFields(r *RancherService, launchConfig *client.LaunchConfig, serv
 				}
 			}
 		}
+		labelName = "io.rancher.loadbalancer.proxy-protocol.ports"
+		if label, ok := r.serviceConfig.Labels[labelName]; ok {
+			split := strings.Split(label, ",")
+			for _, portString := range split {
+				service.LbConfig.Config += fmt.Sprintf(`
+frontend %s
+    accept-proxy`, portString)
+			}
+		}
 		for _, portRule := range portRules {
 			targetService, err := r.FindExisting(portRule.Service)
 			if err != nil {

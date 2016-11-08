@@ -806,6 +806,7 @@ def test_legacy_lb_full_config(client, compose):
     assert lb.lbConfig.portRules[0].targetPort == 80
 
     conf = 'global\n    foo bar\n    \ndefaults\n    def 1\n    '
+    conf += '\nfrontend 80\n    accept-proxy'
     assert lb.lbConfig.config == conf
 
 

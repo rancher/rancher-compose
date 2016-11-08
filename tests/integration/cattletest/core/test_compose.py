@@ -173,6 +173,12 @@ def create_project(compose, operation='create', project_name=None, file=None,
     return project_name
 
 
+def _convert_instance(instance):
+    d = instance.__dict__
+    del d['type']
+    return d
+
+
 @pytest.mark.skipif('True')
 def test_build(client, compose):
     project_name = create_project(compose, file='assets/build/test.yml')
@@ -190,7 +196,7 @@ def test_args(client, compose):
     project_name = create_project(compose, file='assets/full-with-build.yml')
     project_with_build = find_one(client.list_stack, name=project_name)
     service = find_one(project_with_build.services)
-    assert service.launchConfig.build == {
+    assert _convert_instance(service.launchConfig.build) == {
         'dockerfile': 'something/other',
         'remote': 'github.com/ibuildthecloud/tiny-build',
     }
@@ -200,7 +206,7 @@ def test_args(client, compose):
     project_with_build_v2 = find_one(client.list_stack,
                                      name=project_name)
     service = find_one(project_with_build_v2.services)
-    assert service.launchConfig.build == {
+    assert _convert_instance(service.launchConfig.build) == {
         'dockerfile': 'something/other',
         'remote': 'github.com/ibuildthecloud/tiny-build',
     }
@@ -258,7 +264,7 @@ def test_args(client, compose):
         assert service.selectorContainer == 'foo'
         assert launch_config.securityOpt == ['label:foo', 'label:bar']
         assert launch_config.pidMode == 'host'
-        assert launch_config.logConfig == {
+        assert _convert_instance(launch_config.logConfig) == {
             'driver': 'syslog',
             'config': {
                 'tag': 'foo',
@@ -281,7 +287,7 @@ def test_git_build(client, compose):
     project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
-    assert service.launchConfig.build == {
+    assert _convert_instance(service.launchConfig.build) == {
         'remote': 'github.com/ibuildthecloud/tiny-build',
     }
     assert service.launchConfig.imageUuid is not None
@@ -645,7 +651,7 @@ def test_legacy_lb_default_port_http(client, compose):
     assert len(project.services()) == 2
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
-    assert lb.launchConfig.ports == ['7900:7900/tcp'] # TODO
+    assert lb.launchConfig.ports == ['7900:7900/tcp']
 
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 1
@@ -673,7 +679,7 @@ def test_legacy_lb_default_port_with_mapped_tcp(client, compose):
     assert len(project.services()) == 2
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
-    assert lb.launchConfig.ports == ['80:80/tcp'] # TODO
+    assert lb.launchConfig.ports == ['80:80/tcp']
 
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 1
@@ -701,7 +707,7 @@ def test_legacy_lb_default_port_with_tcp(client, compose):
     assert len(project.services()) == 2
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
-    assert lb.launchConfig.ports == ['80:80/tcp'] # TODO
+    assert lb.launchConfig.ports == ['80:80/tcp']
 
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 1
@@ -731,7 +737,7 @@ def test_legacy_lb_label_basic(client, compose):
     assert len(project.services()) == 2
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
-    assert lb.launchConfig.ports == ['80:80/tcp'] # TODO
+    assert lb.launchConfig.ports == ['80:80/tcp']
 
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 1
@@ -766,7 +772,7 @@ def test_legacy_lb_path_name(client, compose):
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
     web2 = _get_service(project.services(), 'web2')
-    assert lb.launchConfig.ports == ['6000:6000/tcp'] # TODO
+    assert lb.launchConfig.ports == ['6000:6000/tcp']
 
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 2
@@ -790,7 +796,7 @@ def test_legacy_lb_full_config(client, compose):
     lb = _get_service(project.services(), 'lb')
     web = _get_service(project.services(), 'web')
 
-    assert lb.launchConfig.ports == ['80:80/tcp'] # TODO
+    assert lb.launchConfig.ports == ['80:80/tcp']
 
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 1
@@ -1546,8 +1552,8 @@ def test_variables(client, compose):
     project = find_one(client.list_stack, name=project_name)
     service = find_one(project.services)
 
-    assert service.launchConfig.imageUuid == 'docker:B'
-    assert service.launchConfig.labels['var'] == 'B'
+    assert service.launchConfig.imageUuid == 'docker:nginx'
+    assert service.launchConfig.labels['var'] == 'nginx'
     assert service.metadata.var == 'E'
     assert service.metadata.var2 == ''
 
@@ -2001,9 +2007,13 @@ vm:
     assert vm.launchConfig.vcpu == 2
     assert vm.launchConfig.userdata == '#cloud-config\nfoo\n'
     assert vm.launchConfig.memoryMb == 1024
-    assert vm.launchConfig.disks[0] == {'name': 'foo', 'size': '1g',
-                                        'opts': {'foo': 'bar'}}
-    assert vm.launchConfig.disks[1] == {'name': 'foo2', 'size': '2g'}
+    assert _convert_instance(vm.launchConfig.disks[0]) == {
+        'name': 'foo', 'size': '1g',
+        'opts': {'foo': 'bar'},
+    }
+    assert _convert_instance(vm.launchConfig.disks[1]) == {
+        'name': 'foo2', 'size': '2g',
+    }
 
 
 def test_cyclic_link_dependency(client, compose):

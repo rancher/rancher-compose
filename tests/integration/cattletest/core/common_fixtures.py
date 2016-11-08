@@ -12,9 +12,14 @@ _SUPER_CLIENT = None
 
 
 @pytest.fixture(scope='session')
-def cattle_url():
-    default_url = 'http://localhost:8080/v2-beta/schemas'
-    return os.environ.get('CATTLE_URL', default_url)
+def cattle_url(project_id=None):
+    default_url = 'http://localhost:8080/v1/schemas'
+    url = os.environ.get('CATTLE_URL', default_url).replace('/v1', '/v2-beta')
+    if project_id is None:
+        return url
+    if url.endswith('/schemas'):
+        url = url[:len(url) - 8]
+    return '{}/projects/{}/schemas'.format(url, project_id)
 
 
 @pytest.fixture(scope='function')
@@ -79,7 +84,7 @@ class Context(object):
         self.client = client
         self.host = host
         self.image_uuid = 'sim:{}'.format(random_str())
-        self.nsp = self._get_nsp()
+        # self.nsp = self._get_nsp()
         self.host_ip = self._get_host_ip()
 
     def _get_nsp(self):
@@ -182,6 +187,9 @@ def create_context(admin_user_client, create_project=False, add_host=False,
         project_client = api_client(project_key.publicValue,
                                     project_key.secretValue)
         project = project_client.reload(project)
+        owner_client = api_client(key.publicValue, key.secretValue,
+                                  project_id=project.id)
+        _create_network_driver(owner_client)
 
     if create_project and add_host:
         host, agent, agent_client = \
@@ -192,6 +200,40 @@ def create_context(admin_user_client, create_project=False, add_host=False,
     return Context(account=account, project=project, user_client=user_client,
                    client=project_client, host=host,
                    agent_client=agent_client, agent=agent)
+
+
+def _create_network_driver(client):
+    driver_name = 'default-test-driver'
+    stack = client.create_stack(name=driver_name, system=True)
+    s = client.create_network_driver_service(
+        name=driver_name,
+        startOnCreate=True,
+        stackId=stack.id,
+        selectorContainer='none',
+        networkDriver={
+            'name': driver_name,
+            'defaultNetwork': {
+                'subnets': [
+                    {
+                        'networkAddress': '10.42.0.0/16'
+                    }
+                ],
+                'dns': ['169.254.169.250'],
+                'dnsSearch': ['rancher.internal'],
+            },
+            'cniConf': {},
+        })
+
+    s = client.wait_success(s)
+    assert s.state == 'active'
+
+    nd = find_one(client.list_network_driver, serviceId=s.id, name=driver_name)
+    nd = client.wait_success(nd)
+    assert nd.state == 'active'
+
+    network = find_one(nd.networks)
+    network = client.wait_success(network)
+    assert network.state == 'active'
 
 
 def cleanup_context(admin_user_client, context):
@@ -617,8 +659,8 @@ def wait_setting_active(api_client, setting, timeout=45):
     return setting
 
 
-def api_client(access_key, secret_key):
-    return cattle.from_env(url=cattle_url(),
+def api_client(access_key, secret_key, project_id=None):
+    return cattle.from_env(url=cattle_url(project_id),
                            cache=False,
                            access_key=access_key,
                            secret_key=secret_key)

@@ -102,7 +102,7 @@ func TryConvertStringsToInts(serviceMap config.RawServiceMap) (config.RawService
 		newServiceMap[k] = make(config.RawService)
 
 		for k2, v2 := range v {
-			if k2 == "disks" || k2 == "load_balancer_config" || k2 == "health_check" || k2 == "scale_policy" || k2 == "upgrade_strategy" || k2 == "service_schemas" {
+			if k2 == "disks" || k2 == "load_balancer_config" || k2 == "health_check" || k2 == "scale_policy" || k2 == "upgrade_strategy" || k2 == "service_schemas" || k2 == "lb_config" {
 				newServiceMap[k][k2] = tryConvertStringsToInts(v2, true)
 			} else {
 				newServiceMap[k][k2] = tryConvertStringsToInts(v2, false)

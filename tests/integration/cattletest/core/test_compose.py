@@ -1205,56 +1205,56 @@ def test_dns_service(client, compose):
     assert names == {'web1', 'web2'}
 
 
-# def test_up_relink(client, compose):
-#     template = '''
-#     lb:
-#         image: rancher/load-balancer-service
-#         ports:
-#         - 80
-#         links:
-#         - web
-#         labels:
-#           a: b
-#           c: d
-#     web:
-#         image: nginx
-#     '''
-#
-#     project_name = create_project(compose, input=template)
-#     project = find_one(client.list_stack, name=project_name)
-#     lb = _get_service(project.services(), 'lb')
-#
-#     consumed = lb.consumedservices()
-#     assert len(consumed) == 1
-#     assert consumed[0].name == 'web'
-#
-#     del lb.launchConfig.labels['io.rancher.service.hash']
-#     assert lb.launchConfig.labels == {
-#         'a': 'b',
-#         'c': 'd',
-#     }
-#
-#     template2 = '''
-#     lb:
-#         image: nginx
-#         ports:
-#         - 80
-#         links:
-#         - web2
-#     web2:
-#         image: nginx
-#     '''
-#     compose.check_call(template2, '--verbose', '-f', '-', '-p', project_name,
-#                        'up', '-d')
-#
-#     def check():
-#         x = lb.consumedservices()
-#         if len(x) == 1:
-#             return x
-#
-#     consumed = wait_for(check, timeout=5)
-#     assert len(consumed) == 1
-#     assert consumed[0].name == 'web2'
+def test_up_relink(client, compose):
+    template = '''
+    lb:
+        image: nginx
+        ports:
+        - 80
+        links:
+        - web
+        labels:
+          a: b
+          c: d
+    web:
+        image: nginx
+    '''
+
+    project_name = create_project(compose, input=template)
+    project = find_one(client.list_stack, name=project_name)
+    lb = _get_service(project.services(), 'lb')
+
+    consumed = lb.consumedservices()
+    assert len(consumed) == 1
+    assert consumed[0].name == 'web'
+
+    del lb.launchConfig.labels['io.rancher.service.hash']
+    assert lb.launchConfig.labels == {
+        'a': 'b',
+        'c': 'd',
+    }
+
+    template2 = '''
+    lb:
+        image: nginx
+        ports:
+        - 80
+        links:
+        - web2
+    web2:
+        image: nginx
+    '''
+    compose.check_call(template2, '--verbose', '-f', '-', '-p', project_name,
+                       'up', '-d')
+
+    def check():
+        x = lb.consumedservices()
+        if len(x) == 1:
+            return x
+
+    consumed = wait_for(check, timeout=5)
+    assert len(consumed) == 1
+    assert consumed[0].name == 'web2'
 
 
 def test_service_upgrade_from_nil(client, compose):
@@ -1679,10 +1679,10 @@ def test_certs(new_context, compose_bin, request):
     assert lb.certificateIds == [cert.id, cert2.id]
 
 
-# def test_cert_not_found(new_context, compose_bin, request):
-#     compose = new_compose(new_context.client, compose_bin, request)
-#     compose.check_retcode(None, 1, '-p', random_str(), '-f',
-#                           'assets/ssl/docker-compose.yml', 'create')
+def test_cert_not_found(new_context, compose_bin, request):
+    compose = new_compose(new_context.client, compose_bin, request)
+    compose.check_retcode(None, 1, '-p', random_str(), '-f',
+                          'assets/ssl/docker-compose.yml', 'create')
 
 
 def test_project_name(client, compose):
@@ -1741,59 +1741,58 @@ def test_project_name_with_dots(client, compose):
     assert len(ret) == 1
 
 
-# def test_create_then_up_on_circle(client, compose):
-#     template = '''
-#       etcd-lb:
-#         image: rancher/load-balancer-service
-#         links:
-#           - etcd0
-#           - etcd1
-#           - etcd2
-#
-#       etcd0:
-#         stdin_open: true
-#         image: busybox
-#         command: cat
-#         links:
-#           - etcd1
-#           - etcd2
-#
-#       etcd1:
-#         stdin_open: true
-#         image: busybox
-#         command: cat
-#         links:
-#           - etcd0
-#           - etcd2
-#
-#       etcd2:
-#         stdin_open: true
-#         image: busybox
-#         command: cat
-#         links:
-#           - etcd0
-#           - etcd1
-#       '''
-#
-#     project_name = create_project(compose, input=template)
-#
-#     project = find_one(client.list_stack, name=project_name)
-#     etcd_lb = _get_service(project.services(), 'etcd-lb')
-#     etcd0 = _get_service(project.services(), 'etcd0')
-#     etcd1 = _get_service(project.services(), 'etcd1')
-#     etcd2 = _get_service(project.services(), 'etcd2')
-#
-#     assert len(etcd_lb.consumedservices()) == 3
-#     assert len(etcd0.consumedservices()) == 2
-#     assert len(etcd1.consumedservices()) == 2
-#     assert len(etcd2.consumedservices()) == 2
-#     assert len(etcd_lb.consumedservices()) == 3
-#
-#     compose.check_call(template, '-f', '-', '-p', project_name, 'up', '-d')
-#     assert len(etcd_lb.consumedservices()) == 3
-#     assert len(etcd0.consumedservices()) == 2
-#     assert len(etcd1.consumedservices()) == 2
-#     assert len(etcd2.consumedservices()) == 2
+def test_create_then_up_on_circle(client, compose):
+    template = '''
+      etcd-lb:
+        stdin_open: true
+        image: busybox
+        command: cat
+        links:
+          - etcd0
+          - etcd1
+          - etcd2
+      etcd0:
+        stdin_open: true
+        image: busybox
+        command: cat
+        links:
+          - etcd1
+          - etcd2
+      etcd1:
+        stdin_open: true
+        image: busybox
+        command: cat
+        links:
+          - etcd0
+          - etcd2
+      etcd2:
+        stdin_open: true
+        image: busybox
+        command: cat
+        links:
+          - etcd0
+          - etcd1
+      '''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    etcd_lb = _get_service(project.services(), 'etcd-lb')
+    etcd0 = _get_service(project.services(), 'etcd0')
+    etcd1 = _get_service(project.services(), 'etcd1')
+    etcd2 = _get_service(project.services(), 'etcd2')
+
+    assert len(etcd_lb.consumedservices()) == 3
+    assert len(etcd0.consumedservices()) == 2
+    assert len(etcd1.consumedservices()) == 2
+    assert len(etcd2.consumedservices()) == 2
+    assert len(etcd_lb.consumedservices()) == 3
+
+    compose.check_call(template, '-f', '-', '-p', project_name, 'up', '-d')
+    assert len(etcd_lb.consumedservices()) == 3
+    assert len(etcd0.consumedservices()) == 2
+    assert len(etcd1.consumedservices()) == 2
+    assert len(etcd2.consumedservices()) == 2
 
 
 def test_expose_port_ignore(client, compose):

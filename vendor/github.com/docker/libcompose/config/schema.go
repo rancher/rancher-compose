@@ -21,7 +21,7 @@ var schemaDataV1 = `{
 
       "properties": {
         "blkio_weight": {"type": ["number", "string"]},
-        "blkio_weight_devices": {"$ref": "#/definitions/list_of_strings"},
+        "blkio_weight_device": {"$ref": "#/definitions/list_of_strings"},
         "build": {"type": "string"},
         "cap_add": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "cap_drop": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
@@ -249,7 +249,7 @@ var servicesSchemaDataV2 = `{
 
       "properties": {
         "blkio_weight": {"type": ["number", "string"]},
-        "blkio_weight_devices": {"$ref": "#/definitions/list_of_strings"},
+        "blkio_weight_device": {"$ref": "#/definitions/list_of_strings"},
         "build": {
           "oneOf": [
             {"type": "string"},

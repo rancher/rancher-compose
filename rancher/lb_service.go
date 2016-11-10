@@ -297,11 +297,11 @@ func isNum(c uint8) bool {
 
 func readHostname(label string, pos int) (string, int, error) {
 	var hostname bytes.Buffer
+	if isNum(label[pos]) {
+		return hostname.String(), pos, nil
+	}
 	for ; pos < len(label); pos++ {
 		c := label[pos]
-		if isNum(c) {
-			return hostname.String(), pos, nil
-		}
 		if c == '=' {
 			return hostname.String(), pos + 1, nil
 		}
@@ -416,7 +416,7 @@ func convertLbLabel(label string) ([]PortRule, error) {
 func mergePortRules(baseRules, overrideRules []PortRule) []PortRule {
 	for i, baseRule := range baseRules {
 		for _, overrideRule := range overrideRules {
-			if baseRule.SourcePort == overrideRule.SourcePort && baseRule.Service == overrideRule.Service {
+			if baseRule.Service == overrideRule.Service && (overrideRule.SourcePort == 0 || baseRule.SourcePort == overrideRule.SourcePort) {
 				baseRules[i].Path = overrideRule.Path
 				baseRules[i].Hostname = overrideRule.Hostname
 				if overrideRule.TargetPort != 0 {

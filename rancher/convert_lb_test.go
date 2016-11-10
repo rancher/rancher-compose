@@ -135,56 +135,56 @@ func testConvertLabel(t *testing.T, label string, expectedPortRules []PortRule) 
 }
 
 func TestConvertLabel(t *testing.T) {
-	testConvertLabel(t, "example.com:80/path=81", []PortRule{
+	testConvertLabel(t, "example2.com:80/path=81", []PortRule{
 		PortRule{
-			Hostname:   "example.com",
+			Hostname:   "example2.com",
 			SourcePort: 80,
 			Path:       "/path",
 			TargetPort: 81,
 		},
 	})
-	testConvertLabel(t, "example.com:80/path/a", []PortRule{
+	testConvertLabel(t, "example2.com:80/path/a", []PortRule{
 		PortRule{
-			Hostname:   "example.com",
+			Hostname:   "example2.com",
 			SourcePort: 80,
 			Path:       "/path/a",
 		},
 	})
-	testConvertLabel(t, "example.com:80=81", []PortRule{
+	testConvertLabel(t, "example2.com:80=81", []PortRule{
 		PortRule{
-			Hostname:   "example.com",
+			Hostname:   "example2.com",
 			SourcePort: 80,
 			TargetPort: 81,
 		},
 	})
-	testConvertLabel(t, "example.com:80", []PortRule{
+	testConvertLabel(t, "example2.com:80", []PortRule{
 		PortRule{
-			Hostname:   "example.com",
+			Hostname:   "example2.com",
 			SourcePort: 80,
 		},
 	})
-	testConvertLabel(t, "example.com/path/b/c=81", []PortRule{
+	testConvertLabel(t, "example2.com/path/b/c=81", []PortRule{
 		PortRule{
-			Hostname:   "example.com",
+			Hostname:   "example2.com",
 			Path:       "/path/b/c",
 			TargetPort: 81,
 		},
 	})
-	testConvertLabel(t, "example.com/path", []PortRule{
+	testConvertLabel(t, "example2.com/path", []PortRule{
 		PortRule{
-			Hostname: "example.com",
+			Hostname: "example2.com",
 			Path:     "/path",
 		},
 	})
-	testConvertLabel(t, "example.com=81", []PortRule{
+	testConvertLabel(t, "example2.com=81", []PortRule{
 		PortRule{
-			Hostname:   "example.com",
+			Hostname:   "example2.com",
 			TargetPort: 81,
 		},
 	})
-	testConvertLabel(t, "example.com", []PortRule{
+	testConvertLabel(t, "example2.com", []PortRule{
 		PortRule{
-			Hostname: "example.com",
+			Hostname: "example2.com",
 		},
 	})
 
@@ -213,9 +213,25 @@ func TestConvertLabel(t *testing.T) {
 			TargetPort: 81,
 		},
 	})
+	testConvertLabel(t, "www.abc.com", []PortRule{
+		PortRule{
+			Hostname: "www.abc.com",
+		},
+	})
+	testConvertLabel(t, "www.abc2.com", []PortRule{
+		PortRule{
+			Hostname: "www.abc2.com",
+		},
+	})
 	testConvertLabel(t, "/path", []PortRule{
 		PortRule{
 			Path: "/path",
+		},
+	})
+	testConvertLabel(t, "www.abc2.com/service.html", []PortRule{
+		PortRule{
+			Hostname: "www.abc2.com",
+			Path:     "/service.html",
 		},
 	})
 	testConvertLabel(t, "81", []PortRule{
@@ -232,15 +248,15 @@ func TestConvertLabel(t *testing.T) {
 			TargetPort: 82,
 		},
 	})
-	testConvertLabel(t, "example.com:80/path=81,example.com:82/path2=83", []PortRule{
+	testConvertLabel(t, "example2.com:80/path=81,example2.com:82/path2=83", []PortRule{
 		PortRule{
-			Hostname:   "example.com",
+			Hostname:   "example2.com",
 			SourcePort: 80,
 			Path:       "/path",
 			TargetPort: 81,
 		},
 		PortRule{
-			Hostname:   "example.com",
+			Hostname:   "example2.com",
 			SourcePort: 82,
 			Path:       "/path2",
 			TargetPort: 83,
@@ -295,6 +311,72 @@ func TestMergePortRules(t *testing.T) {
 			Path:       "/path",
 			SourcePort: 80,
 			TargetPort: 80,
+		},
+	})
+
+	testMergePortRules(t, []PortRule{
+		PortRule{
+			Service:    "web",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+		PortRule{
+			Service:    "web",
+			SourcePort: 81,
+			TargetPort: 81,
+		},
+	}, []PortRule{
+		PortRule{
+			Service: "web",
+			Path:    "/path",
+		},
+	}, []PortRule{
+		PortRule{
+			Service:    "web",
+			Path:       "/path",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+		PortRule{
+			Service:    "web",
+			Path:       "/path",
+			SourcePort: 81,
+			TargetPort: 81,
+		},
+	})
+
+	testMergePortRules(t, []PortRule{
+		PortRule{
+			Service:    "web",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+		PortRule{
+			Service:    "web",
+			SourcePort: 81,
+			TargetPort: 81,
+		},
+	}, []PortRule{
+		PortRule{
+			Service:    "web",
+			TargetPort: 90,
+			Hostname:   "www.example2.com",
+			Path:       "/path",
+		},
+	}, []PortRule{
+		PortRule{
+			Service:    "web",
+			Hostname:   "www.example2.com",
+			Path:       "/path",
+			SourcePort: 80,
+			TargetPort: 90,
+		},
+		PortRule{
+			Service:    "web",
+			Hostname:   "www.example2.com",
+			Path:       "/path",
+			SourcePort: 81,
+			TargetPort: 90,
 		},
 	})
 }

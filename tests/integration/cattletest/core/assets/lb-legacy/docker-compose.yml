@@ -1,0 +1,10 @@
+lb:
+    image: rancher/load-balancer-service
+    ports:
+    - "80:80"
+    links:
+    - web
+    labels:
+      io.rancher.loadbalancer.proxy-protocol.ports: 80
+web:
+    image: nginx

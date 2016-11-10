@@ -528,6 +528,148 @@ def test_extends_1556_2(compose):
         create_project(compose, file='assets/extends_2/docker-compose.yml')
 
 
+def test_lb_basic(client, compose):
+    template = '''
+    lb:
+        image: rancher/lb-service-haproxy
+        ports:
+        - 80
+        lb_config:
+            port_rules:
+            - source_port: 80
+              target_port: 80
+              service: web
+            - source_port: 80
+              target_port: 80
+              service: web2
+    web:
+        image: nginx
+    web2:
+        image: nginx'''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 3
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+    web2 = _get_service(project.services(), 'web2')
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 2
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 80
+    assert lb.lbConfig.portRules[0].targetPort == 80
+
+    assert lb.lbConfig.portRules[1].serviceId == web2.id
+    assert lb.lbConfig.portRules[1].sourcePort == 80
+    assert lb.lbConfig.portRules[1].targetPort == 80
+
+
+def test_lb_private(client, compose):
+    template = '''
+    lb:
+        image: rancher/lb-service-haproxy
+        lb_config:
+          port_rules:
+          - source_port: 111
+            target_port: 222
+            service: web
+          - source_port: 222
+            target_port: 333
+            protocol: tcp
+            service: web
+    web:
+        image: nginx'''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 2
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+
+    assert lb.lbConfig is not None
+    assert 'ports' not in lb.launchConfig
+    assert 'expose' not in lb.launchConfig
+    assert len(lb.lbConfig.portRules) == 2
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 111
+    assert lb.lbConfig.portRules[0].targetPort == 222
+
+    assert lb.lbConfig.portRules[1].serviceId == web.id
+    assert lb.lbConfig.portRules[1].sourcePort == 222
+    assert lb.lbConfig.portRules[1].targetPort == 333
+    assert lb.lbConfig.portRules[1].protocol == 'tcp'
+
+
+def test_lb_hostname_and_path(client, compose):
+    template = '''
+    lb:
+        image: rancher/lb-service-haproxy
+        ports:
+        - 80
+        lb_config:
+            port_rules:
+            - source_port: 80
+              target_port: 80
+              service: web
+              hostname: hostname
+              path: /path1
+            - source_port: 80
+              target_port: 80
+              service: web
+              hostname: hostname
+              path: /path2
+    web:
+        image: nginx
+        '''
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 2
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 2
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 80
+    assert lb.lbConfig.portRules[0].targetPort == 80
+    assert lb.lbConfig.portRules[0].hostname == 'hostname'
+    assert lb.lbConfig.portRules[0].path == '/path1'
+
+    assert lb.lbConfig.portRules[1].serviceId == web.id
+    assert lb.lbConfig.portRules[1].sourcePort == 80
+    assert lb.lbConfig.portRules[1].targetPort == 80
+    assert lb.lbConfig.portRules[1].hostname == 'hostname'
+    assert lb.lbConfig.portRules[1].path == '/path2'
+
+
+def test_lb_full_config(client, compose):
+    project_name = create_project(compose, file='assets/lb/docker-compose.yml')
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 2
+
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 1
+    assert lb.lbConfig.config == 'global\n    foo bar\n'
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 80
+    assert lb.lbConfig.portRules[0].targetPort == 80
+    assert lb.lbConfig.portRules[0].protocol == 'https'
+    assert lb.lbConfig.portRules[0].hostname == 'hostname'
+    assert lb.lbConfig.portRules[0].path == '/path'
+
+
 def test_legacy_lb_private(client, compose):
     template = '''
     lb:
@@ -789,7 +931,8 @@ def test_legacy_lb_path_name(client, compose):
 
 
 def test_legacy_lb_full_config(client, compose):
-    project_name = create_project(compose, file='assets/lb/docker-compose.yml')
+    project_name = create_project(compose,
+                                  file='assets/lb-legacy/docker-compose.yml')
     project = find_one(client.list_stack, name=project_name)
     assert len(project.services()) == 2
 

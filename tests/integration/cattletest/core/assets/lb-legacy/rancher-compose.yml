@@ -1,0 +1,20 @@
+web:
+  scale: 2
+lb:
+  scale: 1
+  load_balancer_config:
+    haproxy_config:
+      global: |
+        foo bar
+      defaults: |
+        def 1
+    lb_cookie_stickiness_policy: null
+    description: null
+    name: lb config
+    health_check:
+      port: null
+      interval: 2000
+      unhealthy_threshold: 3
+      request_line: "OPTIONS /ping HTTP/1.1\r\nHost:\\ www.example.com"
+      healthy_threshold: 2
+      response_timeout: 2000

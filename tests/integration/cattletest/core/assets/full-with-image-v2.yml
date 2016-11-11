@@ -63,3 +63,27 @@ services:
     external_links:
     - foo
     - bar
+    device_write_bps:
+      /dev/null: 200
+    device_write_iops:
+      /dev/vda: 3000
+    device_read_bps:
+      /dev/null: 4000
+    device_read_iops:
+      /dev/vda: 2000
+    group_add:
+    - root
+    cpu_quota: 20000
+    read_only: true
+    oom_score_adj: 100
+    shm_size: 1024
+    cgroup_parent: abcd
+    blkio_weight: 1000
+    stop_signal: SIGTERM
+    dns_opt:
+    - abc
+    cpu_period: 10000
+    mem_swappiness: 100
+    oom_kill_disable: true
+    ipc: host
+    isolation: default

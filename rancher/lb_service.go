@@ -98,6 +98,9 @@ frontend %s
 			if err != nil {
 				return err
 			}
+			if targetService == nil {
+				return fmt.Errorf("Failed to find existing service: %s", portRule.Service)
+			}
 			service.LbConfig.PortRules = append(service.LbConfig.PortRules, client.PortRule{
 				SourcePort:  int64(portRule.SourcePort),
 				Protocol:    portRule.Protocol,
@@ -140,6 +143,9 @@ frontend %s
 			targetService, err := r.FindExisting(portRule.Service)
 			if err != nil {
 				return err
+			}
+			if targetService == nil {
+				return fmt.Errorf("Failed to find existing service: %s", portRule.Service)
 			}
 			service.LbConfig.PortRules = append(service.LbConfig.PortRules, client.PortRule{
 				SourcePort:  int64(portRule.SourcePort),
@@ -270,10 +276,11 @@ func convertLb(ports, links, externalLinks []string) ([]PortRule, error) {
 			}
 		}
 		for _, link := range links {
+			split := strings.Split(link, ":")
 			portRules = append(portRules, PortRule{
 				SourcePort: int(sourcePort),
 				TargetPort: int(targetPort),
-				Service:    link,
+				Service:    split[0],
 				Protocol:   protocol,
 			})
 		}

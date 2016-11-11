@@ -716,7 +716,7 @@ def test_legacy_lb_basic(client, compose):
         - 80:80
         links:
         - web
-        - web2
+        - web2:web2
     web:
         image: nginx
     web2:

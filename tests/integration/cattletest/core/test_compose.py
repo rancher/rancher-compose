@@ -788,6 +788,63 @@ def test_legacy_lb_path_name(client, compose):
     assert lb.lbConfig.portRules[1].targetPort == 8080
 
 
+def test_legacy_lb_label_override(client, compose):
+    label1 = 'www.abc1.com:1008/service1.html,www.abc2.com:1009/service2.html'
+    label2 = 'www.abc3.com:1008/service3.html,www.abc4.com:1009/service4.html'
+    template = '''
+    lb:
+        image: rancher/load-balancer-service
+        ports:
+        - 1008:80
+        - 1009:81
+        labels:
+          io.rancher.loadbalancer.target.web: %s
+          io.rancher.loadbalancer.target.web2: %s
+        links:
+        - web
+        - web2
+    web:
+        image: nginx
+    web2:
+        image: nginx''' % (label1, label2)
+
+    project_name = create_project(compose, input=template)
+
+    project = find_one(client.list_stack, name=project_name)
+    assert len(project.services()) == 3
+    lb = _get_service(project.services(), 'lb')
+    web = _get_service(project.services(), 'web')
+    web2 = _get_service(project.services(), 'web2')
+    assert lb.launchConfig.ports == ['1008:1008/tcp', '1009:1009/tcp']
+
+    assert lb.lbConfig is not None
+    assert len(lb.lbConfig.portRules) == 4
+
+    assert lb.lbConfig.portRules[0].serviceId == web.id
+    assert lb.lbConfig.portRules[0].sourcePort == 1008
+    assert lb.lbConfig.portRules[0].targetPort == 80
+    assert lb.lbConfig.portRules[0].hostname == 'www.abc1.com'
+    assert lb.lbConfig.portRules[0].path == '/service1.html'
+
+    assert lb.lbConfig.portRules[1].serviceId == web2.id
+    assert lb.lbConfig.portRules[1].sourcePort == 1008
+    assert lb.lbConfig.portRules[1].targetPort == 80
+    assert lb.lbConfig.portRules[1].hostname == 'www.abc3.com'
+    assert lb.lbConfig.portRules[1].path == '/service3.html'
+
+    assert lb.lbConfig.portRules[2].serviceId == web.id
+    assert lb.lbConfig.portRules[2].sourcePort == 1009
+    assert lb.lbConfig.portRules[2].targetPort == 81
+    assert lb.lbConfig.portRules[2].hostname == 'www.abc2.com'
+    assert lb.lbConfig.portRules[2].path == '/service2.html'
+
+    assert lb.lbConfig.portRules[3].serviceId == web2.id
+    assert lb.lbConfig.portRules[3].sourcePort == 1009
+    assert lb.lbConfig.portRules[3].targetPort == 81
+    assert lb.lbConfig.portRules[3].hostname == 'www.abc4.com'
+    assert lb.lbConfig.portRules[3].path == '/service4.html'
+
+
 def test_legacy_lb_full_config(client, compose):
     project_name = create_project(compose, file='assets/lb/docker-compose.yml')
     project = find_one(client.list_stack, name=project_name)

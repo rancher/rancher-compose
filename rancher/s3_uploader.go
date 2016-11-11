@@ -5,17 +5,28 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/awslabs/aws-sdk-go/aws"
-	"github.com/awslabs/aws-sdk-go/aws/awserr"
-	"github.com/awslabs/aws-sdk-go/service/s3"
+	"github.com/minio/minio-go"
+	// "github.com/awslabs/aws-sdk-go/aws"
+	// "github.com/awslabs/aws-sdk-go/aws/awserr"
+	// "github.com/awslabs/aws-sdk-go/service/s3"
 	"github.com/docker/libcompose/project"
 )
 
 type S3Uploader struct {
+}
+
+type S3Config struct {
+	region          string
+	endpoint        string
+	accessKeyID     string
+	secretAccessKey string
+	useSSL          bool
+	url             string
 }
 
 func (s *S3Uploader) Name() string {
@@ -26,54 +37,79 @@ func (s *S3Uploader) Upload(p *project.Project, name string, reader io.ReadSeeke
 	bucketName := fmt.Sprintf("%s-%s", p.Name, someHash())
 	objectKey := fmt.Sprintf("%s-%s", name, hash[:12])
 
-	config := aws.DefaultConfig.Copy()
-	if config.Region == "" {
-		config.Region = "us-east-1"
+	/*
+	   Example AWS Config:
+	   AWS_ACCESS_KEY_ID=AKID1234567890
+	   AWS_SECRET_ACCESS_KEY=MY-SECRET-KEY
+	   AWS_REGION=us-east-1
+	*/
+
+	config := S3Config{
+		accessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
+		secretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		useSSL:          os.Getenv("AWS_SSL") != "false",
+		endpoint:        os.Getenv("AWS_URL"),
+		region:          os.Getenv("AWS_REGION"),
 	}
 
-	svc := s3.New(&config)
+	if config.region == "" {
+		config.region = "us-east-1"
+	}
 
-	if err := getOrCreateBucket(svc, bucketName); err != nil {
+	if config.endpoint == "" {
+		config.endpoint = "https://s3.amazonaws.com:9000"
+	}
+
+	minioClient, err := minio.New(config.endpoint, config.accessKeyID, config.secretAccessKey, config.useSSL)
+	if err != nil {
+		log.Fatalln(err)
 		return "", "", err
 	}
 
-	if err := putFile(svc, bucketName, objectKey, reader); err != nil {
+	if err := getOrCreateBucket(minioClient, bucketName, config.region); err != nil {
 		return "", "", err
 	}
 
-	req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
-		Bucket: &bucketName,
-		Key:    &objectKey,
-	})
-
-	url, err := req.Presign(24 * 7 * time.Hour)
-	return objectKey, url, err
-}
-
-func putFile(svc *s3.S3, bucket, object string, reader io.ReadSeeker) error {
-	_, err := svc.PutObject(&s3.PutObjectInput{
-		Bucket:      &bucket,
-		Key:         &object,
-		Body:        reader,
-		ContentType: aws.String("application/tar"),
-	})
-
-	return err
-}
-
-func getOrCreateBucket(svc *s3.S3, bucketName string) error {
-	_, err := svc.HeadBucket(&s3.HeadBucketInput{
-		Bucket: &bucketName,
-	})
-
-	if reqErr, ok := err.(awserr.RequestFailure); ok && reqErr.StatusCode() == 404 {
-		logrus.Infof("Creating bucket %s", bucketName)
-		_, err = svc.CreateBucket(&s3.CreateBucketInput{
-			Bucket: &bucketName,
-		})
+	if err := putFile(minioClient, bucketName, objectKey, reader); err != nil {
+		return "", "", err
 	}
 
+	logrus.Info("Successfully created %s\n", bucketName)
+
+	// req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
+	// 	Bucket: &bucketName,
+	// 	Key:    &objectKey,
+	// })
+
+	// url, err := req.Presign(24 * 7 * time.Hour)
+	url, err := minioClient.PresignedGetObject(bucketName, objectKey, 24*7*time.Hour, nil)
+	return objectKey, url.String(), err
+}
+
+func putFile(minioClient *minio.Client, bucket, object string, reader io.ReadSeeker) error {
+	_, err := minioClient.PutObject(bucket, object, reader, "application/tar")
 	return err
+}
+
+func getOrCreateBucket(minioClient *minio.Client, bucketName string, location string) error {
+	found, err := minioClient.BucketExists(bucketName)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	if !found {
+		return minioClient.MakeBucket(bucketName, location)
+	}
+	return err
+	// _, err := svc.HeadBucket(&s3.HeadBucketInput{
+	// 	Bucket: &bucketName,
+	// })
+	// if reqErr, ok := err.(awserr.RequestFailure); ok && reqErr.StatusCode() == 404 {
+	// 	logrus.Infof("Creating bucket %s", bucketName)
+	// 	_, err = svc.CreateBucket(&s3.CreateBucketInput{
+	// 		Bucket: &bucketName,
+	// 	})
+	// }
 }
 
 func someHash() string {

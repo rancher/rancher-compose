@@ -14,6 +14,7 @@ import (
 	"github.com/docker/libcompose/project"
 	"github.com/docker/libcompose/utils"
 	composeYaml "github.com/docker/libcompose/yaml"
+	"github.com/fatih/structs"
 	legacyClient "github.com/rancher/go-rancher/client"
 	"github.com/rancher/go-rancher/v2"
 	"github.com/rancher/rancher-compose/preprocess"
@@ -113,6 +114,19 @@ type RancherConfig struct {
 	NetworkDriver   *client.NetworkDriver           `yaml:"network_driver,omitempty"`
 }
 
+func getRancherConfigObjects() map[string]bool {
+	rancherConfig := structs.New(RancherConfig{})
+	fields := map[string]bool{}
+	for _, field := range rancherConfig.Fields() {
+		kind := field.Kind().String()
+		if kind == "struct" || kind == "ptr" || kind == "slice" {
+			split := strings.Split(field.Tag("yaml"), ",")
+			fields[split[0]] = true
+		}
+	}
+	return fields
+}
+
 type BindingProperty struct {
 	Services map[string]Service `json:"services"`
 }
@@ -186,7 +200,7 @@ func (c *Context) fillInRancherConfig(rawServiceMap config.RawServiceMap) error 
 		return err
 	}
 
-	rawServiceMap, err := preprocess.TryConvertStringsToInts(rawServiceMap)
+	rawServiceMap, err := preprocess.TryConvertStringsToInts(rawServiceMap, getRancherConfigObjects())
 	if err != nil {
 		return err
 	}

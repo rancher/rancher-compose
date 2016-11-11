@@ -421,16 +421,24 @@ func convertLbLabel(label string) ([]PortRule, error) {
 }
 
 func mergePortRules(baseRules, overrideRules []PortRule) []PortRule {
-	for i, baseRule := range baseRules {
+	newRules := []PortRule{}
+	for _, baseRule := range baseRules {
+		prevLength := len(newRules)
 		for _, overrideRule := range overrideRules {
 			if baseRule.Service == overrideRule.Service && (overrideRule.SourcePort == 0 || baseRule.SourcePort == overrideRule.SourcePort) {
-				baseRules[i].Path = overrideRule.Path
-				baseRules[i].Hostname = overrideRule.Hostname
+				newRule := baseRule
+				newRule.Path = overrideRule.Path
+				newRule.Hostname = overrideRule.Hostname
 				if overrideRule.TargetPort != 0 {
-					baseRules[i].TargetPort = overrideRule.TargetPort
+					newRule.TargetPort = overrideRule.TargetPort
 				}
+				newRules = append(newRules, newRule)
 			}
 		}
+		// If no rules were overidden, just copy over base rule
+		if len(newRules) == prevLength {
+			newRules = append(newRules, baseRule)
+		}
 	}
-	return baseRules
+	return newRules
 }

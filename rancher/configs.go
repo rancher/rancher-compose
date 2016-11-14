@@ -10,6 +10,7 @@ import (
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/docker/service"
 	"github.com/docker/libcompose/utils"
+	"github.com/docker/libcompose/yaml"
 	"github.com/rancher/go-rancher/v2"
 )
 
@@ -61,8 +62,16 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *config.Se
 	scriptsUrl := schemasUrl + "/scripts/transform"
 
 	tempImage := serviceConfig.Image
+	tempLabels := serviceConfig.Labels
+	newLabels := yaml.SliceorMap{}
 	if serviceConfig.Image == "rancher/load-balancer-service" {
 		serviceConfig.Image = defaultLoadBalancerImage
+		for k, v := range serviceConfig.Labels {
+			if !strings.HasPrefix(k, "io.rancher.loadbalancer") {
+				newLabels[k] = v
+			}
+		}
+		serviceConfig.Labels = newLabels
 	}
 
 	config, hostConfig, err := service.Convert(serviceConfig, r.context.Context)
@@ -71,6 +80,7 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *config.Se
 	}
 
 	serviceConfig.Image = tempImage
+	serviceConfig.Labels = tempLabels
 
 	dockerContainer := &ContainerInspect{
 		Config:     config,

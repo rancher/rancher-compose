@@ -766,6 +766,7 @@ def test_legacy_lb_ssl(client, compose):
     web = _get_service(project.services(), 'web')
     web2 = _get_service(project.services(), 'web2')
 
+    assert 'io.rancher.loadbalancer.ssl.ports' not in lb.launchConfig.labels
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 2
 
@@ -881,6 +882,7 @@ def test_legacy_lb_label_basic(client, compose):
     web = _get_service(project.services(), 'web')
     assert lb.launchConfig.ports == ['80:80/tcp']
 
+    assert 'io.rancher.loadbalancer.target.web' not in lb.launchConfig.labels
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 1
 
@@ -916,6 +918,7 @@ def test_legacy_lb_path_name(client, compose):
     web2 = _get_service(project.services(), 'web2')
     assert lb.launchConfig.ports == ['6000:6000/tcp']
 
+    assert 'io.rancher.loadbalancer.target.web' not in lb.launchConfig.labels
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 2
 
@@ -959,6 +962,8 @@ def test_legacy_lb_label_override(client, compose):
     web2 = _get_service(project.services(), 'web2')
     assert lb.launchConfig.ports == ['1008:1008/tcp', '1009:1009/tcp']
 
+    assert 'io.rancher.loadbalancer.target.web' not in lb.launchConfig.labels
+    assert 'io.rancher.loadbalancer.target.web2' not in lb.launchConfig.labels
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 4
 
@@ -998,6 +1003,8 @@ def test_legacy_lb_full_config(client, compose):
 
     assert lb.launchConfig.ports == ['80:80/tcp']
 
+    label = 'io.rancher.loadbalancer.proxy-protocol.ports'
+    assert label not in lb.launchConfig.labels
     assert lb.lbConfig is not None
     assert len(lb.lbConfig.portRules) == 1
 

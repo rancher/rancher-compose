@@ -379,4 +379,96 @@ func TestMergePortRules(t *testing.T) {
 			TargetPort: 90,
 		},
 	})
+
+	testMergePortRules(t, []PortRule{
+		PortRule{
+			Service:    "web",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+	}, []PortRule{
+		PortRule{
+			Service:  "web",
+			Hostname: "www.example1.com",
+			Path:     "/path1",
+		},
+		PortRule{
+			Service:  "web",
+			Hostname: "www.example2.com",
+			Path:     "/path2",
+		},
+	}, []PortRule{
+		PortRule{
+			Service:    "web",
+			Hostname:   "www.example1.com",
+			Path:       "/path1",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+		PortRule{
+			Service:    "web",
+			Hostname:   "www.example2.com",
+			Path:       "/path2",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+	})
+
+	testMergePortRules(t, []PortRule{
+		PortRule{
+			Service:    "web",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+		PortRule{
+			Service:    "web2",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+		PortRule{
+			Service:    "web3",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+	}, []PortRule{
+		PortRule{
+			Service:  "web",
+			Hostname: "www.example1.com",
+			Path:     "/path1",
+		},
+		PortRule{
+			Service:  "web",
+			Hostname: "www.example2.com",
+			Path:     "/path2",
+		},
+		PortRule{
+			Service:    "web3",
+			TargetPort: 90,
+		},
+	}, []PortRule{
+		PortRule{
+			Service:    "web",
+			Hostname:   "www.example1.com",
+			Path:       "/path1",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+		PortRule{
+			Service:    "web",
+			Hostname:   "www.example2.com",
+			Path:       "/path2",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+		PortRule{
+			Service:    "web2",
+			SourcePort: 80,
+			TargetPort: 80,
+		},
+		PortRule{
+			Service:    "web3",
+			SourcePort: 80,
+			TargetPort: 90,
+		},
+	})
 }

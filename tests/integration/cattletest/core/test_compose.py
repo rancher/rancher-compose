@@ -273,6 +273,36 @@ def test_args(client, compose):
         assert launch_config.extraHosts == ['host:1.1.1.1', 'host:2.2.2.2']
         assert launch_config.networkMode == 'host'
         assert launch_config.volumeDriver == 'foo'
+        devNull = launch_config.blkioDeviceOptions['/dev/null']
+        devVda = launch_config.blkioDeviceOptions['/dev/vda']
+        assert _convert_instance(devNull) == {
+            'readBps': 4000,
+            'readIops': None,
+            'weight': None,
+            'writeBps': 200,
+            'writeIops': None
+        }
+        assert _convert_instance(devVda) == {
+            'readBps': None,
+            'readIops': 2000,
+            'weight': None,
+            'writeBps': None,
+            'writeIops': 3000
+        }
+        assert launch_config.groupAdd == ['root']
+        assert launch_config.cpuQuota == 20000
+        assert launch_config.readOnly
+        assert launch_config.oomScoreAdj == 100
+        assert launch_config.shmSize == 1024
+        assert launch_config.cgroupParent == 'abcd'
+        assert launch_config.blkioWeight == 1000
+        assert launch_config.stopSignal == 'SIGTERM'
+        assert launch_config.dnsOpt == ['abc']
+        assert launch_config.cpuPeriod == 10000
+        assert launch_config.memorySwappiness == 100
+        assert launch_config.oomKillDisable
+        assert launch_config.ipcMode == 'host'
+        # TODO: test isolation
         # Not supported
         # assert launch_config.externalLinks == ['foo', 'bar']
 

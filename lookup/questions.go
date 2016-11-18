@@ -66,14 +66,19 @@ func ParseCatalogConfig(contents []byte) (*model.RancherCompose, error) {
 	}
 	var rawCatalogConfig interface{}
 
-	if cfg.Version == "2" {
-		var data map[string]interface{}
-		if err := yaml.Unmarshal(contents, &data); err != nil {
-			return nil, err
-		}
-		rawCatalogConfig = data["catalog"]
-	} else {
+	if cfg.Version == "2" && cfg.Services[".catalog"] != nil {
 		rawCatalogConfig = cfg.Services[".catalog"]
+	}
+
+	var data map[string]interface{}
+	if err := yaml.Unmarshal(contents, &data); err != nil {
+		return nil, err
+	}
+
+	if data["catalog"] != nil {
+		rawCatalogConfig = data["catalog"]
+	} else if data[".catalog"] != nil {
+		rawCatalogConfig = data[".catalog"]
 	}
 
 	if rawCatalogConfig != nil {

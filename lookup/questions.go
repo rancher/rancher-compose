@@ -47,16 +47,26 @@ func (q *QuestionLookup) parse(file string) error {
 		return err
 	}
 
-	catalogConfig, err := ParseCatalogConfig(contents)
+	q.questions, err = ParseQuestions(contents)
 	if err != nil {
 		return err
 	}
 
-	for _, question := range catalogConfig.Questions {
-		q.questions[question.Variable] = question
+	return nil
+}
+
+func ParseQuestions(contents []byte) (map[string]model.Question, error) {
+	catalogConfig, err := ParseCatalogConfig(contents)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	questions := map[string]model.Question{}
+	for _, question := range catalogConfig.Questions {
+		questions[question.Variable] = question
+	}
+
+	return questions, nil
 }
 
 func ParseCatalogConfig(contents []byte) (*model.RancherCompose, error) {

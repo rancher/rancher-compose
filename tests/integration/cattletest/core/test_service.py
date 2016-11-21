@@ -225,5 +225,36 @@ two:
         find_one(s.consumedservices)
 
 
+def test_stack_variable_interpolation(client):
+    name = 'project-' + random_str()
+    rancher_compose = '''
+.catalog:
+  uuid: foo
+  questions:
+  - variable: d
+    default: e
+'''
+    template = '''
+one:
+  image: nginx
+  labels:
+    a: $a
+    d: $d
+'''
+
+    env = client.create_stack(name=name, dockerCompose=template,
+                              environment={'a': 'b'},
+                              rancherCompose=rancher_compose)
+    env = client.wait_success(env)
+    env = client.wait_success(env.activateservices())
+    assert env.state == 'active'
+    assert env.environment == {'a': 'b'}
+    for s in env.services():
+        s = client.wait_success(s)
+        assert s.state == 'active'
+        assert s.launchConfig.labels.a == 'b'
+        assert s.launchConfig.labels.d == 'e'
+
+
 def _base():
     return path.dirname(__file__)

@@ -14,10 +14,6 @@ import (
 	"github.com/rancher/go-rancher/v2"
 )
 
-const (
-	defaultLoadBalancerImage = "rancher/lb-service-haproxy"
-)
-
 func createLaunchConfigs(r *RancherService) (client.LaunchConfig, []client.SecondaryLaunchConfig, error) {
 	secondaryLaunchConfigs := []client.SecondaryLaunchConfig{}
 	launchConfig, err := createLaunchConfig(r, r.Name(), r.Config())
@@ -65,7 +61,14 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *config.Se
 	tempLabels := serviceConfig.Labels
 	newLabels := yaml.SliceorMap{}
 	if serviceConfig.Image == "rancher/load-balancer-service" {
-		serviceConfig.Image = defaultLoadBalancerImage
+		// Lookup default load balancer image
+		lbImageSetting, err := r.Client().Setting.ById("lb.instance.image")
+		if err != nil {
+			return result, err
+		}
+		serviceConfig.Image = lbImageSetting.Value
+
+		// Strip off legacy load balancer labels
 		for k, v := range serviceConfig.Labels {
 			if !strings.HasPrefix(k, "io.rancher.loadbalancer") {
 				newLabels[k] = v

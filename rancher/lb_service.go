@@ -11,16 +11,22 @@ import (
 )
 
 func populateLbFields(r *RancherService, launchConfig *client.LaunchConfig, service *CompositeService) error {
+	serviceType := FindServiceType(r)
+
 	config, ok := r.context.RancherConfig[r.name]
 	if !ok {
-		return nil
+		if serviceType == LegacyLbServiceType {
+			r.context.RancherConfig[r.name] = RancherConfig{}
+			config = r.context.RancherConfig[r.name]
+		} else {
+			return nil
+		}
 	}
 
 	// Write back to the ports passed in because the Docker parsing logic changes then
 	launchConfig.Ports = r.serviceConfig.Ports
 	launchConfig.Expose = r.serviceConfig.Expose
 
-	serviceType := FindServiceType(r)
 	if serviceType == LegacyLbServiceType {
 		existingHAProxyConfig := ""
 		var legacyStickinessPolicy *legacyClient.LoadBalancerCookieStickinessPolicy

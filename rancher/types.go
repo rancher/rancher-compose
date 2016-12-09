@@ -25,7 +25,7 @@ func FindServiceType(r *RancherService) ServiceType {
 		return ExternalServiceType
 	} else if r.serviceConfig.Image == LB_IMAGE {
 		return LegacyLbServiceType
-	} else if r.RancherConfig().LbConfig != nil {
+	} else if isLbServiceType(r.RancherConfig().LbConfig) {
 		return LbServiceType
 	} else if r.serviceConfig.Image == DNS_IMAGE {
 		return DnsServiceType
@@ -36,6 +36,20 @@ func FindServiceType(r *RancherService) ServiceType {
 	}
 
 	return RancherType
+}
+
+func isLbServiceType(lbConfig *LBConfig) bool {
+	if lbConfig == nil {
+		return false
+	}
+
+	for _, portRule := range lbConfig.PortRules {
+		if portRule.SourcePort != 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 type CompositeService struct {

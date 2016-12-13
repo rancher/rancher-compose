@@ -57,7 +57,7 @@ type CompositeService struct {
 
 	StorageDriver *client.StorageDriver `json:"storageDriver,omitempty" yaml:"storageDriver,omitempty"`
 	NetworkDriver *client.NetworkDriver `json:"networkDriver,omitempty" yaml:"networkDriver,omitempty"`
-	LbConfig      *client.LbConfig      `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
+	RealLbConfig  *client.LbConfig      `json:"lbConfig,omitempty" yaml:"lb_config,omitempty"`
 
 	// External Service Fields
 	ExternalIpAddresses []string                    `json:"externalIpAddresses,omitempty" yaml:"external_ip_addresses,omitempty"`

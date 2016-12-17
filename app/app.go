@@ -47,7 +47,9 @@ func (p *ProjectFactory) Create(c *cli.Context) (project.APIProject, error) {
 		AccessKey:          c.GlobalString("access-key"),
 		SecretKey:          c.GlobalString("secret-key"),
 		PullCached:         c.Bool("cached"),
-		Uploader:           &rancher.S3Uploader{},
+		Uploader: &rancher.S3Uploader{
+			Bucket: c.String("bucket"),
+		},
 		Args:               c.Args(),
 		BindingsFile:       c.GlobalString("bindings-file"),
 	}
@@ -102,6 +104,10 @@ func UpgradeCommand(factory app.ProjectFactory) cli.Command {
 			cli.BoolFlag{
 				Name:  "cleanup, c",
 				Usage: "Remove the original service definition once upgraded, implies --wait",
+			},
+			cli.StringFlag{
+				Name:  "bucket",
+				Usage: "Specify S3 bucket to upload builds to",
 			},
 		},
 	}
@@ -166,6 +172,10 @@ func UpCommand(factory app.ProjectFactory) cli.Command {
 				Name:  "interval",
 				Usage: "Update interval in milliseconds",
 				Value: 1000,
+			},
+			cli.StringFlag{
+				Name:  "bucket",
+				Usage: "Specify S3 bucket to upload builds to",
 			},
 		},
 	}

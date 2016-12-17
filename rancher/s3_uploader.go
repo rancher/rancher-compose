@@ -16,6 +16,7 @@ import (
 )
 
 type S3Uploader struct {
+	Bucket string
 }
 
 func (s *S3Uploader) Name() string {
@@ -23,7 +24,12 @@ func (s *S3Uploader) Name() string {
 }
 
 func (s *S3Uploader) Upload(p *project.Project, name string, reader io.ReadSeeker, hash string) (string, string, error) {
-	bucketName := fmt.Sprintf("%s-%s", p.Name, someHash())
+	bucketName := s.Bucket
+
+	if bucketName == "" {
+		bucketName = fmt.Sprintf("%s-%s", p.Name, someHash())
+	}
+
 	objectKey := fmt.Sprintf("%s-%s", name, hash[:12])
 
 	config := aws.DefaultConfig.Copy()

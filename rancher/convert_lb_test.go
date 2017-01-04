@@ -52,8 +52,8 @@ func TestRewritePorts(t *testing.T) {
 	testRewritePorts(t, "80:80/tcp", "80/tcp")
 }
 
-func testConvertLb(t *testing.T, ports, links, externalLinks []string, expectedPortRules []PortRule) {
-	portRules, err := convertLb(ports, links, externalLinks)
+func testConvertLb(t *testing.T, ports, links, externalLinks []string, selector string, expectedPortRules []PortRule) {
+	portRules, err := convertLb(ports, links, externalLinks, selector)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func testConvertLb(t *testing.T, ports, links, externalLinks []string, expectedP
 func TestConvertLb(t *testing.T) {
 	testConvertLb(t, []string{
 		"8080:80",
-	}, []string{"web1", "web2"}, []string{"external/web3"}, []PortRule{
+	}, []string{"web1", "web2"}, []string{"external/web3"}, "", []PortRule{
 		PortRule{
 			SourcePort: 8080,
 			TargetPort: 80,
@@ -90,7 +90,7 @@ func TestConvertLb(t *testing.T) {
 
 	testConvertLb(t, []string{
 		"80",
-	}, []string{"web1", "web2"}, []string{}, []PortRule{
+	}, []string{"web1", "web2"}, []string{}, "", []PortRule{
 		PortRule{
 			SourcePort: 80,
 			TargetPort: 80,
@@ -107,7 +107,7 @@ func TestConvertLb(t *testing.T) {
 
 	testConvertLb(t, []string{
 		"80/tcp",
-	}, []string{"web1", "web2"}, []string{}, []PortRule{
+	}, []string{"web1", "web2"}, []string{}, "", []PortRule{
 		PortRule{
 			SourcePort: 80,
 			TargetPort: 80,
@@ -118,6 +118,17 @@ func TestConvertLb(t *testing.T) {
 			SourcePort: 80,
 			TargetPort: 80,
 			Service:    "web2",
+			Protocol:   "tcp",
+		},
+	})
+
+	testConvertLb(t, []string{
+		"80/tcp",
+	}, nil, nil, "foo=bar", []PortRule{
+		PortRule{
+			SourcePort: 80,
+			TargetPort: 80,
+			Selector:   "foo=bar",
 			Protocol:   "tcp",
 		},
 	})

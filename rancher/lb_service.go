@@ -65,18 +65,33 @@ func populateLbFields(r *RancherService, launchConfig *client.LaunchConfig, serv
 				Postonly: legacyStickinessPolicy.Postonly,
 			}
 		}
-		portRules, err := convertLb(r.serviceConfig.Ports, r.serviceConfig.Links, r.serviceConfig.ExternalLinks)
+		portRules, err := convertLb(r.serviceConfig.Ports, r.serviceConfig.Links, r.serviceConfig.ExternalLinks, "")
 		if err != nil {
 			return err
 		}
-		exposeRules, err := convertLb(r.serviceConfig.Expose, r.serviceConfig.Links, r.serviceConfig.ExternalLinks)
+		exposeRules, err := convertLb(r.serviceConfig.Expose, r.serviceConfig.Links, r.serviceConfig.ExternalLinks, "")
 		portRules = append(portRules, exposeRules...)
+		labelName := "io.rancher.service.selector.link"
+		if label, ok := r.serviceConfig.Labels[labelName]; ok {
+			selectorPortRules, err := convertLb(r.serviceConfig.Ports, nil, nil, label)
+			if err != nil {
+				return err
+			}
+			portRules = append(portRules, selectorPortRules...)
+			selectorExposeRules, err := convertLb(r.serviceConfig.Expose, nil, nil, label)
+			if err != nil {
+				return err
+			}
+			portRules = append(portRules, selectorExposeRules...)
+
+		}
+
 		links, err := r.getLinks()
 		if err != nil {
 			return err
 		}
 		for link := range links {
-			labelName := "io.rancher.loadbalancer.target." + link.ServiceName
+			labelName = "io.rancher.loadbalancer.target." + link.ServiceName
 			if label, ok := r.serviceConfig.Labels[labelName]; ok {
 				newPortRules, err := convertLbLabel(label)
 				if err != nil {
@@ -88,7 +103,7 @@ func populateLbFields(r *RancherService, launchConfig *client.LaunchConfig, serv
 				portRules = mergePortRules(portRules, newPortRules)
 			}
 		}
-		labelName := "io.rancher.loadbalancer.ssl.ports"
+		labelName = "io.rancher.loadbalancer.ssl.ports"
 		if label, ok := r.serviceConfig.Labels[labelName]; ok {
 			split := strings.Split(label, ",")
 			for _, portString := range split {
@@ -113,24 +128,27 @@ frontend %s
 			}
 		}
 		for _, portRule := range portRules {
-			targetService, err := r.FindExisting(portRule.Service)
-			if err != nil {
-				return err
-			}
-			if targetService == nil {
-				return fmt.Errorf("Failed to find existing service: %s", portRule.Service)
-			}
-			service.RealLbConfig.PortRules = append(service.RealLbConfig.PortRules, client.PortRule{
+			finalPortRule := client.PortRule{
 				SourcePort:  int64(portRule.SourcePort),
 				Protocol:    portRule.Protocol,
 				Path:        portRule.Path,
 				Hostname:    portRule.Hostname,
-				ServiceId:   targetService.Id,
 				TargetPort:  int64(portRule.TargetPort),
 				Priority:    int64(portRule.Priority),
 				BackendName: portRule.BackendName,
 				Selector:    portRule.Selector,
-			})
+			}
+			if portRule.Service != "" {
+				targetService, err := r.FindExisting(portRule.Service)
+				if err != nil {
+					return err
+				}
+				if targetService == nil {
+					return fmt.Errorf("Failed to find existing service: %s", portRule.Service)
+				}
+				finalPortRule.ServiceId = targetService.Id
+			}
+			service.RealLbConfig.PortRules = append(service.RealLbConfig.PortRules, finalPortRule)
 		}
 
 		// Strip target ports from lb service config
@@ -258,7 +276,7 @@ func rewritePorts(ports []string) ([]string, error) {
 	return updatedPorts, nil
 }
 
-func convertLb(ports, links, externalLinks []string) ([]PortRule, error) {
+func convertLb(ports, links, externalLinks []string, selector string) ([]PortRule, error) {
 	portRules := []PortRule{}
 
 	for _, port := range ports {
@@ -314,6 +332,14 @@ func convertLb(ports, links, externalLinks []string) ([]PortRule, error) {
 				SourcePort: int(sourcePort),
 				TargetPort: int(targetPort),
 				Service:    split[0],
+				Protocol:   protocol,
+			})
+		}
+		if selector != "" {
+			portRules = append(portRules, PortRule{
+				SourcePort: int(sourcePort),
+				TargetPort: int(targetPort),
+				Selector:   selector,
 				Protocol:   protocol,
 			})
 		}

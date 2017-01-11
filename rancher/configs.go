@@ -70,7 +70,7 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *config.Se
 
 		// Strip off legacy load balancer labels
 		for k, v := range serviceConfig.Labels {
-			if !strings.HasPrefix(k, "io.rancher.loadbalancer") {
+			if !strings.HasPrefix(k, "io.rancher.loadbalancer") && !strings.HasPrefix(k, "io.rancher.service.selector") {
 				newLabels[k] = v
 			}
 		}

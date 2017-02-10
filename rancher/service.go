@@ -20,6 +20,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/rancher/go-rancher/hostaccess"
 	"github.com/rancher/go-rancher/v2"
+	rContainer "github.com/rancher/rancher-compose/container"
 	rUtils "github.com/rancher/rancher-compose/utils"
 )
 
@@ -73,6 +74,8 @@ func (r *RancherService) RancherService() (*client.Service, error) {
 }
 
 func (r *RancherService) Create(ctx context.Context, options options.Create) error {
+	err := rContainer.Up(string(r.Context().ComposeBytes[0]), r.Client())
+	return err
 	service, err := r.FindExisting(r.name)
 
 	if err == nil && service == nil {

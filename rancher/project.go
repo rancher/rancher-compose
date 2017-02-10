@@ -2,11 +2,12 @@ package rancher
 
 import (
 	"encoding/json"
+	"io/ioutil"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/libcompose/config"
 	"github.com/docker/libcompose/project"
 	"github.com/rancher/rancher-compose/preprocess"
-	"io/ioutil"
 )
 
 func NewProject(context *Context) (*project.Project, error) {
@@ -39,7 +40,7 @@ func NewProject(context *Context) (*project.Project, error) {
 	preProcessServiceMap := preprocess.PreprocessServiceMap(context.BindingsBytes)
 	p := project.NewProject(&context.Context, nil, &config.ParseOptions{
 		Interpolate: true,
-		Validate:    true,
+		Validate:    false,
 		Preprocess:  preProcessServiceMap,
 	})
 

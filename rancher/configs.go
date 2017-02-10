@@ -6,65 +6,64 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/libcompose/config"
-	"github.com/docker/libcompose/docker/service"
 	"github.com/docker/libcompose/utils"
 	"github.com/docker/libcompose/yaml"
 	"github.com/rancher/go-rancher/v2"
+	"github.com/rancher/rancher-compose/convert"
 )
 
 func createLaunchConfigs(r *RancherService) (client.LaunchConfig, []client.SecondaryLaunchConfig, error) {
 	secondaryLaunchConfigs := []client.SecondaryLaunchConfig{}
-	launchConfig, err := createLaunchConfig(r, r.Name(), r.Config())
+	launchConfig, err := createLaunchConfig(r, r.Name(), r.serviceConfig)
 	if err != nil {
 		return launchConfig, nil, err
 	}
 	launchConfig.HealthCheck = r.HealthCheck("")
 
-	if secondaries, ok := r.Context().SidekickInfo.primariesToSidekicks[r.Name()]; ok {
-		for _, secondaryName := range secondaries {
-			serviceConfig, ok := r.Context().Project.ServiceConfigs.Get(secondaryName)
-			if !ok {
-				return launchConfig, nil, fmt.Errorf("Failed to find sidekick: %s", secondaryName)
-			}
+	secondaries, ok := r.Context().SidekickInfo.primariesToSidekicks[r.Name()]
+	if !ok {
+		return launchConfig, []client.SecondaryLaunchConfig{}, nil
+	}
 
-			launchConfig, err := createLaunchConfig(r, secondaryName, serviceConfig)
-			if err != nil {
-				return launchConfig, nil, err
-			}
-			launchConfig.HealthCheck = r.HealthCheck(secondaryName)
-
-			var secondaryLaunchConfig client.SecondaryLaunchConfig
-			utils.Convert(launchConfig, &secondaryLaunchConfig)
-			secondaryLaunchConfig.Name = secondaryName
-
-			if secondaryLaunchConfig.Labels == nil {
-				secondaryLaunchConfig.Labels = map[string]interface{}{}
-			}
-			secondaryLaunchConfigs = append(secondaryLaunchConfigs, secondaryLaunchConfig)
+	for _, secondaryName := range secondaries {
+		serviceConfig, ok := r.Context().Project.ServiceConfigs.Get(secondaryName)
+		if !ok {
+			return launchConfig, nil, fmt.Errorf("Failed to find sidekick: %s", secondaryName)
 		}
+
+		launchConfig, err := createLaunchConfig(r, secondaryName, serviceConfig)
+		if err != nil {
+			return launchConfig, nil, err
+		}
+		launchConfig.HealthCheck = r.HealthCheck(secondaryName)
+
+		var secondaryLaunchConfig client.SecondaryLaunchConfig
+		if err = utils.Convert(launchConfig, &secondaryLaunchConfig); err != nil {
+			return client.LaunchConfig{}, nil, err
+		}
+		secondaryLaunchConfig.Name = secondaryName
+
+		if secondaryLaunchConfig.Labels == nil {
+			secondaryLaunchConfig.Labels = map[string]interface{}{}
+		}
+		secondaryLaunchConfigs = append(secondaryLaunchConfigs, secondaryLaunchConfig)
 	}
 
 	return launchConfig, secondaryLaunchConfigs, nil
 }
 
+// TODO: handle legacy load balancers
 func createLaunchConfig(r *RancherService, name string, serviceConfig *config.ServiceConfig) (client.LaunchConfig, error) {
-	var result client.LaunchConfig
-
-	rancherConfig := r.context.RancherConfig[name]
-
-	schemasUrl := strings.SplitN(r.Context().Client.GetSchemas().Links["self"], "/schemas", 2)[0]
-	scriptsUrl := schemasUrl + "/scripts/transform"
-
 	tempImage := serviceConfig.Image
 	tempLabels := serviceConfig.Labels
+
 	newLabels := yaml.SliceorMap{}
 	if serviceConfig.Image == "rancher/load-balancer-service" {
 		// Lookup default load balancer image
 		lbImageSetting, err := r.Client().Setting.ById("lb.instance.image")
 		if err != nil {
-			return result, err
+			return client.LaunchConfig{}, err
 		}
 		serviceConfig.Image = lbImageSetting.Value
 
@@ -77,71 +76,44 @@ func createLaunchConfig(r *RancherService, name string, serviceConfig *config.Se
 		serviceConfig.Labels = newLabels
 	}
 
-	config, hostConfig, err := service.Convert(serviceConfig, r.context.Context)
+	launchConfig, err := convert.ComposeToLaunchConfig(*serviceConfig)
 	if err != nil {
-		return result, err
+		return client.LaunchConfig{}, err
 	}
 
 	serviceConfig.Image = tempImage
 	serviceConfig.Labels = tempLabels
 
-	dockerContainer := &ContainerInspect{
-		Config:     config,
-		HostConfig: hostConfig,
+	if err = setupBuild(r, name, &launchConfig, serviceConfig); err != nil {
+		return client.LaunchConfig{}, nil
 	}
 
-	dockerContainer.HostConfig.NetworkMode = container.NetworkMode("")
-	dockerContainer.Name = "/" + name
-
-	err = r.Context().Client.Post(scriptsUrl, dockerContainer, &result)
-	if err != nil {
-		return result, err
+	// TODO: should this be done in ComposeToLaunchConfig?
+	if launchConfig.Labels == nil {
+		launchConfig.Labels = map[string]interface{}{}
 	}
 
-	result.VolumeDriver = hostConfig.VolumeDriver
-
-	setupNetworking(serviceConfig.NetworkMode, &result)
-	setupVolumesFrom(serviceConfig.VolumesFrom, &result)
-
-	err = setupBuild(r, name, &result, serviceConfig)
-
-	if result.Labels == nil {
-		result.Labels = map[string]interface{}{}
+	// TODO: should this be done in ComposeToLaunchConfig?
+	if launchConfig.LogConfig != nil && launchConfig.LogConfig.Config == nil {
+		launchConfig.LogConfig.Config = map[string]interface{}{}
 	}
 
-	result.Kind = rancherConfig.Type
-	result.Vcpu = int64(rancherConfig.Vcpu)
-	result.Userdata = rancherConfig.Userdata
-	result.MemoryMb = int64(rancherConfig.Memory)
-	result.Disks = rancherConfig.Disks
+	rancherConfig := r.RancherConfig()
 
-	if strings.EqualFold(result.Kind, "virtual_machine") || strings.EqualFold(result.Kind, "virtualmachine") {
-		result.Kind = "virtualMachine"
+	launchConfig.Kind = rancherConfig.Type
+	launchConfig.Vcpu = int64(rancherConfig.Vcpu)
+	launchConfig.Userdata = rancherConfig.Userdata
+	launchConfig.MemoryMb = int64(rancherConfig.Memory)
+	launchConfig.Disks = rancherConfig.Disks
+
+	if strings.EqualFold(launchConfig.Kind, "virtual_machine") || strings.EqualFold(launchConfig.Kind, "virtualmachine") {
+		launchConfig.Kind = "virtualMachine"
 	}
 
-	if result.LogConfig.Config == nil {
-		result.LogConfig.Config = map[string]interface{}{}
-	}
-
-	return result, err
+	return launchConfig, nil
 }
 
-func setupNetworking(netMode string, launchConfig *client.LaunchConfig) {
-	if netMode == "" {
-		launchConfig.NetworkMode = "managed"
-	} else if container.IpcMode(netMode).IsContainer() {
-		// For some reason NetworkMode object is gone runconfig, but IpcMode works the same for this
-		launchConfig.NetworkMode = "container"
-		launchConfig.NetworkLaunchConfig = strings.TrimPrefix(netMode, "container:")
-	} else {
-		launchConfig.NetworkMode = netMode
-	}
-}
-
-func setupVolumesFrom(volumesFrom []string, launchConfig *client.LaunchConfig) {
-	launchConfig.DataVolumesFromLaunchConfigs = volumesFrom
-}
-
+// TODO: should this be done in ComposeToLaunchConfig?
 func setupBuild(r *RancherService, name string, result *client.LaunchConfig, serviceConfig *config.ServiceConfig) error {
 	if serviceConfig.Build.Context != "" {
 		result.Build = &client.DockerBuild{

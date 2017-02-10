@@ -50,8 +50,8 @@ func (p *ProjectFactory) Create(c *cli.Context) (project.APIProject, error) {
 		Uploader: &rancher.S3Uploader{
 			Bucket: c.String("bucket"),
 		},
-		Args:               c.Args(),
-		BindingsFile:       c.GlobalString("bindings-file"),
+		Args:         c.Args(),
+		BindingsFile: c.GlobalString("bindings-file"),
 	}
 	qLookup.Context = context
 

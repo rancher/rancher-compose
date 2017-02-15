@@ -18,6 +18,10 @@ func (f *NormalFactory) Hash(service *RancherService) (digest.ServiceHash, error
 }
 
 func (f *NormalFactory) configAndHash(r *RancherService) (digest.ServiceHash, *CompositeService, error) {
+	if err := r.populateLbLinks(); err != nil {
+		return digest.ServiceHash{}, nil, err
+	}
+
 	rancherService, launchConfig, secondaryLaunchConfigs, err := f.config(r)
 	if err != nil {
 		return digest.ServiceHash{}, nil, err
@@ -150,7 +154,7 @@ func (f *NormalFactory) Upgrade(r *RancherService, force bool, selected []string
 
 	service := hash.Service != existingHash.Service || isForce(r.Name(), force, selected)
 	launchConfig := hash.LaunchConfig != existingHash.LaunchConfig || isForce(r.Name(), force, selected)
-	for oldSecondary, _ := range existingHash.SecondaryLaunchConfigs {
+	for oldSecondary := range existingHash.SecondaryLaunchConfigs {
 		if _, ok := hash.SecondaryLaunchConfigs[oldSecondary]; !ok {
 			removedSecondaryNames = append(removedSecondaryNames, oldSecondary)
 		}

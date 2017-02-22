@@ -121,6 +121,11 @@ func Merge(existingServices *ServiceConfigs, environmentLookup EnvironmentLookup
 	if err := utils.Convert(config.Volumes, &volumes); err != nil {
 		return "", nil, nil, nil, err
 	}
+	for i, volume := range volumes {
+		if volume == nil {
+			volumes[i] = &VolumeConfig{}
+		}
+	}
 	if err := utils.Convert(config.Networks, &networks); err != nil {
 		return "", nil, nil, nil, err
 	}

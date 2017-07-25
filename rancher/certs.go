@@ -7,7 +7,7 @@ import (
 )
 
 func populateCerts(apiClient *client.RancherClient, lbService *CompositeService, defaultCert string, certs []string) error {
-	if defaultCert != "" {
+	if defaultCert != "<nil>" && defaultCert != "" {
 		certId, err := findCertByName(apiClient, defaultCert)
 		if err != nil {
 			return err

@@ -253,6 +253,7 @@ func Convert(c *config.ServiceConfig, ctx project.Context) (*container.Config, *
 		CapDrop:     strslice.StrSlice(utils.CopySlice(c.CapDrop)),
 		GroupAdd:    c.GroupAdd,
 		ExtraHosts:  utils.CopySlice(c.ExtraHosts),
+		Sysctls:     c.Sysctls,
 		Privileged:  c.Privileged,
 		Binds:       Filter(vols, isBind),
 		DNS:         utils.CopySlice(c.DNS),

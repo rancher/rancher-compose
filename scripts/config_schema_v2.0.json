@@ -186,6 +186,7 @@
         "stdin_open": {"type": "boolean"},
         "stop_signal": {"type": "string"},
         "storage_driver": {"type": "object"},
+        "sysctls": {"$ref": "#/definitions/list_or_dict"},
         "tmpfs": {"$ref": "#/definitions/string_or_list"},
         "tty": {"type": "boolean"},
         "type": {"type": "string"},

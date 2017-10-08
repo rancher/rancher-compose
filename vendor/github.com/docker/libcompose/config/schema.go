@@ -336,6 +336,7 @@ var servicesSchemaDataV2 = `{
         "ipc": {"type": "string"},
         "isolation": {"type": "string"},
         "labels": {"$ref": "#/definitions/list_or_dict"},
+        "sysctls": {"$ref": "#/definitions/list_or_dict"},
         "lb_config": {"type": "object"},
         "links": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
         "load_balancer_config": {"type": "object"},

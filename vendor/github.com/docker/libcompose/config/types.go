@@ -121,6 +121,7 @@ type ServiceConfig struct {
 	Extends           yaml.MaporEqualSlice `yaml:"extends,omitempty"`
 	ExternalLinks     []string             `yaml:"external_links,omitempty"`
 	ExtraHosts        []string             `yaml:"extra_hosts,omitempty"`
+	Sysctls           yaml.SliceorMap      `yaml:"sysctls,omitempty"`
 	GroupAdd          []string             `yaml:"group_add,omitempty"`
 	Image             string               `yaml:"image,omitempty"`
 	Isolation         string               `yaml:"isolation,omitempty"`

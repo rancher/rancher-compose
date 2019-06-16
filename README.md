@@ -9,6 +9,12 @@ Binaries are available for Linux, OS X, and Windows. Refer to the latest [releas
 ## Building
 Run `make build` to create `./bin/rancher-compose`
 
+## Installing
+```bash
+export VERSION=v0.12.5
+curl -SL -o- "https://github.com/rancher/rancher-compose/releases/download/$VERSION/rancher-compose-linux-amd64-v0.12.5.tar.gz" |sudo tar xzv -C /usr/local/bin/ && sudo rm /usr/local/bin/rancher-compose; sudo ln -s /usr/local/bin/rancher-compose-$VERSION/rancher-compose /usr/local/bin/
+```
+
 ## Usage:
 
 ```

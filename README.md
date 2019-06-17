@@ -10,6 +10,7 @@ Binaries are available for Linux, OS X, and Windows. Refer to the latest [releas
 Run `make build` to create `./bin/rancher-compose`
 
 ## Installing
+If you have Rancher server running, the version of rancher-compose that is compatible with your Rancher server version can be downloaded inside the app.
 ```bash
 export VERSION=v0.12.5
 curl -SL -o- "https://github.com/rancher/rancher-compose/releases/download/$VERSION/rancher-compose-linux-amd64-v0.12.5.tar.gz" |sudo tar xzv -C /usr/local/bin/ && sudo rm /usr/local/bin/rancher-compose; sudo ln -s /usr/local/bin/rancher-compose-$VERSION/rancher-compose /usr/local/bin/ && sudo chmod +x /usr/local/bin/rancher-compose
